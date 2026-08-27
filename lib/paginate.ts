@@ -384,9 +384,13 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
           // margin-top (18px) stacks on top of .output-image-item's own
           // margin-top (10px) and blows out the gap between images.
           const showHeading = isFirstPartOfOutput && imgIdx === 0;
+          // Use the section's real heading ("OUTPUT:"), not a hardcoded
+          // label — and keep it if this image gets bumped to a fresh page
+          // below, since it's still the first thing in the section there.
+          const headingHTML = showHeading ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
           const imageBlockHTML = `
             <section class="record-block ${showHeading ? "" : "record-block-cont"}">
-              ${showHeading ? `<h2 class="record-heading">OUTPUT IMAGES:</h2>` : ""}
+              ${headingHTML}
               <div class="output-image-item">
                 <img src="${image.src}" class="output-image" alt="${escapeHTML(image.name)}" />
               </div>
@@ -399,6 +403,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
             commitCurrentPage();
             const newPageImageBlockHTML = `
               <section class="record-block">
+                ${headingHTML}
                 <div class="output-image-item">
                   <img src="${image.src}" class="output-image" alt="${escapeHTML(image.name)}" />
                 </div>
