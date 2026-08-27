@@ -1,0 +1,382 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================
+   GENERAL & RESET
+
+   NOTE: everything below styles the app CHROME (editor,
+   toolbars, modal). The generated record itself (.a4-page
+   and its descendants) intentionally keeps a hard-coded
+   Arial stack — see A4Page.tsx / printCss.ts / buildPrintHtml.ts
+   — so it renders identically in preview, print, and PDF.
+   Never point those selectors at the --font-* variables.
+===================================================== */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans), Arial, sans-serif;
+  background-color: #faf7f0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  inset: 0;
+}
+
+/* Faint graph-paper texture for the editor surface — a nod to the squared
+   pages of a physical lab notebook, kept subtle enough not to compete with
+   form content. */
+.editor-surface {
+  background-color: #fdfcf8;
+  background-image:
+    linear-gradient(to right, rgba(28, 43, 51, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 43, 51, 0.035) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* =====================================================
+   ACCORDION
+===================================================== */
+.record-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.record-section summary {
+  list-style: none;
+}
+
+.dropdown-icon {
+  transition: transform 300ms ease;
+}
+
+.record-section[open] .dropdown-icon {
+  transform: rotate(180deg);
+}
+
+.record-section[open] {
+  border-color: #eabf98;
+  box-shadow: 0 1px 2px rgba(28, 43, 51, 0.04);
+}
+
+.section-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms ease;
+}
+
+.record-section[open] .section-content {
+  grid-template-rows: 1fr;
+}
+
+.section-content-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* =====================================================
+   PREVIEW CONTAINER
+===================================================== */
+.preview-area {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.preview-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: 24px;
+}
+
+.preview-page-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-page-caption {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #9a8f77;
+}
+
+/* =====================================================
+   A4 DOCUMENT STYLES
+===================================================== */
+.a4-page {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  flex-shrink: 0;
+  background: white;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.a4-border {
+  position: absolute;
+  top: 8mm;
+  right: 8mm;
+  bottom: 8mm;
+  left: 8mm;
+  border: 1px solid #111827;
+  pointer-events: none;
+}
+
+.a4-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 18mm 17mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: Arial, sans-serif;
+  color: #000000;
+}
+
+.a4-main-flow {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.a4-bottom-result {
+  margin-top: auto;
+  padding-top: 8px;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   WATERMARK
+===================================================== */
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  color: rgba(107, 114, 128, 0.10);
+  font-family: Arial, sans-serif;
+  font-size: 72px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* =====================================================
+   RECORD HEADER TABLE
+===================================================== */
+.record-header {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #111827;
+  font-family: Arial, sans-serif;
+}
+
+.record-header td {
+  border: 1px solid #111827;
+}
+
+.record-meta {
+  width: 28%;
+  padding: 7px 10px;
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.record-meta .label {
+  font-weight: 700;
+}
+
+.record-meta .value {
+  font-weight: 400;
+}
+
+.record-title {
+  width: 72%;
+  padding: 14px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* =====================================================
+   RECORD SECTIONS & BLOCKS
+===================================================== */
+.record-block {
+  margin-top: 18px;
+}
+
+.record-block:first-child {
+  margin-top: 0;
+}
+
+.record-block-cont {
+  margin-top: 0;
+}
+
+.record-heading {
+  margin: 0 0 5px 0;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.record-body {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Arial, sans-serif;
+}
+
+.source-code {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.output-text {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Arial, sans-serif;
+}
+
+/* =====================================================
+   OUTPUT IMAGES IN DOCUMENT
+===================================================== */
+.output-images {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.output-image-item {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* A heading's own bottom margin already provides the gap — cancel the
+   image's top margin when it sits directly under a heading so the two
+   don't stack into a double gap. */
+.record-heading + .output-image-item {
+  margin-top: 0;
+}
+
+.output-image {
+  display: block;
+  width: 100%;
+  max-height: 125mm;
+  object-fit: contain;
+  border: 1px solid #d1d5db;
+  background: white;
+}
+
+/* =====================================================
+   EDITOR IMAGE UPLOAD THUMBNAILS
+===================================================== */
+.uploaded-images {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.uploaded-image-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.uploaded-image-card img {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.remove-image-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9999px;
+  background: white;
+  color: #ef4444;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 150ms ease;
+}
+
+.remove-image-button:hover {
+  background-color: #fee2e2;
+}
+
+/* =====================================================
+   RESPONSIVE & MOBILE NAVIGATION
+===================================================== */
+@media (max-width: 767px) {
+  .app-layout {
+    flex-direction: column;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  .mobile-panel {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: calc(100% - 64px) !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  .preview-pages {
+    padding: 14px;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .a4-page {
+    transform-origin: top center;
+    zoom: 0.45;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .a4-page {
+    zoom: 0.7;
+  }
+}

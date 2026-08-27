@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Record Lab</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Material Symbols Rounded CDN -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0" />
+
+  <!-- html2pdf.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    /* =====================================================
+       GENERAL & RESET
+    ===================================================== */
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f3f4f6;
+      overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+      inset: 0;
+    }
+
+    /* =====================================================
+       ACCORDION
+    ===================================================== */
+    .record-section summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .record-section summary {
+      list-style: none;
+    }
+
+    .dropdown-icon {
+      transition: transform 300ms ease;
+    }
+
+    .record-section[open] .dropdown-icon {
+      transform: rotate(180deg);
+    }
+
+    .section-content {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 300ms ease;
+    }
+
+    .record-section[open] .section-content {
+      grid-template-rows: 1fr;
+    }
+
+    .section-content-inner {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* =====================================================
+       PREVIEW CONTAINER
+    ===================================================== */
+    .preview-area {
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .preview-pages {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    /* =====================================================
+       A4 DOCUMENT STYLES
+    ===================================================== */
+    .a4-page {
+      position: relative;
+      width: 210mm;
+      height: 297mm;
+      flex-shrink: 0;
+      background: white;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .a4-border {
+      position: absolute;
+      top: 8mm;
+      right: 8mm;
+      bottom: 8mm;
+      left: 8mm;
+      border: 1px solid #111827;
+      pointer-events: none;
+    }
+
+    .a4-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      padding: 18mm 17mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-family: Arial, sans-serif;
+      color: #000000;
+    }
+
+    .a4-main-flow {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .a4-bottom-result {
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid #111827;
+      flex-shrink: 0;
+    }
+
+    /* =====================================================
+       WATERMARK
+    ===================================================== */
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 1;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      color: rgba(107, 114, 128, 0.10);
+      font-family: Arial, sans-serif;
+      font-size: 72px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* =====================================================
+       RECORD HEADER TABLE
+    ===================================================== */
+    .record-header {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #111827;
+      font-family: Arial, sans-serif;
+    }
+
+    .record-header td {
+      border: 1px solid #111827;
+    }
+
+    .record-meta {
+      width: 28%;
+      padding: 7px 10px;
+      vertical-align: top;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .record-meta .label {
+      font-weight: 700;
+    }
+
+    .record-meta .value {
+      font-weight: 400;
+    }
+
+    .record-title {
+      width: 72%;
+      padding: 14px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    /* =====================================================
+       RECORD SECTIONS & BLOCKS
+    ===================================================== */
+    .record-block {
+      margin-top: 18px;
+    }
+
+    .record-block:first-child {
+      margin-top: 0;
+    }
+
+    .record-block-cont {
+      margin-top: 0;
+    }
+
+    .record-heading {
+      margin: 0 0 5px 0;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .record-body {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: Arial, sans-serif;
+    }
+
+    .source-code {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .output-text {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: Arial, sans-serif;
+    }
+
+    /* =====================================================
+       OUTPUT IMAGES IN DOCUMENT
+    ===================================================== */
+    .output-images {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .output-image-item {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .output-image {
+      display: block;
+      width: 100%;
+      max-height: 125mm;
+      object-fit: contain;
+      border: 1px solid #d1d5db;
+      background: white;
+    }
+
+    /* =====================================================
+       EDITOR IMAGE UPLOAD THUMBNAILS
+    ===================================================== */
+    .uploaded-images {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .uploaded-image-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #f9fafb;
+    }
+
+    .uploaded-image-card img {
+      display: block;
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+
+    .remove-image-button {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 9999px;
+      background: white;
+      color: #ef4444;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      transition: background-color 150ms ease;
+    }
+
+    .remove-image-button:hover {
+      background-color: #fee2e2;
+    }
+
+    /* =====================================================
+       RESPONSIVE & MOBILE NAVIGATION
+    ===================================================== */
+    @media (max-width: 767px) {
+      .app-layout {
+        flex-direction: column;
+        padding: 0 !important;
+        gap: 0 !important;
+      }
+
+      .mobile-panel {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: calc(100% - 60px) !important;
+        border-radius: 0 !important;
+        border: none !important;
+      }
+
+      .preview-pages {
+        padding: 10px;
+        align-items: center;
+      }
+
+      .a4-page {
+        transform-origin: top center;
+        zoom: 0.45;
+      }
+    }
+
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .a4-page {
+        zoom: 0.7;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       MAIN APPLICATION LAYOUT
+  ===================================================== -->
+  <div class="app-layout flex h-full w-full gap-3.5 md:gap-4 bg-gray-100 p-3.5 md:p-4 overflow-hidden">
+
+    <!-- ===================================================
+         INPUT PANEL (EDITOR)
+    =================================================== -->
+    <div id="inputPanel"
+      class="mobile-panel flex w-full md:w-[380px] lg:w-[400px] shrink-0 flex-col rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+
+      <!-- HEADER -->
+      <div class="flex shrink-0 items-center justify-between border-b border-gray-200 p-4 bg-white">
+        <h1 class="text-lg font-bold text-gray-800 tracking-tight">
+          Record Lab
+        </h1>
+        <button id="openAiModalBtn" type="button" title="Generate with AI" aria-label="Generate with AI"
+          class="rounded-xl border border-gray-200 bg-white p-2 text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm flex items-center justify-center">
+          <span class="material-symbols-rounded text-xl">auto_awesome</span>
+        </button>
+      </div>
+
+      <!-- INPUT FORM SCROLL AREA -->
+      <div class="min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3.5">
+
+        <!-- RECORD DETAILS CARD -->
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <p class="mb-3 text-xs font-bold text-gray-700 uppercase tracking-wider">
+            RECORD DETAILS
+          </p>
+
+          <div class="space-y-3">
+            <!-- RRN -->
+            <div>
+              <label for="rrnInput" class="mb-1 block text-xs font-semibold text-gray-700">
+                RRN Number
+              </label>
+              <input id="rrnInput" type="text" placeholder="Enter RRN number..."
+                class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all" />
+            </div>
+
+            <!-- EXERCISE NUMBER -->
+            <div>
+              <label for="exInput" class="mb-1 block text-xs font-semibold text-gray-700">
+                Exercise Number
+              </label>
+              <input id="exInput" type="text" placeholder="Ex : 2"
+                class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all" />
+            </div>
+
+            <!-- DATE -->
+            <div>
+              <label for="dateInput" class="mb-1 block text-xs font-semibold text-gray-700">
+                Date
+              </label>
+              <input id="dateInput" type="date"
+                class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all" />
+            </div>
+
+            <!-- EXPERIMENT TITLE -->
+            <div>
+              <label for="titleInput" class="mb-1 block text-xs font-semibold text-gray-700">
+                Experiment Title
+              </label>
+              <input id="titleInput" type="text" placeholder="Enter experiment title..."
+                class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all" />
+            </div>
+          </div>
+        </div>
+
+        <!-- WATERMARK OPTIONS SECTION -->
+        <details class="record-section rounded-2xl border border-gray-200 bg-white shadow-sm transition-all">
+          <summary class="flex cursor-pointer items-center justify-between p-3.5 select-none font-bold text-xs text-gray-700 uppercase tracking-wider">
+            <span>WATERMARK OPTIONS</span>
+            <span class="material-symbols-rounded dropdown-icon text-gray-400 text-lg">
+              keyboard_arrow_down
+            </span>
+          </summary>
+          <div class="section-content">
+            <div class="section-content-inner px-3.5 pb-3.5 space-y-3">
+              <!-- FONT FAMILY -->
+              <div>
+                <label for="watermarkFontInput" class="mb-1 block text-xs font-semibold text-gray-700">Font Family</label>
+                <select id="watermarkFontInput"
+                  class="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all">
+                  <option value="Arial, sans-serif" selected>Arial</option>
+                  <option value="'Times New Roman', serif">Times New Roman</option>
+                  <option value="'Courier New', monospace">Courier New</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="Impact, sans-serif">Impact</option>
+                  <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                  <option value="Verdana, sans-serif">Verdana</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <!-- FONT SIZE -->
+                <div>
+                  <label for="watermarkSizeInput" class="mb-1 block text-xs font-semibold text-gray-700">Size (px)</label>
+                  <input id="watermarkSizeInput" type="number" min="20" max="200" value="72"
+                    class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all" />
+                </div>
+
+                <!-- ROTATION -->
+                <div>
+                  <label for="watermarkRotationInput" class="mb-1 block text-xs font-semibold text-gray-700">Rotation (°)</label>
+                  <input id="watermarkRotationInput" type="number" min="-180" max="180" value="-45"
+                    class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <!-- OPACITY -->
+                <div>
+                  <div class="mb-1 flex items-center justify-between">
+                    <label for="watermarkOpacityInput" class="text-xs font-semibold text-gray-700">Opacity</label>
+                    <span id="watermarkOpacityVal" class="font-mono text-xs text-gray-500">10%</span>
+                  </div>
+                  <input id="watermarkOpacityInput" type="range" min="1" max="50" value="10"
+                    class="w-full mt-2 cursor-pointer accent-blue-600" />
+                </div>
+
+                <!-- COLOR -->
+                <div>
+                  <label for="watermarkColorInput" class="mb-1 block text-xs font-semibold text-gray-700">Color</label>
+                  <input id="watermarkColorInput" type="color" value="#6b7280"
+                    class="h-10 w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-1" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- AIM SECTION -->
+        <details class="record-section rounded-2xl border border-gray-200 bg-white shadow-sm transition-all" open>
+          <summary class="flex cursor-pointer items-center justify-between p-3.5 select-none font-bold text-xs text-gray-700 uppercase tracking-wider">
+            <span>AIM</span>
+            <span class="material-symbols-rounded dropdown-icon text-gray-400 text-lg">
+              keyboard_arrow_down
+            </span>
+          </summary>
+          <div class="section-content">
+            <div class="section-content-inner px-3.5 pb-3.5">
+              <label for="aimInput" class="sr-only">Aim</label>
+              <textarea id="aimInput" rows="5" placeholder="Enter the aim of the experiment..."
+                class="w-full resize-none rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"></textarea>
+            </div>
+          </div>
+        </details>
+
+        <!-- ALGORITHM SECTION -->
+        <details class="record-section rounded-2xl border border-gray-200 bg-white shadow-sm transition-all">
+          <summary class="flex cursor-pointer items-center justify-between p-3.5 select-none font-bold text-xs text-gray-700 uppercase tracking-wider">
+            <span>ALGORITHM</span>
+            <span class="material-symbols-rounded dropdown-icon text-gray-400 text-lg">
+              keyboard_arrow_down
+            </span>
+          </summary>
+          <div class="section-content">
+            <div class="section-content-inner px-3.5 pb-3.5">
+              <label for="algorithmInput" class="sr-only">Algorithm</label>
+              <textarea id="algorithmInput" rows="7" placeholder="Enter the algorithm..."
+                class="w-full resize-none rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"></textarea>
+            </div>
+          </div>
+        </details>
+
+        <!-- SOURCE CODE SECTION -->
+        <details class="record-section rounded-2xl border border-gray-200 bg-white shadow-sm transition-all">
+          <summary class="flex cursor-pointer items-center justify-between p-3.5 select-none font-bold text-xs text-gray-700 uppercase tracking-wider">
+            <span>SOURCE CODE</span>
+            <span class="material-symbols-rounded dropdown-icon text-gray-400 text-lg">
+              keyboard_arrow_down
+            </span>
+          </summary>
+          <div class="section-content">
+            <div class="section-content-inner px-3.5 pb-3.5">
+              <label for="programInput" class="sr-only">Source Code</label>
+              <textarea id="programInput" rows="10" placeholder="Enter program / source code..."
+                class="w-full resize-none rounded-xl border border-gray-200 p-3 font-mono text-xs leading-relaxed outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 bg-gray-50/50 focus:bg-white placeholder:text-gray-400 transition-all"></textarea>
+            </div>
+          </div>
+        </details>
+
+        <!-- OUTPUT SECTION -->
+        <details class="record-section rounded-2xl border border-gray-200 bg-white shadow-sm transition-all">
+          <summary class="flex cursor-pointer items-center justify-between p-3.5 select-none font-bold text-xs text-gray-700 uppercase tracking-wider">
+            <span>OUTPUT</span>
+            <span class="material-symbols-rounded dropdown-icon text-gray-400 text-lg">
+              keyboard_arrow_down
+            </span>
+          </summary>
+          <div class="section-content">
+            <div class="section-content-inner px-3.5 pb-3.5">
+              <label for="outputInput" class="mb-1 block text-xs font-semibold text-gray-700">Output Text</label>
+              <textarea id="outputInput" rows="5" placeholder="Enter optional output text..."
+                class="mb-3 w-full resize-none rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"></textarea>
+
+              <div class="image-upload-area">
+                <label for="outputImagesInput"
+                  class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-all">
+                  <span class="material-symbols-rounded text-base">
+                    add_photo_alternate
+                  </span>
+                  <span>Add Output Images</span>
+                  <input id="outputImagesInput" type="file" accept="image/*" multiple class="hidden" />
+                </label>
+
+                <!-- UPLOADED IMAGES PREVIEW THUMBNAILS -->
+                <div id="uploadedImages" class="uploaded-images mt-2.5"></div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- REVIEW QUESTIONS SECTION -->
+        <details class="record-section rounded-2xl border border-gray-200 bg-white shadow-sm transition-all">
+          <summary class="flex cursor-pointer items-center justify-between p-3.5 select-none font-bold text-xs text-gray-700 uppercase tracking-wider">
+            <span>REVIEW QUESTIONS</span>
+            <span class="material-symbols-rounded dropdown-icon text-gray-400 text-lg">
+              keyboard_arrow_down
+            </span>
+          </summary>
+          <div class="section-content">
+            <div class="section-content-inner px-3.5 pb-3.5">
+              <label for="reviewInput" class="sr-only">Review Questions</label>
+              <textarea id="reviewInput" rows="7" placeholder="Enter review questions and answers..."
+                class="w-full resize-none rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"></textarea>
+            </div>
+          </div>
+        </details>
+
+        <!-- RESULT SECTION -->
+        <details class="record-section rounded-2xl border border-gray-200 bg-white shadow-sm transition-all">
+          <summary class="flex cursor-pointer items-center justify-between p-3.5 select-none font-bold text-xs text-gray-700 uppercase tracking-wider">
+            <span>RESULT</span>
+            <span class="material-symbols-rounded dropdown-icon text-gray-400 text-lg">
+              keyboard_arrow_down
+            </span>
+          </summary>
+          <div class="section-content">
+            <div class="section-content-inner px-3.5 pb-3.5">
+              <label for="resultInput" class="sr-only">Result</label>
+              <textarea id="resultInput" rows="3" placeholder="Enter final result..."
+                class="w-full resize-none rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"></textarea>
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </div>
+
+    <!-- ===================================================
+         PREVIEW PANEL (A4 LIVE PREVIEW)
+    =================================================== -->
+    <div id="previewPanel"
+      class="mobile-panel hidden md:flex min-w-0 flex-1 flex-col rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+
+      <!-- PREVIEW HEADER -->
+      <div class="flex shrink-0 items-center justify-between border-b border-gray-200 p-4 bg-white">
+        <h2 class="text-lg font-bold text-gray-800 tracking-tight">
+          Preview
+        </h2>
+
+        <div class="flex items-center gap-2">
+          <!-- SAVE PDF BUTTON -->
+          <button id="savePdfButton" type="button"
+            class="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition-all shadow-sm">
+            Save PDF
+          </button>
+
+          <!-- PRINT BUTTON -->
+          <button id="printButton" type="button"
+            class="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-all shadow-sm">
+            Print
+          </button>
+        </div>
+      </div>
+
+      <!-- PREVIEW SCROLL AREA -->
+      <div class="preview-area min-h-0 flex-1">
+        <div id="previewPages" class="preview-pages"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- =====================================================
+       MOBILE BOTTOM NAVIGATION
+  ===================================================== -->
+  <nav class="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t border-gray-200 bg-white p-2 shadow-lg md:hidden">
+    <button id="navInputsBtn" type="button"
+      class="flex flex-1 flex-col items-center justify-center rounded-xl py-1 text-blue-600 font-semibold">
+      <span class="material-symbols-rounded">edit</span>
+      <span class="text-xs">Inputs</span>
+    </button>
+
+    <button id="navPreviewBtn" type="button"
+      class="flex flex-1 flex-col items-center justify-center rounded-xl py-1 text-gray-500">
+      <span class="material-symbols-rounded">preview</span>
+      <span class="text-xs">Preview</span>
+    </button>
+  </nav>
+
+  <!-- =====================================================
+       HIDDEN PRINT IFRAME
+  ===================================================== -->
+  <iframe id="printFrame" title="Print Frame" style="position: fixed; width: 0; height: 0; border: 0; opacity: 0; pointer-events: none; left: -10000px; top: -10000px;"></iframe>
+
+  <!-- =====================================================
+       VANILLA JAVASCRIPT LOGIC
+  ===================================================== -->
+  <script>
+    /* =====================================================
+       APPLICATION STATE
+    ===================================================== */
+    const state = {
+      record: {
+        rrn: "",
+        exercise_number: "",
+        date: "",
+        title: "",
+        aim: "",
+        algorithm: "",
+        source_code: "",
+        output: "",
+        review_questions: "",
+        result: ""
+      },
+      output_images: [] // Array of { id: number, src: string, name: string }
+    };
+
+    /* Backward compatibility variable */
+    let outputImages = state.output_images;
+
+    /* =====================================================
+       DOM ELEMENTS
+    ===================================================== */
+    const rrnInput = document.getElementById("rrnInput");
+    const exInput = document.getElementById("exInput");
+    const dateInput = document.getElementById("dateInput");
+    const titleInput = document.getElementById("titleInput");
+
+    const watermarkFontInput = document.getElementById("watermarkFontInput");
+    const watermarkSizeInput = document.getElementById("watermarkSizeInput");
+    const watermarkRotationInput = document.getElementById("watermarkRotationInput");
+    const watermarkOpacityInput = document.getElementById("watermarkOpacityInput");
+    const watermarkOpacityVal = document.getElementById("watermarkOpacityVal");
+    const watermarkColorInput = document.getElementById("watermarkColorInput");
+
+    const aimInput = document.getElementById("aimInput");
+    const algorithmInput = document.getElementById("algorithmInput");
+    const programInput = document.getElementById("programInput");
+    const outputInput = document.getElementById("outputInput");
+    const reviewInput = document.getElementById("reviewInput");
+    const resultInput = document.getElementById("resultInput");
+
+    const outputImagesInput = document.getElementById("outputImagesInput");
+    const uploadedImages = document.getElementById("uploadedImages");
+    const previewPages = document.getElementById("previewPages");
+    const printFrame = document.getElementById("printFrame");
+    const savePdfButton = document.getElementById("savePdfButton");
+    const printButton = document.getElementById("printButton");
+
+    const inputPanel = document.getElementById("inputPanel");
+    const previewPanel = document.getElementById("previewPanel");
+    const navInputsBtn = document.getElementById("navInputsBtn");
+    const navPreviewBtn = document.getElementById("navPreviewBtn");
+
+    /* =====================================================
+       UTILITY FUNCTIONS
+    ===================================================== */
+    function escapeHTML(value) {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      const parts = value.split("-");
+      if (parts.length !== 3) return value;
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
+    /* =====================================================
+       DOCUMENT CONTENT HELPERS
+    ===================================================== */
+    function createHeader() {
+      const exNo = escapeHTML(exInput.value.trim());
+      const formattedDate = escapeHTML(formatDate(dateInput.value));
+      const title = escapeHTML(titleInput.value.trim());
+
+      return `
+        <table class="record-header">
+          <tr>
+            <td class="record-meta">
+              <div>
+                <span class="label">EX NO :</span>
+                <span class="value">${exNo}</span>
+              </div>
+              <div>
+                <span class="label">DATE :</span>
+                <span class="value">${formattedDate}</span>
+              </div>
+            </td>
+            <td class="record-title">
+              ${title}
+            </td>
+          </tr>
+        </table>
+      `;
+    }
+
+    function createOutputImagesHTML() {
+      if (outputImages.length === 0) return "";
+      return `
+        <div class="output-images">
+          ${outputImages.map(img => `
+            <div class="output-image-item">
+              <img src="${img.src}" class="output-image" alt="${escapeHTML(img.name)}" />
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function createA4Page(mainFlowHTML, resultHTML = "") {
+      const rrn = escapeHTML(rrnInput.value.trim());
+      const fontFamily = watermarkFontInput ? watermarkFontInput.value : "Arial, sans-serif";
+      const fontSize = watermarkSizeInput ? watermarkSizeInput.value : "72";
+      const rotation = watermarkRotationInput ? watermarkRotationInput.value : "-45";
+      const opacity = watermarkOpacityInput ? (watermarkOpacityInput.value / 100) : 0.10;
+      const color = watermarkColorInput ? watermarkColorInput.value : "#6b7280";
+
+      const style = `font-family: ${fontFamily}; font-size: ${fontSize}px; transform: translate(-50%, -50%) rotate(${rotation}deg); opacity: ${opacity}; color: ${color};`;
+
+      return `
+        <div class="a4-page">
+          <div class="watermark" style="${style}">${rrn}</div>
+          <div class="a4-border"></div>
+          <div class="a4-content">
+            <div class="a4-main-flow">
+              ${mainFlowHTML}
+            </div>
+            ${resultHTML ? `<div class="a4-bottom-result">${resultHTML}</div>` : ""}
+          </div>
+        </div>
+      `;
+    }
+
+    function createMeasurePage() {
+      const page = document.createElement("div");
+      page.className = "a4-page";
+      page.style.position = "absolute";
+      page.style.left = "-10000px";
+      page.style.top = "0";
+      page.style.height = "auto";
+      page.style.minHeight = "297mm";
+      page.style.overflow = "visible";
+      page.style.visibility = "hidden";
+      page.style.pointerEvents = "none";
+      page.innerHTML = `
+        <div class="a4-content" style="height:auto;min-height:261mm;overflow:visible;">
+          <div class="a4-main-flow" style="height:auto;overflow:visible;"></div>
+        </div>
+      `;
+      document.body.appendChild(page);
+      return page;
+    }
+
+    /* =====================================================
+       DOCUMENT BUILDER & SMART PAGINATION ENGINE
+    ===================================================== */
+    function buildPages() {
+      const measurePage = createMeasurePage();
+      const measureContent = measurePage.querySelector(".a4-content");
+      
+      // Fixed inner height of A4 page content (297mm minus 36mm vertical padding ≈ 986px)
+      const pageHeight = 986; 
+
+      const resultVal = resultInput ? resultInput.value : "";
+      const resultBlockHTML = `
+        <div class="a4-bottom-result">
+          <section class="record-block record-block-result">
+            <h2 class="record-heading">RESULT:</h2>
+            <div class="record-body">${escapeHTML(resultVal)}</div>
+          </section>
+        </div>
+      `;
+
+      // Helper function to measure height of any main flow HTML
+      function measureMainFlowHeight(htmlContent) {
+        measureContent.innerHTML = `
+          <div class="a4-main-flow" style="height:auto;overflow:visible;">
+            ${htmlContent}
+          </div>
+        `;
+        const el = measureContent.firstElementChild;
+        return el ? el.scrollHeight : 0;
+      }
+
+      // Measure exact height of the result block
+      measureContent.innerHTML = resultBlockHTML;
+      const resultEl = measureContent.firstElementChild;
+      const resultBlockHeight = resultEl ? resultEl.offsetHeight : 50;
+      measureContent.innerHTML = "";
+
+      const rawPages = [];
+      let currentMainFlowHTML = "";
+
+      function tryAddFragment(fragmentHTML, isFinalSection = false) {
+        const allowedHeight = isFinalSection ? (pageHeight - resultBlockHeight - 24) : (pageHeight - 12);
+        const mainFlowHeight = measureMainFlowHeight(currentMainFlowHTML + fragmentHTML);
+        return mainFlowHeight <= allowedHeight;
+      }
+
+      function commitCurrentPage() {
+        if (currentMainFlowHTML.trim() !== "") {
+          rawPages.push(currentMainFlowHTML);
+          currentMainFlowHTML = "";
+          measureContent.innerHTML = "";
+        }
+      }
+
+      // 1. Add Header Table
+      const headerHTML = createHeader();
+      currentMainFlowHTML += headerHTML;
+
+      // 2. Main flow sections (excluding result)
+      const sections = [
+        { id: "aim", heading: "AIM:", type: "text", val: aimInput.value },
+        { id: "algorithm", heading: "ALGORITHM:", type: "text", val: algorithmInput.value },
+        { id: "source_code", heading: "SOURCE CODE:", type: "code", val: programInput.value },
+        { id: "output", heading: "OUTPUT:", type: "output", textVal: outputInput.value, images: outputImages },
+        { id: "review_questions", heading: "REVIEW QUESTIONS:", type: "text", val: reviewInput.value }
+      ];
+
+      const nonArrayEmptySections = sections.filter(s => {
+        if (s.type === "output") {
+          return (s.textVal && s.textVal.trim() !== "") || (s.images && s.images.length > 0);
+        }
+        return s.val && s.val.trim() !== "";
+      });
+      const lastActiveSectionId = nonArrayEmptySections.length > 0 ? nonArrayEmptySections[nonArrayEmptySections.length - 1].id : null;
+
+      function buildFullSectionHTML(sec) {
+        if (sec.type === "text" || sec.type === "code") {
+          const rawText = (sec.val || "").trim();
+          if (!rawText) return "";
+          const contentEscaped = rawText.split("\n").map(l => escapeHTML(l)).join("\n");
+          return `
+            <section class="record-block">
+              <h2 class="record-heading">${sec.heading}</h2>
+              <${sec.type === "code" ? "pre" : "div"} class="${sec.type === "code" ? "source-code" : "record-body"}">${contentEscaped}</${sec.type === "code" ? "pre" : "div"}>
+            </section>
+          `;
+        } else if (sec.type === "output") {
+          const textVal = (sec.textVal || "").trim();
+          const images = sec.images || [];
+          if (!textVal && images.length === 0) return "";
+          let html = `<section class="record-block"><h2 class="record-heading">${sec.heading}</h2>`;
+          if (textVal !== "") {
+            html += `<div class="output-text">${textVal.split("\n").map(l => escapeHTML(l)).join("\n")}</div>`;
+          }
+          if (images.length > 0) {
+            images.forEach(img => {
+              html += `<div class="output-image-item"><img src="${img.src}" class="output-image" alt="${escapeHTML(img.name)}" /></div>`;
+            });
+          }
+          html += `</section>`;
+          return html;
+        }
+        return "";
+      }
+
+      sections.forEach(sec => {
+        const isFinalSection = (sec.id === lastActiveSectionId);
+        const fullSectionHTML = buildFullSectionHTML(sec);
+
+        // 1. If full section fits on current page, add it in one piece!
+        if (fullSectionHTML && tryAddFragment(fullSectionHTML, isFinalSection)) {
+          currentMainFlowHTML += fullSectionHTML;
+          return;
+        }
+
+        // 2. If full section does NOT fit on current page:
+        // Move section to a fresh page only if remaining space on current page is less than 60px (orphan heading protection)
+        const currentHeight = measureMainFlowHeight(currentMainFlowHTML);
+        const allowedHeight = isFinalSection ? (pageHeight - resultBlockHeight - 24) : (pageHeight - 12);
+        const spaceRemaining = allowedHeight - currentHeight;
+
+        if (currentMainFlowHTML.trim() !== "" && spaceRemaining < 60) {
+          commitCurrentPage();
+          if (fullSectionHTML && tryAddFragment(fullSectionHTML, isFinalSection)) {
+            currentMainFlowHTML += fullSectionHTML;
+            return;
+          }
+        }
+
+        if (sec.type === "text" || sec.type === "code") {
+          const rawText = sec.val || "";
+
+          if (rawText.trim() === "") {
+            const emptyBlockHTML = `
+              <section class="record-block">
+                <h2 class="record-heading">${sec.heading}</h2>
+                <${sec.type === "code" ? "pre" : "div"} class="${sec.type === "code" ? "source-code" : "record-body"}"></${sec.type === "code" ? "pre" : "div"}>
+              </section>
+            `;
+            if (!tryAddFragment(emptyBlockHTML, isFinalSection)) {
+              commitCurrentPage();
+            }
+            currentMainFlowHTML += emptyBlockHTML;
+            return;
+          }
+
+          const lines = rawText.split("\n");
+          let isFirstLineOfSection = true;
+          let currentSectionLines = [];
+
+          let i = 0;
+          while (i < lines.length) {
+            let chunkLines = [lines[i]];
+            // Group Question & Answer lines together
+            if (/^Q\d+[:.]/i.test(lines[i].trim()) && i + 1 < lines.length && /^A\d+[:.]/i.test(lines[i + 1].trim())) {
+              chunkLines.push(lines[i + 1]);
+              i++;
+            }
+
+            const testLines = [...currentSectionLines, ...chunkLines];
+            const lineContentEscaped = testLines.map(l => escapeHTML(l)).join("\n");
+            const headingHTML = isFirstLineOfSection ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+
+            const testBlockHTML = `
+              <section class="record-block ${isFirstLineOfSection ? "" : "record-block-cont"}">
+                ${headingHTML}
+                <${sec.type === "code" ? "pre" : "div"} class="${sec.type === "code" ? "source-code" : "record-body"}">${lineContentEscaped}</${sec.type === "code" ? "pre" : "div"}>
+              </section>
+            `;
+
+            if (tryAddFragment(testBlockHTML, isFinalSection)) {
+              currentSectionLines.push(...chunkLines);
+            } else {
+              if (currentSectionLines.length === 0) {
+                commitCurrentPage();
+                currentSectionLines.push(...chunkLines);
+              } else {
+                const committedContent = currentSectionLines.map(l => escapeHTML(l)).join("\n");
+                const committedHeadingHTML = isFirstLineOfSection ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+                const committedBlockHTML = `
+                  <section class="record-block ${isFirstLineOfSection ? "" : "record-block-cont"}">
+                    ${committedHeadingHTML}
+                    <${sec.type === "code" ? "pre" : "div"} class="${sec.type === "code" ? "source-code" : "record-body"}">${committedContent}</${sec.type === "code" ? "pre" : "div"}>
+                  </section>
+                `;
+                currentMainFlowHTML += committedBlockHTML;
+                commitCurrentPage();
+                isFirstLineOfSection = false;
+                currentSectionLines = [...chunkLines];
+              }
+            }
+            i++;
+          }
+
+          if (currentSectionLines.length > 0) {
+            const remainingContent = currentSectionLines.map(l => escapeHTML(l)).join("\n");
+            const remainingHeadingHTML = isFirstLineOfSection ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+            const remainingBlockHTML = `
+              <section class="record-block ${isFirstLineOfSection ? "" : "record-block-cont"}">
+                ${remainingHeadingHTML}
+                <${sec.type === "code" ? "pre" : "div"} class="${sec.type === "code" ? "source-code" : "record-body"}">${remainingContent}</${sec.type === "code" ? "pre" : "div"}>
+              </section>
+            `;
+            currentMainFlowHTML += remainingBlockHTML;
+          }
+
+        } else if (sec.type === "output") {
+          const textVal = sec.textVal || "";
+          const images = sec.images || [];
+
+          if (textVal.trim() === "" && images.length === 0) {
+            const emptyBlockHTML = `
+              <section class="record-block">
+                <h2 class="record-heading">${sec.heading}</h2>
+                <div class="output-text"></div>
+              </section>
+            `;
+            if (!tryAddFragment(emptyBlockHTML, isFinalSection)) {
+              commitCurrentPage();
+            }
+            currentMainFlowHTML += emptyBlockHTML;
+            return;
+          }
+
+          let isFirstPartOfOutput = true;
+          if (textVal.trim() !== "") {
+            const lines = textVal.split("\n");
+            let currentTextLines = [];
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const testLines = [...currentTextLines, line];
+              const lineContentEscaped = testLines.map(l => escapeHTML(l)).join("\n");
+              const headingHTML = isFirstPartOfOutput ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+              const testBlockHTML = `
+                <section class="record-block ${isFirstPartOfOutput ? "" : "record-block-cont"}">
+                  ${headingHTML}
+                  <div class="output-text">${lineContentEscaped}</div>
+                </section>
+              `;
+
+              if (tryAddFragment(testBlockHTML, isFinalSection)) {
+                currentTextLines.push(line);
+              } else {
+                if (currentTextLines.length === 0) {
+                  commitCurrentPage();
+                  currentTextLines.push(line);
+                } else {
+                  const committedContent = currentTextLines.map(l => escapeHTML(l)).join("\n");
+                  const committedHeadingHTML = isFirstPartOfOutput ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+                  const committedBlockHTML = `
+                    <section class="record-block ${isFirstPartOfOutput ? "" : "record-block-cont"}">
+                      ${committedHeadingHTML}
+                      <div class="output-text">${committedContent}</div>
+                    </section>
+                  `;
+                  currentMainFlowHTML += committedBlockHTML;
+                  commitCurrentPage();
+                  isFirstPartOfOutput = false;
+                  currentTextLines = [line];
+                }
+              }
+            }
+
+            if (currentTextLines.length > 0) {
+              const remainingContent = currentTextLines.map(l => escapeHTML(l)).join("\n");
+              const remainingHeadingHTML = isFirstPartOfOutput ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+              const remainingBlockHTML = `
+                <section class="record-block ${isFirstPartOfOutput ? "" : "record-block-cont"}">
+                  ${remainingHeadingHTML}
+                  <div class="output-text">${remainingContent}</div>
+                </section>
+              `;
+              currentMainFlowHTML += remainingBlockHTML;
+              isFirstPartOfOutput = false;
+            }
+          }
+
+          if (images.length > 0) {
+            images.forEach((image, imgIdx) => {
+              const showHeading = (isFirstPartOfOutput && imgIdx === 0);
+              const imageBlockHTML = `
+                <section class="record-block">
+                  ${showHeading ? `<h2 class="record-heading">OUTPUT IMAGES:</h2>` : ""}
+                  <div class="output-image-item">
+                    <img src="${image.src}" class="output-image" alt="${escapeHTML(image.name)}" />
+                  </div>
+                </section>
+              `;
+
+              if (tryAddFragment(imageBlockHTML, isFinalSection)) {
+                currentMainFlowHTML += imageBlockHTML;
+              } else {
+                commitCurrentPage();
+                const newPageImageBlockHTML = `
+                  <section class="record-block">
+                    <div class="output-image-item">
+                      <img src="${image.src}" class="output-image" alt="${escapeHTML(image.name)}" />
+                    </div>
+                  </section>
+                `;
+                currentMainFlowHTML += newPageImageBlockHTML;
+              }
+              isFirstPartOfOutput = false;
+            });
+          }
+        }
+      });
+
+      commitCurrentPage();
+      measurePage.remove();
+
+      const pageObjects = [];
+      const resultBlockContent = `
+        <section class="record-block record-block-result">
+          <h2 class="record-heading">RESULT:</h2>
+          <div class="record-body">${escapeHTML(resultVal)}</div>
+        </section>
+      `;
+
+      const validPages = rawPages.filter(p => p && p.trim() !== "");
+      if (validPages.length === 0) {
+        pageObjects.push({ main: "", result: resultBlockContent });
+      } else {
+        validPages.forEach((mainHTML, index) => {
+          const isLastPage = (index === validPages.length - 1);
+          pageObjects.push({
+            main: mainHTML,
+            result: isLastPage ? resultBlockContent : ""
+          });
+        });
+      }
+
+      return pageObjects;
+    }
+
+    function buildDocument() {
+      return buildPages();
+    }
+
+    function renderPreview() {
+      const pageObjects = buildPages();
+      previewPages.innerHTML = "";
+      pageObjects.forEach(page => {
+        previewPages.insertAdjacentHTML("beforeend", createA4Page(page.main, page.result));
+      });
+    }
+
+    /* =====================================================
+       OUTPUT IMAGE MANAGEMENT
+    ===================================================== */
+    function handleImageUpload(event) {
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
+
+      files.forEach(file => {
+        if (!file.type.startsWith("image/")) return;
+
+        const reader = new FileReader();
+        reader.onload = e => {
+          outputImages.push({
+            id: Date.now() + Math.random(),
+            src: e.target.result,
+            name: file.name
+          });
+          renderUploadedImages();
+          renderPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      event.target.value = "";
+    }
+
+    function removeOutputImage(id) {
+      state.output_images = state.output_images.filter(img => img.id !== id);
+      outputImages = state.output_images;
+      renderUploadedImages();
+      renderPreview();
+    }
+
+    function renderUploadedImages() {
+      uploadedImages.innerHTML = "";
+      outputImages.forEach(image => {
+        const card = document.createElement("div");
+        card.className = "uploaded-image-card";
+        card.innerHTML = `
+          <img src="${image.src}" alt="${escapeHTML(image.name)}" />
+          <button type="button" class="remove-image-button" data-id="${image.id}" aria-label="Remove output image ${escapeHTML(image.name)}">
+            <span class="material-symbols-rounded text-sm">close</span>
+          </button>
+        `;
+        uploadedImages.appendChild(card);
+      });
+    }
+
+    outputImagesInput.addEventListener("change", handleImageUpload);
+
+    uploadedImages.addEventListener("click", event => {
+      const button = event.target.closest(".remove-image-button");
+      if (!button) return;
+      const id = Number(button.dataset.id);
+      removeOutputImage(id);
+    });
+
+    /* =====================================================
+       INPUT EVENT LISTENERS
+    ===================================================== */
+    const allInputs = [
+      rrnInput, exInput, dateInput, titleInput,
+      watermarkFontInput, watermarkSizeInput, watermarkRotationInput, watermarkOpacityInput, watermarkColorInput,
+      aimInput, algorithmInput, programInput, outputInput, reviewInput, resultInput
+    ];
+
+    allInputs.forEach(input => {
+      if (!input) return;
+      input.addEventListener("input", () => {
+        if (input === watermarkOpacityInput && watermarkOpacityVal) {
+          watermarkOpacityVal.textContent = watermarkOpacityInput.value + "%";
+        }
+        renderPreview();
+      });
+      input.addEventListener("change", () => {
+        if (input === watermarkOpacityInput && watermarkOpacityVal) {
+          watermarkOpacityVal.textContent = watermarkOpacityInput.value + "%";
+        }
+        renderPreview();
+      });
+    });
+
+    /* =====================================================
+       ACCORDION BEHAVIOR
+    ===================================================== */
+    document.querySelectorAll(".record-section").forEach(section => {
+      const summary = section.querySelector("summary");
+      summary.addEventListener("click", event => {
+        event.preventDefault();
+        const content = section.querySelector(".section-content");
+
+        if (section.open) {
+          content.style.gridTemplateRows = "0fr";
+          setTimeout(() => {
+            section.open = false;
+          }, 300);
+        } else {
+          section.open = true;
+          requestAnimationFrame(() => {
+            content.style.gridTemplateRows = "1fr";
+          });
+        }
+      });
+    });
+
+    /* =====================================================
+       PRINT ENGINE
+    ===================================================== */
+    function getPrintCSS() {
+      return `
+        @page {
+          size: A4;
+          margin: 0;
+        }
+        * {
+          box-sizing: border-box;
+        }
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          background: white;
+          font-family: Arial, sans-serif;
+        }
+        .print-document {
+          width: 210mm;
+          margin: 0 auto;
+        }
+        .a4-page {
+          position: relative;
+          width: 210mm;
+          height: 297mm;
+          overflow: hidden;
+          background: white;
+          page-break-after: always;
+          break-after: page;
+        }
+        .a4-page:last-child {
+          page-break-after: auto;
+          break-after: auto;
+        }
+        .a4-border {
+          position: absolute;
+          top: 8mm;
+          right: 8mm;
+          bottom: 8mm;
+          left: 8mm;
+          border: 1px solid #111827;
+        }
+        .a4-content {
+          position: relative;
+          z-index: 2;
+          width: 100%;
+          height: 100%;
+          padding: 18mm 17mm;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          font-family: Arial, sans-serif;
+        }
+        .a4-main-flow {
+          flex: 1;
+          min-height: 0;
+          overflow: hidden;
+        }
+        .a4-bottom-result {
+          margin-top: auto;
+          padding-top: 8px;
+          border-top: 1px solid #111827;
+          flex-shrink: 0;
+        }
+        .watermark {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          z-index: 1;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          color: rgba(107, 114, 128, 0.10);
+          font-family: Arial, sans-serif;
+          font-size: 72px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+        .record-header {
+          width: 100%;
+          border-collapse: collapse;
+          border: 1px solid #111827;
+          font-family: Arial, sans-serif;
+        }
+        .record-header td {
+          border: 1px solid #111827;
+        }
+        .record-meta {
+          width: 28%;
+          padding: 7px 10px;
+          vertical-align: top;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+        .record-meta .label {
+          font-weight: 700;
+        }
+        .record-meta .value {
+          font-weight: 400;
+        }
+        .record-title {
+          width: 72%;
+          padding: 14px;
+          text-align: center;
+          font-size: 16px;
+          font-weight: 700;
+          line-height: 1.5;
+        }
+        .record-block {
+          margin-top: 18px;
+        }
+        .record-block:first-child {
+          margin-top: 0;
+        }
+        .record-block-cont {
+          margin-top: 0;
+        }
+        .record-heading {
+          margin: 0 0 5px 0;
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1.5;
+        }
+        .record-body {
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 1.5;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+        .source-code {
+          margin: 0;
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 1.5;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+        .output-text {
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 1.5;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+        .output-image-item {
+          width: 100%;
+          margin-top: 10px;
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        .output-image {
+          display: block;
+          width: 100%;
+          max-height: 125mm;
+          object-fit: contain;
+          border: 1px solid #d1d5db;
+          background: white;
+        }
+      `;
+    }
+
+    function createPrintDocument() {
+      renderPreview();
+      const pagesHTML = previewPages.innerHTML;
+      const iframeDocument = printFrame.contentDocument || printFrame.contentWindow.document;
+
+      iframeDocument.open();
+      iframeDocument.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>Record Lab</title>
+          <style>${getPrintCSS()}</style>
+        </head>
+        <body>
+          <div class="print-document">
+            ${pagesHTML}
+          </div>
+        </body>
+        </html>
+      `);
+      iframeDocument.close();
+      return iframeDocument;
+    }
+
+    function printRecord() {
+      createPrintDocument();
+      setTimeout(() => {
+        printFrame.contentWindow.focus();
+        printFrame.contentWindow.print();
+      }, 500);
+    }
+
+    printButton.addEventListener("click", printRecord);
+
+    /* =====================================================
+       SAVE PDF ENGINE
+    ===================================================== */
+    async function savePDF() {
+      const oldText = savePdfButton.textContent;
+      savePdfButton.disabled = true;
+      savePdfButton.textContent = "Generating...";
+
+      try {
+        const iframeDocument = createPrintDocument();
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const pdfContent = iframeDocument.querySelector(".print-document");
+        if (!pdfContent) {
+          throw new Error("PDF content not found.");
+        }
+
+        const title = titleInput.value.trim();
+        const rrn = rrnInput.value.trim();
+        let filename = "record-lab";
+
+        if (title) {
+          filename += "-" + title.replace(/[<>:"/\\|?*]+/g, "").replace(/\s+/g, "-").toLowerCase();
+        }
+        if (rrn) {
+          filename += "-" + rrn.replace(/[<>:"/\\|?*]+/g, "").replace(/\s+/g, "-").toLowerCase();
+        }
+        filename += ".pdf";
+
+        await html2pdf()
+          .set({
+            margin: 0,
+            filename: filename,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: "#ffffff",
+              logging: false
+            },
+            jsPDF: {
+              unit: "mm",
+              format: "a4",
+              orientation: "portrait",
+              compress: true
+            },
+            pagebreak: { mode: ["css", "legacy"] }
+          })
+          .from(pdfContent)
+          .save();
+
+      } catch (error) {
+        console.error("PDF generation failed:", error);
+        alert("Unable to generate the PDF.");
+      } finally {
+        savePdfButton.disabled = false;
+        savePdfButton.textContent = oldText;
+      }
+    }
+
+    savePdfButton.addEventListener("click", savePDF);
+
+    /* =====================================================
+       MOBILE NAVIGATION TAB SWITCHING
+    ===================================================== */
+    navInputsBtn.addEventListener("click", () => {
+      inputPanel.classList.remove("hidden");
+      inputPanel.classList.add("flex");
+      previewPanel.classList.add("hidden");
+      previewPanel.classList.remove("flex");
+
+      navInputsBtn.classList.add("text-blue-600", "font-semibold");
+      navInputsBtn.classList.remove("text-gray-500");
+      navPreviewBtn.classList.remove("text-blue-600", "font-semibold");
+      navPreviewBtn.classList.add("text-gray-500");
+    });
+
+    navPreviewBtn.addEventListener("click", () => {
+      previewPanel.classList.remove("hidden");
+      previewPanel.classList.add("flex");
+      inputPanel.classList.add("hidden");
+      inputPanel.classList.remove("flex");
+
+      navPreviewBtn.classList.add("text-blue-600", "font-semibold");
+      navPreviewBtn.classList.remove("text-gray-500");
+      navInputsBtn.classList.remove("text-blue-600", "font-semibold");
+      navInputsBtn.classList.add("text-gray-500");
+    });
+
+    /* Initialize preview */
+    renderPreview();
+  </script>
+
+  <!-- =====================================================
+       AI RECORD PROMPT & IMPORT ASSISTANT MODAL
+  ===================================================== -->
+  <div id="aiModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-3 backdrop-blur-sm">
+    <div id="aiModalCard" class="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-hidden">
+      
+      <!-- MODAL HEADER -->
+      <div class="flex shrink-0 items-center justify-between border-b border-gray-200 p-4 bg-white">
+        <div>
+          <h2 class="text-base font-bold text-gray-800">
+            AI PROMPT & IMPORT ASSISTANT
+          </h2>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Copy prefilled prompts for LLMs or paste HTML / tagged output to auto-fill
+          </p>
+        </div>
+        <button id="closeAiModalBtn" type="button" class="rounded-xl border border-gray-200 bg-white p-2 text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm flex items-center justify-center" aria-label="Close dialog">
+          <span class="material-symbols-rounded text-lg">close</span>
+        </button>
+      </div>
+
+      <!-- TAB NAVIGATION -->
+      <div class="mx-4 mt-3.5 flex rounded-xl border border-gray-200 bg-gray-100/70 p-1 text-xs font-medium gap-1 shrink-0">
+        <button id="aiTabPrompt" type="button" class="flex-1 rounded-lg bg-white py-2 px-3 text-center font-semibold text-gray-800 shadow-sm border border-gray-200/80 transition-all flex items-center justify-center gap-1.5">
+          <span class="material-symbols-rounded text-base">content_copy</span>
+          <span>Copy Prompt</span>
+        </button>
+        <button id="aiTabImport" type="button" class="flex-1 rounded-lg py-2 px-3 text-center font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center justify-center gap-1.5 border border-transparent">
+          <span class="material-symbols-rounded text-base">file_upload</span>
+          <span>Paste & Import</span>
+        </button>
+        <button id="aiTabDirect" type="button" class="flex-1 rounded-lg py-2 px-3 text-center font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center justify-center gap-1.5 border border-transparent">
+          <span class="material-symbols-rounded text-base">bolt</span>
+          <span>Direct LLM</span>
+        </button>
+      </div>
+
+      <!-- MODAL BODY (SCROLLABLE) -->
+      <div class="p-4 overflow-y-auto flex-1 space-y-3.5">
+        
+        <!-- VALIDATION ERROR ALERT -->
+        <div id="aiErrorAlert" class="hidden rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 items-center gap-2">
+          <span class="material-symbols-rounded text-sm shrink-0">error</span>
+          <span id="aiErrorText">Please fill in all required fields.</span>
+        </div>
+
+        <!-- TAB 1: PROMPT GENERATOR SECTION -->
+        <div id="aiPromptSection" class="space-y-3">
+          <p class="text-xs text-gray-600 leading-relaxed">
+            Enter experiment details to create a prefilled prompt requesting the LLM to output content inside structured HTML tags (<code class="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">&lt;aim&gt;</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">&lt;algorithm&gt;</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">&lt;sourcecode&gt;</code>).
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- EXPERIMENT TITLE -->
+            <div>
+              <label for="aiTitleInput" class="mb-1 block text-xs font-semibold text-gray-700">
+                Experiment Title <span class="text-red-500 font-semibold">*</span>
+              </label>
+              <input id="aiTitleInput" type="text" placeholder="Example: Binary Search Tree"
+                class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all" />
+            </div>
+
+            <!-- PROGRAMMING LANGUAGE -->
+            <div>
+              <label for="aiLangInput" class="mb-1 block text-xs font-semibold text-gray-700">
+                Programming Language <span class="text-red-500 font-semibold">*</span>
+              </label>
+              <input id="aiLangInput" type="text" placeholder="Example: Python / C++"
+                class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all" />
+            </div>
+          </div>
+
+          <!-- PROGRAM REQUIREMENT -->
+          <div>
+            <label for="aiReqInput" class="mb-1 block text-xs font-semibold text-gray-700">
+              Program / Problem Requirement <span class="text-red-500 font-semibold">*</span>
+            </label>
+            <textarea id="aiReqInput" rows="2" placeholder="Describe what the program should implement (e.g. tree insertion, deletion, and in-order traversal)..."
+              class="w-full resize-none rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"></textarea>
+          </div>
+
+          <!-- CUSTOM INSTRUCTIONS -->
+          <div>
+            <label for="aiCustomInput" class="mb-1 block text-xs font-semibold text-gray-700">
+              Custom Instructions <span class="text-gray-400 font-normal text-xs">(Optional)</span>
+            </label>
+            <textarea id="aiCustomInput" rows="2" placeholder="Example: Keep algorithm in Step 1 format, generate viva questions..."
+              class="w-full resize-none rounded-xl border border-gray-200 p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"></textarea>
+          </div>
+
+          <!-- PROMPT PREVIEW TOGGLE -->
+          <details class="rounded-xl border border-gray-200 bg-white">
+            <summary class="flex cursor-pointer items-center justify-between p-3 select-none text-xs font-bold text-gray-700 uppercase tracking-wider">
+              <span>VIEW PREFILLED PROMPT PREVIEW</span>
+              <span class="material-symbols-rounded dropdown-icon text-gray-400 text-base">keyboard_arrow_down</span>
+            </summary>
+            <div class="px-3 pb-3">
+              <pre id="aiPromptPreview" class="text-xs font-mono whitespace-pre-wrap bg-gray-50 p-3 rounded-xl border border-gray-200 text-gray-800 max-h-44 overflow-y-auto leading-relaxed"></pre>
+            </div>
+          </details>
+
+          <!-- PROMPT COPY ACTION -->
+          <div class="pt-2 flex justify-end">
+            <button id="copyPromptBtn" type="button"
+              class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-100 shadow-sm transition-colors flex items-center justify-center gap-2 w-full sm:w-auto">
+              <span id="copyPromptIcon" class="material-symbols-rounded text-base">content_copy</span>
+              <span id="copyPromptText">Copy Prefilled Prompt</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: IMPORT CONTENT SECTION -->
+        <div id="aiImportSection" class="hidden space-y-3">
+          <p class="text-xs text-gray-600 leading-relaxed">
+            Paste the LLM's output or HTML below. Record Lab will parse tags like <code class="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">&lt;aim&gt;</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">&lt;algorithm&gt;</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">&lt;sourcecode&gt;</code>, <code class="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">&lt;output&gt;</code> and place the content into your record fields automatically.
+          </p>
+
+          <div>
+            <div class="mb-1 flex items-center justify-between">
+              <label for="aiImportTextarea" class="text-xs font-semibold text-gray-700">
+                Pasted LLM Response / HTML Data <span class="text-red-500 font-semibold">*</span>
+              </label>
+              <button id="loadExampleBtn" type="button" class="text-xs text-blue-600 hover:underline flex items-center gap-1 font-semibold">
+                <span class="material-symbols-rounded text-xs">science</span>
+                <span>Load Sample Tagged Data</span>
+              </button>
+            </div>
+            <textarea id="aiImportTextarea" rows="9" placeholder="Paste response here, e.g.:&#10;<title>EXPERIMENT TITLE</title>&#10;<aim>To write and execute...</aim>&#10;<algorithm>Step 1: Start...</algorithm>&#10;<sourcecode>def main(): ...</sourcecode>&#10;<output>Computed result...</output>&#10;<review>Q1: ... A1: ...</review>&#10;<result>Thus, the program executed...</result>"
+              class="w-full font-mono text-xs rounded-xl border border-gray-200 p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 bg-gray-50/50 focus:bg-white leading-relaxed resize-none transition-all"></textarea>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button id="importAiBtn" type="button"
+              class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-100 shadow-sm transition-colors flex items-center justify-center gap-2 w-full sm:w-auto">
+              <span id="importAiIcon" class="material-symbols-rounded text-base">download_done</span>
+              <span id="importAiText">Import & Auto-Fill Record</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 3: DIRECT LLM GENERATION SECTION -->
+        <div id="aiDirectSection" class="hidden space-y-3">
+          <p class="text-xs text-gray-600 leading-relaxed">
+            Generate directly inside Record Lab using an optional Gemini API key or built-in generator.
+          </p>
+
+          <div>
+            <label for="aiApiKeyInput" class="mb-1 block text-xs font-semibold text-gray-700">Gemini API Key (Optional)</label>
+            <input id="aiApiKeyInput" type="password" placeholder="Enter Gemini API key for live LLM generation..."
+              class="w-full rounded-xl border border-gray-200 p-2.5 text-sm outline-none bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all" />
+            <span class="mt-1 block text-[10px] text-gray-400">If left blank, Record Lab uses its built-in intelligent record generator.</span>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button id="generateAiBtn" type="button"
+              class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-100 shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto">
+              <span id="generateAiIcon" class="material-symbols-rounded text-base">auto_awesome</span>
+              <span id="generateAiText">Direct Generate</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MODAL FOOTER -->
+      <div class="flex justify-end border-t border-gray-200 p-3 shrink-0">
+        <button id="cancelAiBtn" type="button"
+          class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       AI RECORD GENERATOR & IMPORT SCRIPT LOGIC
+  ===================================================== -->
+  <script>
+    const aiModal = document.getElementById("aiModal");
+    const openAiModalBtn = document.getElementById("openAiModalBtn");
+    const closeAiModalBtn = document.getElementById("closeAiModalBtn");
+    const cancelAiBtn = document.getElementById("cancelAiBtn");
+
+    const aiTabPrompt = document.getElementById("aiTabPrompt");
+    const aiTabImport = document.getElementById("aiTabImport");
+    const aiTabDirect = document.getElementById("aiTabDirect");
+
+    const aiPromptSection = document.getElementById("aiPromptSection");
+    const aiImportSection = document.getElementById("aiImportSection");
+    const aiDirectSection = document.getElementById("aiDirectSection");
+
+    const copyPromptBtn = document.getElementById("copyPromptBtn");
+    const copyPromptIcon = document.getElementById("copyPromptIcon");
+    const copyPromptText = document.getElementById("copyPromptText");
+
+    const importAiBtn = document.getElementById("importAiBtn");
+    const importAiIcon = document.getElementById("importAiIcon");
+    const importAiText = document.getElementById("importAiText");
+    const loadExampleBtn = document.getElementById("loadExampleBtn");
+
+    const generateAiBtn = document.getElementById("generateAiBtn");
+    const generateAiText = document.getElementById("generateAiText");
+    const generateAiIcon = document.getElementById("generateAiIcon");
+
+    const aiTitleInput = document.getElementById("aiTitleInput");
+    const aiLangInput = document.getElementById("aiLangInput");
+    const aiReqInput = document.getElementById("aiReqInput");
+    const aiCustomInput = document.getElementById("aiCustomInput");
+    const aiApiKeyInput = document.getElementById("aiApiKeyInput");
+    const aiPromptPreview = document.getElementById("aiPromptPreview");
+    const aiImportTextarea = document.getElementById("aiImportTextarea");
+
+    const aiErrorAlert = document.getElementById("aiErrorAlert");
+    const aiErrorText = document.getElementById("aiErrorText");
+
+    /* Modal Navigation Tabs */
+    function switchAiTab(activeTab) {
+      aiPromptSection.classList.add("hidden");
+      aiImportSection.classList.add("hidden");
+      aiDirectSection.classList.add("hidden");
+
+      const inactiveTabStyle = "flex-1 rounded-lg py-2 px-3 text-center font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center justify-center gap-1.5 border border-transparent";
+      const activeTabStyle = "flex-1 rounded-lg bg-white py-2 px-3 text-center font-semibold text-gray-800 shadow-sm border border-gray-200/80 transition-all flex items-center justify-center gap-1.5";
+
+      aiTabPrompt.className = inactiveTabStyle;
+      aiTabImport.className = inactiveTabStyle;
+      aiTabDirect.className = inactiveTabStyle;
+
+      if (activeTab === "prompt") {
+        aiPromptSection.classList.remove("hidden");
+        aiTabPrompt.className = activeTabStyle;
+      } else if (activeTab === "import") {
+        aiImportSection.classList.remove("hidden");
+        aiTabImport.className = activeTabStyle;
+        aiImportTextarea.focus();
+      } else if (activeTab === "direct") {
+        aiDirectSection.classList.remove("hidden");
+        aiTabDirect.className = activeTabStyle;
+      }
+
+      hideAiError();
+    }
+
+    aiTabPrompt.addEventListener("click", () => switchAiTab("prompt"));
+    aiTabImport.addEventListener("click", () => switchAiTab("import"));
+    aiTabDirect.addEventListener("click", () => switchAiTab("direct"));
+
+    function openAiModal() {
+      aiModal.classList.remove("hidden");
+      aiModal.classList.add("flex");
+      hideAiError();
+      updatePromptPreview();
+      switchAiTab("prompt");
+      aiTitleInput.focus();
+    }
+
+    function closeAiModal() {
+      aiModal.classList.add("hidden");
+      aiModal.classList.remove("flex");
+      hideAiError();
+    }
+
+    openAiModalBtn.addEventListener("click", openAiModal);
+    closeAiModalBtn.addEventListener("click", closeAiModal);
+    cancelAiBtn.addEventListener("click", closeAiModal);
+
+    aiModal.addEventListener("click", event => {
+      if (event.target === aiModal) {
+        closeAiModal();
+      }
+    });
+
+    function showAiError(msg) {
+      aiErrorText.textContent = msg;
+      aiErrorAlert.classList.remove("hidden");
+      aiErrorAlert.classList.add("flex");
+    }
+
+    function hideAiError() {
+      aiErrorAlert.classList.add("hidden");
+      aiErrorAlert.classList.remove("flex");
+    }
+
+    /* 1. Build Lab Record Prompt Template */
+    function buildLabRecordPrompt({ experimentTitle, programmingLanguage, problemRequirements, customInstructions }) {
+      const title = experimentTitle || "{{EXPERIMENT_TITLE}}";
+      const lang = programmingLanguage || "{{PROGRAMMING_LANGUAGE}}";
+      const req = problemRequirements || "{{PROBLEM_REQUIREMENTS}}";
+      const custom = customInstructions || "{{CUSTOM_INSTRUCTIONS}}";
+
+      return `You are a college professor preparing a complete laboratory practical record for a Computer Science Engineering student.
+
+Generate a laboratory record using the experiment details supplied at runtime.
+
+EXPERIMENT DETAILS
+- Experiment Title: ${title}
+- Programming Language: ${lang}
+- Problem / Requirements: ${req}
+- Custom Instructions: ${custom}
+
+The generated response will be parsed automatically by the application.
+
+Return ONLY valid HTML.
+Do not return Markdown.
+Do not return JSON.
+Do not return XML.
+Do not use Markdown code fences.
+Do not add explanations outside the HTML.
+
+The record MUST contain exactly these sections and in this exact order:
+
+1. AIM:
+2. ALGORITHM:
+3. SOURCE CODE:
+4. OUTPUT:
+5. Review Questions
+6. RESULT:
+
+Use these exact data-section values:
+- aim
+- algorithm
+- source-code
+- output
+- viva
+- result
+
+HTML STRUCTURE:
+
+<div class="lab-record">
+  <section data-section="aim">
+    <h2>AIM:</h2>
+    <p>Generate the aim here.</p>
+  </section>
+
+  <section data-section="algorithm">
+    <h2>ALGORITHM:</h2>
+    <ol>
+      <li>Generate algorithm step.</li>
+    </ol>
+  </section>
+
+  <section data-section="source-code">
+    <h2>SOURCE CODE:</h2>
+    <pre><code>Generate the complete executable source code here.</code></pre>
+  </section>
+
+  <section data-section="output">
+    <h2>OUTPUT:</h2>
+    <pre>Generate output corresponding to the source code.</pre>
+  </section>
+
+  <section data-section="viva">
+    <h2>Review Questions</h2>
+    <div class="viva-question">
+      <p class="question"><strong>1. </strong>Question</p>
+      <p class="answer"><strong>Answer: </strong>Concise answer</p>
+    </div>
+  </section>
+
+  <section data-section="result">
+    <h2>RESULT:</h2>
+    <p>Generate the result statement.</p>
+  </section>
+</div>
+
+CONTENT RULES:
+1. Use simple college-level language.
+2. Generate content based only on the runtime experiment details.
+3. Follow the requested programming language.
+4. Follow the requested problem and requirements.
+5. Follow the custom instructions.
+6. The algorithm must accurately describe the generated source code.
+7. The source code must be complete and executable.
+8. The output must correspond to the generated source code.
+9. Generate exactly 5 viva questions by default.
+10. Viva questions must be directly related to the current experiment.
+11. Viva answers must be concise and easy to understand.
+12. Do not introduce unnecessary sections.
+13. Do not generate Requirements, Theory, Sample Input, Conclusion, or other sections.
+14. Preserve source-code indentation.
+15. Properly escape HTML characters where necessary.
+16. Never change the data-section attribute values.
+17. Every opening HTML tag must have a matching closing tag.
+18. Return valid parseable HTML only.`;
+    }
+
+    function updatePromptPreview() {
+      if (aiPromptPreview) {
+        aiPromptPreview.textContent = buildLabRecordPrompt({
+          experimentTitle: aiTitleInput.value.trim(),
+          programmingLanguage: aiLangInput.value.trim(),
+          problemRequirements: aiReqInput.value.trim(),
+          customInstructions: aiCustomInput.value.trim()
+        });
+      }
+    }
+
+    [aiTitleInput, aiLangInput, aiReqInput, aiCustomInput].forEach(inp => {
+      if (inp) {
+        inp.addEventListener("input", updatePromptPreview);
+      }
+    });
+
+    /* 2. Clean LLM Response */
+    function cleanLLMHTML(rawHTML) {
+      if (!rawHTML) return "";
+      let clean = rawHTML.trim();
+      clean = clean.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      return clean;
+    }
+
+    /* 3. HTML Parser */
+    function parseLabRecordHTML(cleanHTML) {
+      if (!cleanHTML || !cleanHTML.trim()) {
+        throw new Error("Invalid HTML content provided.");
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(cleanHTML, "text/html");
+
+      const getSectionText = (selector) => {
+        const sec = doc.querySelector(selector);
+        if (!sec) return "";
+
+        const listItems = sec.querySelectorAll("li");
+        if (listItems.length > 0) {
+          return Array.from(listItems).map((li, idx) => {
+            const text = li.textContent.trim();
+            if (/^step\s*\d+/i.test(text)) return text;
+            return `Step ${idx + 1}: ${text}`;
+          }).join("\n");
+        }
+
+        const clone = sec.cloneNode(true);
+        const h2 = clone.querySelector("h2");
+        if (h2) h2.remove();
+        return clone.textContent.trim();
+      };
+
+      const getCodeText = () => {
+        const sec = doc.querySelector('[data-section="source-code"]');
+        if (!sec) return "";
+        const codeEl = sec.querySelector("code") || sec.querySelector("pre");
+        if (codeEl) return codeEl.textContent;
+        const clone = sec.cloneNode(true);
+        const h2 = clone.querySelector("h2");
+        if (h2) h2.remove();
+        return clone.textContent;
+      };
+
+      const getVivaText = () => {
+        const sec = doc.querySelector('[data-section="viva"]');
+        if (!sec) return "";
+
+        const vivaQuestions = sec.querySelectorAll(".viva-question");
+        if (vivaQuestions.length > 0) {
+          return Array.from(vivaQuestions).map((qEl, idx) => {
+            const qText = qEl.querySelector(".question")?.textContent || "";
+            const aText = qEl.querySelector(".answer")?.textContent || "";
+
+            const cleanQ = qText.replace(/^(\d+\.|Q\d+[:.]?)\s*/i, "").trim();
+            const cleanA = aText.replace(/^(Answer:|A\d+[:.]?)\s*/i, "").trim();
+
+            return `Q${idx + 1}: ${cleanQ}\nA${idx + 1}: ${cleanA}`;
+          }).join("\n\n");
+        }
+
+        const clone = sec.cloneNode(true);
+        const h2 = clone.querySelector("h2");
+        if (h2) h2.remove();
+        return clone.textContent.trim();
+      };
+
+      function extractTag(tagNames) {
+        for (const tag of tagNames) {
+          const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "gi");
+          const match = regex.exec(cleanHTML);
+          if (match && match[1] && match[1].trim()) {
+            return match[1].replace(/^```[a-zA-Z]*\n?/, "").replace(/\n?```$/, "").trim();
+          }
+        }
+        return "";
+      }
+
+      return {
+        aim: getSectionText('[data-section="aim"]') || extractTag(["aim"]),
+        algorithm: getSectionText('[data-section="algorithm"]') || extractTag(["algorithm", "algo"]),
+        sourceCode: getCodeText() || extractTag(["source-code", "sourcecode", "code"]),
+        output: getSectionText('[data-section="output"]') || extractTag(["output"]),
+        viva: getVivaText() || extractTag(["viva", "review", "review_questions"]),
+        result: getSectionText('[data-section="result"]') || extractTag(["result"])
+      };
+    }
+
+    /* Generation Session State */
+    let activeGenerationId = null;
+
+    function createNewGenerationId() {
+      return "gen_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+    }
+
+    /* 4. Validate Lab Record */
+    function validateLabRecord(parsedSections) {
+      const missing = [];
+
+      if (!parsedSections.aim || !parsedSections.aim.trim()) missing.push("AIM");
+      if (!parsedSections.algorithm || !parsedSections.algorithm.trim()) missing.push("ALGORITHM");
+      if (!parsedSections.sourceCode || !parsedSections.sourceCode.trim()) missing.push("SOURCE CODE");
+      if (!parsedSections.output || !parsedSections.output.trim()) missing.push("OUTPUT");
+      if (!parsedSections.viva || !parsedSections.viva.trim()) missing.push("Review Questions");
+      if (!parsedSections.result || !parsedSections.result.trim()) missing.push("RESULT");
+
+      if (missing.length > 0) {
+        throw new Error(`Generated record is incomplete. Missing required sections: ${missing.join(", ")}.`);
+      }
+
+      return true;
+    }
+
+    /* 5. Populate Existing Editor State */
+    function populateRecordEditor(parsedSections, experimentTitle = "", generationId = null) {
+      if (generationId && generationId !== activeGenerationId) {
+        console.warn("Ignoring stale generation response:", generationId);
+        return;
+      }
+
+      const newTitle = experimentTitle.trim() || aiTitleInput.value.trim();
+      if (newTitle) {
+        titleInput.value = newTitle.toUpperCase();
+      }
+
+      // Atomic editor section updates
+      aimInput.value = (parsedSections.aim || "").trim();
+      algorithmInput.value = (parsedSections.algorithm || "").trim();
+      programInput.value = (parsedSections.sourceCode || "").trim();
+      outputInput.value = (parsedSections.output || "").trim();
+      reviewInput.value = (parsedSections.viva || "").trim();
+      resultInput.value = (parsedSections.result || "").trim();
+
+      // Reset previous output images by default for a new experiment
+      state.output_images = [];
+      outputImages = state.output_images;
+      renderUploadedImages();
+
+      renderPreview();
+    }
+
+    /* Copy Prompt Logic */
+    async function copyLLMPrompt() {
+      hideAiError();
+      const experimentTitle = aiTitleInput.value.trim();
+      const programmingLanguage = aiLangInput.value.trim();
+      const problemRequirements = aiReqInput.value.trim();
+      const customInstructions = aiCustomInput.value.trim();
+
+      if (!experimentTitle || !programmingLanguage || !problemRequirements) {
+        showAiError("Please fill in Experiment Title, Programming Language, and Program Requirement before copying prompt.");
+        return;
+      }
+
+      const promptText = buildLabRecordPrompt({ experimentTitle, programmingLanguage, problemRequirements, customInstructions });
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(promptText);
+        } else {
+          const tempArea = document.createElement("textarea");
+          tempArea.value = promptText;
+          document.body.appendChild(tempArea);
+          tempArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(tempArea);
+        }
+
+        copyPromptIcon.textContent = "check_circle";
+        copyPromptText.textContent = "Copied to Clipboard!";
+        copyPromptBtn.classList.remove("bg-white", "text-gray-700");
+        copyPromptBtn.classList.add("bg-emerald-50", "text-emerald-700", "border-emerald-200");
+
+        setTimeout(() => {
+          copyPromptIcon.textContent = "content_copy";
+          copyPromptText.textContent = "Copy Prefilled Prompt";
+          copyPromptBtn.classList.remove("bg-emerald-50", "text-emerald-700", "border-emerald-200");
+          copyPromptBtn.classList.add("bg-white", "text-gray-700");
+        }, 2500);
+
+      } catch (err) {
+        showAiError("Failed to copy automatically. You can copy the prompt from the preview box below.");
+      }
+    }
+
+    copyPromptBtn.addEventListener("click", copyLLMPrompt);
+
+    /* Import Handler */
+    function handleImportContent() {
+      hideAiError();
+      const rawText = aiImportTextarea.value;
+      const newGenId = createNewGenerationId();
+      activeGenerationId = newGenId;
+
+      try {
+        const cleanHTML = cleanLLMHTML(rawText);
+        const parsed = parseLabRecordHTML(cleanHTML);
+        validateLabRecord(parsed);
+        populateRecordEditor(parsed, "", newGenId);
+        closeAiModal();
+      } catch (err) {
+        showAiError(err.message || "Failed to parse content.");
+      }
+    }
+
+    importAiBtn.addEventListener("click", handleImportContent);
+
+    /* Sample HTML Data Loader */
+    loadExampleBtn.addEventListener("click", () => {
+      const title = aiTitleInput.value.trim().toUpperCase() || "BINARY SEARCH TREE OPERATIONAL RECORD";
+      const lang = aiLangInput.value.trim() || "Python";
+
+      aiImportTextarea.value = `<div class="lab-record">
+  <section data-section="aim">
+    <h2>AIM:</h2>
+    <p>To implement binary search tree operations including insertion, deletion, and in-order traversal in ${lang} and verify its output.</p>
+  </section>
+
+  <section data-section="algorithm">
+    <h2>ALGORITHM:</h2>
+    <ol>
+      <li>Start the program.</li>
+      <li>Define a node structure containing key, left child pointer, and right child pointer.</li>
+      <li>Implement insertion function to recursively insert key based on BST ordering properties.</li>
+      <li>Implement in-order traversal function to traverse left subtree, print root, and traverse right subtree.</li>
+      <li>Construct sample tree by inserting key sequence into the binary search tree.</li>
+      <li>Display the resulting in-order traversal output and terminate the program.</li>
+    </ol>
+  </section>
+
+  <section data-section="source-code">
+    <h2>SOURCE CODE:</h2>
+    <pre><code>class Node:
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+
+def insert(node, key):
+    if node is None:
+        return Node(key)
+    if key < node.key:
+        node.left = insert(node.left, key)
+    else:
+        node.right = insert(node.right, key)
+    return node
+
+def inorder(root):
+    if root:
+        inorder(root.left)
+        print(root.key, end=" ")
+        inorder(root.right)
+
+if __name__ == "__main__":
+    keys = [50, 30, 20, 40, 70, 60, 80]
+    root = None
+    for k in keys:
+        root = insert(root, k)
+    print("In-order Traversal of BST:")
+    inorder(root)
+    print()</code></pre>
+  </section>
+
+  <section data-section="output">
+    <h2>OUTPUT:</h2>
+    <pre>In-order Traversal of BST:
+20 30 40 50 60 70 80</pre>
+  </section>
+
+  <section data-section="viva">
+    <h2>Review Questions</h2>
+    <div class="viva-question">
+      <p class="question"><strong>1. </strong>What is a Binary Search Tree (BST)?</p>
+      <p class="answer"><strong>Answer: </strong>A binary tree where the left child key is smaller and the right child key is larger than the parent node.</p>
+    </div>
+    <div class="viva-question">
+      <p class="question"><strong>2. </strong>What is the average time complexity of BST search?</p>
+      <p class="answer"><strong>Answer: </strong>O(log N) for balanced trees.</p>
+    </div>
+    <div class="viva-question">
+      <p class="question"><strong>3. </strong>Which traversal prints a BST in sorted ascending order?</p>
+      <p class="answer"><strong>Answer: </strong>In-order traversal.</p>
+    </div>
+    <div class="viva-question">
+      <p class="question"><strong>4. </strong>What is the worst-case time complexity of search in a skewed BST?</p>
+      <p class="answer"><strong>Answer: </strong>O(N).</p>
+    </div>
+    <div class="viva-question">
+      <p class="question"><strong>5. </strong>How can a skewed BST be balanced?</p>
+      <p class="answer"><strong>Answer: </strong>By using self-balancing trees like AVL or Red-Black trees.</p>
+    </div>
+  </section>
+
+  <section data-section="result">
+    <h2>RESULT:</h2>
+    <p>Thus, the ${lang} program for ${title} was successfully executed and verified.</p>
+  </section>
+</div>`;
+
+      hideAiError();
+    });
+
+    /* 6. Generate Lab Record Flow */
+    async function generateLabRecord({ experimentTitle, programmingLanguage, problemRequirements, customInstructions, apiKey, generationId }) {
+      const prompt = buildLabRecordPrompt({ experimentTitle, programmingLanguage, problemRequirements, customInstructions });
+      let rawHTML = "";
+
+      if (apiKey) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Gemini API error (Status ${res.status}). Please check your API Key.`);
+        }
+
+        const data = await res.json();
+        rawHTML = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        if (!rawHTML) {
+          throw new Error("No content returned from the AI model.");
+        }
+      } else {
+        throw new Error("Direct API generation requires a Gemini API Key. Alternatively, click 'Copy Prefilled Prompt' to copy the structured prompt for your LLM, then paste the generated HTML into the Import box below.");
+      }
+
+      if (generationId !== activeGenerationId) {
+        console.warn("Generation request superseded by a newer request:", generationId);
+        return;
+      }
+
+      const cleanHTML = cleanLLMHTML(rawHTML);
+      const parsed = parseLabRecordHTML(cleanHTML);
+      validateLabRecord(parsed);
+      populateRecordEditor(parsed, experimentTitle, generationId);
+    }
+
+    async function handleAiGeneration() {
+      hideAiError();
+
+      const experimentTitle = aiTitleInput.value.trim();
+      const programmingLanguage = aiLangInput.value.trim();
+      const problemRequirements = aiReqInput.value.trim();
+      const customInstructions = aiCustomInput.value.trim();
+      const apiKey = aiApiKeyInput.value.trim();
+
+      if (!experimentTitle || !programmingLanguage || !problemRequirements) {
+        showAiError("Please fill in Experiment Title, Programming Language, and Program Requirement.");
+        return;
+      }
+
+      const newGenId = createNewGenerationId();
+      activeGenerationId = newGenId;
+
+      generateAiBtn.disabled = true;
+      generateAiText.textContent = "Generating Record...";
+      generateAiIcon.textContent = "sync";
+      generateAiIcon.classList.add("animate-spin");
+
+      try {
+        await generateLabRecord({ experimentTitle, programmingLanguage, problemRequirements, customInstructions, apiKey, generationId: newGenId });
+        if (activeGenerationId === newGenId) {
+          closeAiModal();
+        }
+      } catch (err) {
+        console.error("AI Generation Error:", err);
+        showAiError(err.message || "Failed to generate record. Please try again.");
+      } finally {
+        generateAiBtn.disabled = false;
+        generateAiText.textContent = "Direct Generate";
+        generateAiIcon.textContent = "auto_awesome";
+        generateAiIcon.classList.remove("animate-spin");
+      }
+    }
+
+    generateAiBtn.addEventListener("click", handleAiGeneration);
+  </script>
+</body>
+
+</html>
