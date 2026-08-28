@@ -97,7 +97,7 @@ export const PRINT_CSS = `
     width: 72%;
     padding: 14px;
     text-align: center;
-    font-size: 14px;
+    font-size: 14pt;
     font-weight: 700;
     line-height: 1.5;
   }
@@ -112,7 +112,7 @@ export const PRINT_CSS = `
   }
   .record-heading {
     margin: 0 0 5px 0;
-    font-size: 14px;
+    font-size: 14pt;
     font-weight: 700;
     line-height: 1.5;
   }

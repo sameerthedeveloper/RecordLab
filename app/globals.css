@@ -211,7 +211,7 @@ body {
   width: 72%;
   padding: 14px;
   text-align: center;
-  font-size: 14px;
+  font-size: 14pt;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -234,7 +234,7 @@ body {
 .record-heading {
   margin: 0 0 5px 0;
   font-family: Arial, sans-serif;
-  font-size: 14px;
+  font-size: 14pt;
   font-weight: 700;
   line-height: 1.5;
 }
