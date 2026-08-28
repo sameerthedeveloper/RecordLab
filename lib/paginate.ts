@@ -59,6 +59,7 @@ function createHeader(record: RecordState): string {
             <span class="label">EX NO :</span>
             <span class="value">${exNo}</span>
           </div>
+          <div class="record-meta-divider"></div>
           <div>
             <span class="label">DATE :</span>
             <span class="value">${formattedDate}</span>

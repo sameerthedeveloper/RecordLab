@@ -93,6 +93,10 @@ export const PRINT_CSS = `
   .record-meta .value {
     font-weight: 400;
   }
+  .record-meta-divider {
+    margin: 5px 0;
+    border-top: 1px solid #111827;
+  }
   .record-title {
     width: 72%;
     padding: 14px;
