@@ -94,7 +94,7 @@ export const PRINT_CSS = `
     font-weight: 400;
   }
   .record-meta-divider {
-    margin: 5px 0;
+    margin: 5px -10px;
     border-top: 1px solid #111827;
   }
   .record-title {
