@@ -481,5 +481,20 @@ export function paginateRecord(record: RecordState): PageObject[] {
     }
   }
 
-  return pageObjects;
+  return dropBlankTrailingPages(pageObjects);
+}
+
+// A page whose main-flow is just the header table (no section content) and
+// which carries no RESULT block either would render as a visually blank
+// page in the PDF/print output — strip those out rather than emit them.
+function isBlankPage(page: PageObject): boolean {
+  if (page.result.trim() !== "") return false;
+  const withoutHeader = page.main.replace(/<table class="record-header">[\s\S]*?<\/table>/, "");
+  return withoutHeader.trim() === "";
+}
+
+function dropBlankTrailingPages(pages: PageObject[]): PageObject[] {
+  if (pages.length <= 1) return pages;
+  const filtered = pages.filter((page) => !isBlankPage(page));
+  return filtered.length > 0 ? filtered : [pages[0]];
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { ImagePlus, Sparkles, X } from "lucide-react";
+import { useRef } from "react";
+import { FolderOpen, ImagePlus, Save, Sparkles, X } from "lucide-react";
 import { AccordionSection } from "./AccordionSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
@@ -13,6 +14,8 @@ interface RecordEditorPanelProps {
   onImageUpload: (files: FileList) => void;
   onRemoveImage: (id: number) => void;
   onOpenAiModal: () => void;
+  onSaveWork: () => void;
+  onLoadWork: (file: File) => void;
   visible: boolean;
 }
 
@@ -30,8 +33,12 @@ export function RecordEditorPanel({
   onImageUpload,
   onRemoveImage,
   onOpenAiModal,
+  onSaveWork,
+  onLoadWork,
   visible,
 }: RecordEditorPanelProps) {
+  const loadInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div
       id="inputPanel"
@@ -44,15 +51,46 @@ export function RecordEditorPanel({
           </p>
           <h1 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">Record Lab</h1>
         </div>
-        <button
-          type="button"
-          title="Generate with AI"
-          aria-label="Generate with AI"
-          onClick={onOpenAiModal}
-          className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
-        >
-          <Sparkles className="h-5 w-5" strokeWidth={2} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            title="Load Work"
+            aria-label="Load Work"
+            onClick={() => loadInputRef.current?.click()}
+            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
+          >
+            <FolderOpen className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <input
+            ref={loadInputRef}
+            type="file"
+            accept="application/json,.json,.rlab"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onLoadWork(file);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            title="Save Work"
+            aria-label="Save Work"
+            onClick={onSaveWork}
+            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
+          >
+            <Save className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            title="Generate with AI"
+            aria-label="Generate with AI"
+            onClick={onOpenAiModal}
+            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
+          >
+            <Sparkles className="h-5 w-5" strokeWidth={2} />
+          </button>
+        </div>
       </div>
 
       <div className="editor-surface min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3.5">

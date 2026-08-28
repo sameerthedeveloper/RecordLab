@@ -47,6 +47,50 @@ export default function Home() {
     setRecord((prev) => ({ ...prev, output_images: prev.output_images.filter((img) => img.id !== id) }));
   }, []);
 
+  function handleSaveWork() {
+    const payload = { version: 1, record, watermark };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const title = record.title.trim();
+    let filename = "record-lab";
+    if (title) {
+      filename += "-" + title.replace(/[<>:"/\\|?*]+/g, "").replace(/\s+/g, "-").toLowerCase();
+    }
+    filename += ".rlab.json";
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleLoadWork(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result;
+        if (typeof text !== "string") throw new Error("Unable to read file.");
+        const data = JSON.parse(text);
+        const loadedRecord = data && typeof data === "object" && data.record ? data.record : data;
+        if (!loadedRecord || typeof loadedRecord !== "object" || typeof loadedRecord.title !== "string") {
+          throw new Error("This doesn't look like a Record Lab work file.");
+        }
+        setRecord({ ...DEFAULT_RECORD, ...loadedRecord });
+        if (data.watermark && typeof data.watermark === "object") {
+          setWatermark({ ...DEFAULT_WATERMARK, ...data.watermark });
+        }
+      } catch (error) {
+        console.error("Load work failed:", error);
+        alert("Unable to load this file. Please choose a valid Record Lab work file.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function writePrintDocument(): Document | null {
     const iframe = printFrameRef.current;
     if (!iframe) return null;
@@ -159,6 +203,8 @@ export default function Home() {
           onImageUpload={handleImageUpload}
           onRemoveImage={handleRemoveImage}
           onOpenAiModal={() => setAiModalOpen(true)}
+          onSaveWork={handleSaveWork}
+          onLoadWork={handleLoadWork}
           visible={mobilePanel === "inputs"}
         />
 
