@@ -427,10 +427,21 @@ export function paginateRecord(record: RecordState): PageObject[] {
   const measureContent = measurePage.querySelector(".a4-content") as HTMLElement;
 
   const resultVal = record.result;
+  const resultIsEmpty = resultVal.trim() === "";
   const resultBlockContent = `
     <section class="record-block record-block-result">
       <h2 class="record-heading">RESULT:</h2>
-      <div class="record-body"${resultVal.trim() === "" ? emptyBlockStyleAttr("result") : ""}>${escapeHTML(resultVal)}</div>
+      <div class="record-body"${resultIsEmpty ? emptyBlockStyleAttr("result") : ""}>${escapeHTML(resultVal)}</div>
+    </section>
+  `;
+  // Fallback used when the reserved writing space for an empty RESULT
+  // doesn't fit on the last page — dropping the reserved height (rather
+  // than forcing the whole block onto a fresh, near-blank page) mirrors
+  // how empty AIM/ALGORITHM sections already degrade in paginateMainFlow.
+  const compactResultBlockContent = `
+    <section class="record-block record-block-result">
+      <h2 class="record-heading">RESULT:</h2>
+      <div class="record-body">${escapeHTML(resultVal)}</div>
     </section>
   `;
 
@@ -444,10 +455,15 @@ export function paginateRecord(record: RecordState): PageObject[] {
     return el ? el.scrollHeight : 0;
   }
 
-  measureContent.innerHTML = `<div class="a4-bottom-result">${resultBlockContent}</div>`;
-  const resultEl = measureContent.firstElementChild as HTMLElement | null;
-  const resultBlockHeight = resultEl ? resultEl.offsetHeight : 50;
-  measureContent.innerHTML = "";
+  function measureBlockHeight(html: string): number {
+    measureContent.innerHTML = `<div class="a4-bottom-result">${html}</div>`;
+    const el = measureContent.firstElementChild as HTMLElement | null;
+    const height = el ? el.offsetHeight : 50;
+    measureContent.innerHTML = "";
+    return height;
+  }
+
+  const resultBlockHeight = measureBlockHeight(resultBlockContent);
 
   const headerHTML = createHeader(record);
   const rawPages = paginateMainFlow(record, measureContent, headerHTML);
@@ -457,9 +473,18 @@ export function paginateRecord(record: RecordState): PageObject[] {
   // page's already-placed content? Check after the fact instead of trying to
   // predict it during pagination — much less error-prone.
   let resultNeedsOwnPage = false;
+  let finalResultBlockContent = resultBlockContent;
   if (validPages.length > 0) {
     const lastPageHeight = measureMainFlowHeight(validPages[validPages.length - 1]);
     resultNeedsOwnPage = lastPageHeight + resultBlockHeight + RESULT_BLOCK_BUFFER > PAGE_HEIGHT;
+
+    if (resultNeedsOwnPage && resultIsEmpty) {
+      const compactHeight = measureBlockHeight(compactResultBlockContent);
+      if (lastPageHeight + compactHeight + RESULT_BLOCK_BUFFER <= PAGE_HEIGHT) {
+        resultNeedsOwnPage = false;
+        finalResultBlockContent = compactResultBlockContent;
+      }
+    }
   }
 
   measurePage.remove();
@@ -473,7 +498,7 @@ export function paginateRecord(record: RecordState): PageObject[] {
       const isLastPage = index === validPages.length - 1;
       pageObjects.push({
         main: mainHTML,
-        result: isLastPage && !resultNeedsOwnPage ? resultBlockContent : "",
+        result: isLastPage && !resultNeedsOwnPage ? finalResultBlockContent : "",
       });
     });
     if (resultNeedsOwnPage) {
