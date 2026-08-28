@@ -117,7 +117,7 @@ export const PRINT_CSS = `
     line-height: 1.5;
   }
   .record-body {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.5;
     white-space: pre-wrap;
@@ -126,14 +126,14 @@ export const PRINT_CSS = `
   .source-code {
     margin: 0;
     font-family: Arial, sans-serif;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
   }
   .output-text {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.5;
     white-space: pre-wrap;

@@ -19,8 +19,8 @@ const RESULT_BLOCK_BUFFER = 24;
 
 // Reserved blank space (in px) shown when a section is left empty, so the
 // printed record still has room to fill in by hand.
-// ~5 lines at the record-body line-height (12px font-size * 1.5 line-height).
-const FIVE_LINE_MIN_HEIGHT = 90;
+// ~5 lines at the record-body line-height (16px font-size * 1.5 line-height).
+const FIVE_LINE_MIN_HEIGHT = 120;
 // Half a page of writing space for the (usually longer) algorithm section.
 const HALF_PAGE_MIN_HEIGHT = Math.round(PAGE_HEIGHT / 2);
 
