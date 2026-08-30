@@ -12,9 +12,25 @@ import {
   Stamp,
 } from "lucide-react";
 
+const title = "Record Lab — Straight to the fair copy";
+const description =
+  "Specially curated for Crescent CSE students — type your lab record once, get a print-ready fair copy.";
+
 export const metadata: Metadata = {
-  title: "Record Lab — Straight to the fair copy",
-  description: "Specially curated for Crescent CSE students — type your lab record once, get a print-ready fair copy.",
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    url: "/landing",
+    siteName: "Record Lab",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 const index = [

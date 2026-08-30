@@ -25,7 +25,20 @@ const monoFont = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://record-lab.vercel.app"),
   title: "Record Lab",
+  description: "Type your lab record once — Record Lab paginates it to true A4 pages and exports a print-ready fair copy.",
+  openGraph: {
+    title: "Record Lab",
+    description: "Type your lab record once — Record Lab paginates it to true A4 pages and exports a print-ready fair copy.",
+    siteName: "Record Lab",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Record Lab",
+    description: "Type your lab record once — Record Lab paginates it to true A4 pages and exports a print-ready fair copy.",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
