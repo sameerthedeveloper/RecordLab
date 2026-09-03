@@ -10,6 +10,7 @@ interface WatermarkOptionsSectionProps {
 
 const FONT_OPTIONS = [
   { value: "Arial, sans-serif", label: "Arial" },
+  { value: "Calibri, sans-serif", label: "Calibri" },
   { value: "'Times New Roman', serif", label: "Times New Roman" },
   { value: "'Courier New', monospace", label: "Courier New" },
   { value: "Georgia, serif", label: "Georgia" },
