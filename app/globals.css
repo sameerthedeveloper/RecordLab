@@ -374,14 +374,20 @@ body {
     align-items: center;
   }
 
-  .a4-page {
+  /* Scoped to the visible preview container only — the pagination engine's
+     hidden offscreen measurement node (lib/paginate.ts) also has the
+     .a4-page class but lives outside .preview-pages, appended straight to
+     document.body. If this rule matched it too, `zoom` would distort every
+     scrollHeight measurement it takes on narrow viewports, producing page
+     breaks that differ from desktop (and get baked into the mobile PDF). */
+  .preview-pages .a4-page {
     transform-origin: top center;
     zoom: 0.45;
   }
 }
 
 @media (min-width: 768px) and (max-width: 1024px) {
-  .a4-page {
+  .preview-pages .a4-page {
     zoom: 0.7;
   }
 }
