@@ -133,12 +133,6 @@ export function Onboarding({ activePanel, onRequestPanel }: OnboardingProps) {
   const holeRight = Math.min(vw, rect.right + SPOTLIGHT_PADDING);
   const holeBottom = Math.min(vh, rect.bottom + SPOTLIGHT_PADDING);
 
-  const frameStyle: React.CSSProperties = {
-    position: "fixed",
-    background: "rgba(28, 43, 51, 0.55)",
-    transition: `all ${transitionDuration} ease-out`,
-  };
-
   const centerX = rect.left + rect.width / 2;
   const cardLeftForCenter = clamp(centerX - CARD_WIDTH / 2, MARGIN, vw - CARD_WIDTH - MARGIN);
   const roughTop = clamp(rect.top + rect.height / 2 - 90, MARGIN, vh - MARGIN - 180);
@@ -185,11 +179,18 @@ export function Onboarding({ activePanel, onRequestPanel }: OnboardingProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[9998]" aria-live="polite">
-      <div style={{ ...frameStyle, top: 0, left: 0, right: 0, height: holeTop }} />
-      <div style={{ ...frameStyle, top: holeBottom, left: 0, right: 0, bottom: 0 }} />
-      <div style={{ ...frameStyle, top: holeTop, left: 0, width: holeLeft, height: holeBottom - holeTop }} />
-      <div style={{ ...frameStyle, top: holeTop, left: holeRight, right: 0, height: holeBottom - holeTop }} />
+    <div className="fixed inset-0 z-[9998] rounded-2xl" aria-live="polite">
+      <div
+        className="pointer-events-none fixed rounded-2xl"
+        style={{
+          top: holeTop,
+          left: holeLeft,
+          width: holeRight - holeLeft,
+          height: holeBottom - holeTop,
+          boxShadow: "0 0 0 9999px rgba(28, 43, 51, 0.55)",
+          transition: `all ${transitionDuration} ease-out`,
+        }}
+      />
 
       <div
         className="pointer-events-none fixed rounded-2xl border-2 border-accent shadow-[0_0_0_5px_rgba(194,65,12,0.18)]"
