@@ -40,7 +40,9 @@ npm run start    # serve the production build
 - `lib/buildPrintHtml.ts` / `lib/printCss.ts` — build the exact print-document
   HTML string reused by both the hidden print `<iframe>` and `html2pdf.js`.
 - `lib/aiAssistant.ts` — the AI prompt template, DOMParser-based section
-  parser with regex `extractTag` fallback, validator, and Gemini API call.
+  parser with regex `extractTag` fallback, and validator.
+- `lib/puter.ts` — client-side AI text generation via Puter.js
+  (`window.puter.ai.chat`), no API key required.
 - `lib/types.ts` — `RecordState`, `OutputImage`, `WatermarkOptions`,
   `PageObject`.
 
@@ -76,27 +78,19 @@ preview, print, and PDF stay pixel-identical — never point the chrome's
   synchronously); it does not change output.
 - **No persistence**: state is in-memory only (`useState`), matching the
   original — nothing is written to `localStorage`/`sessionStorage`.
-- **Two direct LLM providers**: the "Direct LLM" tab supports Google Gemini
-  (`gemini-1.5-flash`) and NVIDIA NIM's OpenAI-compatible chat completions
-  endpoint (`integrate.api.nvidia.com`, model defaults to
-  `meta/llama-3.1-70b-instruct`, editable). Both share one prompt builder
-  (`buildLabRecordPrompt`) and response parser, so switching providers doesn't
-  change what gets imported.
+- **Puter.js for AI generation, no API key**: the "Direct LLM" tab calls
+  `puter.ai.chat` (loaded via the `https://js.puter.com/v2/` script tag in
+  `app/layout.tsx`) instead of a keyed provider API. `lib/puter.ts` tries
+  `gpt-4o` first and falls back once to `claude-3-5-sonnet` if the first
+  model call fails. Errors surface as a toast ("Generation failed, please try
+  again") rather than an inline API error message.
 - **Client-side rate limiting**: `lib/rateLimiter.ts` is a small in-memory
-  sliding-window limiter (5 requests / 60s, shared across both providers) used
-  by `DirectLlmTab` to block rapid repeat clicks and show a countdown before
-  the next request is allowed. It's a UX guard against accidentally burning
-  through API quota, not a security control.
+  sliding-window limiter (5 requests / 60s) used by `DirectLlmTab` to block
+  rapid repeat clicks and show a countdown before the next request is
+  allowed. It's a UX guard, not a security control.
 
 ## Known limitations (carried over from the original, not silently "fixed")
 
-- **API keys are exposed client-side.** The "Direct LLM" tab calls the Gemini
-  and NVIDIA NIM APIs directly from the browser using the key the user types
-  in. This was true of the original single-file app's Gemini integration too
-  — a backend proxy would fix it, but that's out of scope unless requested.
-  Note NVIDIA NIM's endpoint may not allow direct browser (CORS) requests in
-  all environments; `generateLabRecordViaNim` surfaces that as a clear error
-  rather than failing silently.
 - The pagination engine relies on browser font metrics (it creates a hidden,
   offscreen `.a4-page` node and measures `scrollHeight`), so it only produces
   accurate output in a browser environment, not during SSR — this matches the

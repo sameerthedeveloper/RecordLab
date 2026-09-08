@@ -273,6 +273,114 @@ body {
 }
 
 /* =====================================================
+   CANVAS2PDF MODE — TIPTAP-EDITABLE PREVIEW
+===================================================== */
+.a4-page .ProseMirror {
+  min-height: 1.5em;
+  outline: none;
+  cursor: text;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+}
+
+.a4-page .ProseMirror:hover {
+  background-color: rgba(37, 99, 235, 0.04);
+}
+
+.a4-page .ProseMirror:focus {
+  background-color: rgba(37, 99, 235, 0.06);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.a4-page .ProseMirror p {
+  margin: 0;
+}
+
+.record-header-input {
+  border: none;
+  background: transparent;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  border-radius: 2px;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  transition: background-color 0.15s ease;
+}
+
+.record-header-input:hover {
+  background-color: rgba(37, 99, 235, 0.04);
+}
+
+.record-header-input:focus {
+  background-color: rgba(37, 99, 235, 0.06);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.record-meta .record-header-input {
+  width: 9em;
+}
+
+.record-header-input--title {
+  width: 100%;
+  text-align: center;
+  font-weight: 700;
+}
+
+.a4-editable-surface {
+  position: relative;
+  width: 100%;
+}
+
+/* Fixed gap below the header's default slot — the header floats
+   independently now, so this doesn't track wherever it's been dragged to. */
+.a4-main-flow--floating-header {
+  margin-top: 25mm;
+}
+
+.header-layout-box {
+  z-index: 3;
+  background: white;
+}
+
+.header-layout-box .record-header {
+  height: 100%;
+}
+
+.header-layout-box .record-title {
+  vertical-align: middle;
+}
+
+.header-layout-move-handle {
+  position: absolute;
+  top: -11px;
+  left: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #111827;
+  border-radius: 4px 4px 0 0;
+  background: white;
+  color: #111827;
+  cursor: move;
+  touch-action: none;
+}
+
+.header-layout-resize-handle {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid #111827;
+  border-bottom: 2px solid #111827;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+/* =====================================================
    OUTPUT IMAGES IN DOCUMENT
 ===================================================== */
 .output-images {

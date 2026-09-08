@@ -4,6 +4,20 @@ export interface OutputImage {
   name: string;
 }
 
+/**
+ * Position/size of the header table in the canvas2pdf editable preview, in mm
+ * relative to the top-left of the page's content area (inside the 18mm/17mm
+ * padding — same origin `lib/buildCanvasPdf.ts` uses for MARGIN_LEFT/TOP).
+ * Only canvas2pdf mode's editor and exporter read this; the paginated
+ * html2pdf/docx/print paths keep their own fixed header layout.
+ */
+export interface HeaderLayout {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface RecordState {
   rrn: string;
   exercise_number: string;
@@ -17,6 +31,7 @@ export interface RecordState {
   review_questions: string;
   review_questions_enabled: boolean;
   result: string;
+  headerLayout: HeaderLayout;
 }
 
 export interface WatermarkOptions {
@@ -27,10 +42,30 @@ export interface WatermarkOptions {
   color: string;
 }
 
+export type DownloadFormat = "pdf" | "docx";
+
+/** Which engine renders the PDF: html2pdf.js (rasterized snapshot) or canvas2pdf (vector/selectable text). */
+export type PdfEngine = "html2pdf" | "canvas2pdf";
+
 export interface PageObject {
   main: string;
   result: string;
 }
+
+// A4 content area (page minus the 18mm top/bottom, 17mm left/right padding
+// canvas2pdf and the paginated print CSS both use) — shared bounds for the
+// canvas2pdf header table's draggable/resizable layout.
+export const CONTENT_WIDTH_MM = 176;
+export const CONTENT_HEIGHT_MM = 261;
+
+// Matches the fixed header table used by the paginated html2pdf/docx/print
+// paths: full content width, ~60pt tall.
+export const DEFAULT_HEADER_LAYOUT: HeaderLayout = {
+  x: 0,
+  y: 0,
+  width: CONTENT_WIDTH_MM,
+  height: 21.2,
+};
 
 export const DEFAULT_RECORD: RecordState = {
   rrn: "",
@@ -45,6 +80,7 @@ export const DEFAULT_RECORD: RecordState = {
   review_questions: "",
   review_questions_enabled: true,
   result: "",
+  headerLayout: DEFAULT_HEADER_LAYOUT,
 };
 
 export const DEFAULT_WATERMARK: WatermarkOptions = {

@@ -7,9 +7,34 @@ import { MobileNav } from "@/components/MobileNav";
 import { AiAssistantModal } from "@/components/AiAssistantModal";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
+import { buildRecordDocx } from "@/lib/buildDocx";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
-import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
+import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
 import type { ParsedLabRecord } from "@/lib/aiAssistant";
+
+function buildFilename(record: RecordState, extension: string): string {
+  const title = record.title.trim();
+  const rrn = record.rrn.trim();
+  let filename = "record-lab";
+  if (title) {
+    filename += "-" + title.replace(/[<>:"/\\|?*]+/g, "").replace(/\s+/g, "-").toLowerCase();
+  }
+  if (rrn) {
+    filename += "-" + rrn.replace(/[<>:"/\\|?*]+/g, "").replace(/\s+/g, "-").toLowerCase();
+  }
+  return `${filename}.${extension}`;
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 export default function Home() {
   const [record, setRecord] = useState<RecordState>(DEFAULT_RECORD);
@@ -17,6 +42,8 @@ export default function Home() {
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
+  const [pdfEngine, setPdfEngine] = useState<PdfEngine>("html2pdf");
 
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
@@ -50,7 +77,6 @@ export default function Home() {
   function handleSaveWork() {
     const payload = { version: 1, record, watermark };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
 
     const title = record.title.trim();
     let filename = "record-lab";
@@ -59,13 +85,7 @@ export default function Home() {
     }
     filename += ".rlab.json";
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, filename);
   }
 
   function handleLoadWork(file: File) {
@@ -113,7 +133,24 @@ export default function Home() {
     }, 500);
   }
 
-  async function handleSavePdf() {
+  async function handleSaveCanvasPdf() {
+    setIsSavingPdf(true);
+    try {
+      // Lazily imported: canvas2pdf pulls in a ~1.8MB bundled PDFKit build
+      // (standard-font metrics included), so it shouldn't weigh down the
+      // initial page load for users who never pick this engine.
+      const { buildCanvasPdf } = await import("@/lib/buildCanvasPdf");
+      const blob = await buildCanvasPdf(record, watermark);
+      downloadBlob(blob, buildFilename(record, "pdf"));
+    } catch (error) {
+      console.error("Canvas PDF generation failed:", error);
+      alert("Unable to generate the PDF.");
+    } finally {
+      setIsSavingPdf(false);
+    }
+  }
+
+  async function handleSaveHtml2Pdf() {
     setIsSavingPdf(true);
     try {
       const iframeDocument = writePrintDocument();
@@ -124,16 +161,7 @@ export default function Home() {
         throw new Error("PDF content not found.");
       }
 
-      const title = record.title.trim();
-      const rrn = record.rrn.trim();
-      let filename = "record-lab";
-      if (title) {
-        filename += "-" + title.replace(/[<>:"/\\|?*]+/g, "").replace(/\s+/g, "-").toLowerCase();
-      }
-      if (rrn) {
-        filename += "-" + rrn.replace(/[<>:"/\\|?*]+/g, "").replace(/\s+/g, "-").toLowerCase();
-      }
-      filename += ".pdf";
+      const filename = buildFilename(record, "pdf");
 
       if (!window.html2pdf) {
         throw new Error("PDF engine failed to load.");
@@ -174,6 +202,29 @@ export default function Home() {
     }
   }
 
+  async function handleSaveDocx() {
+    setIsSavingPdf(true);
+    try {
+      const blob = await buildRecordDocx(record, watermark);
+      downloadBlob(blob, buildFilename(record, "docx"));
+    } catch (error) {
+      console.error("DOCX generation failed:", error);
+      alert("Unable to generate the DOCX file.");
+    } finally {
+      setIsSavingPdf(false);
+    }
+  }
+
+  function handleSave() {
+    if (downloadFormat === "docx") {
+      handleSaveDocx();
+    } else if (pdfEngine === "canvas2pdf") {
+      handleSaveCanvasPdf();
+    } else {
+      handleSaveHtml2Pdf();
+    }
+  }
+
   function handleAiImport(parsed: ParsedLabRecord, experimentTitle: string) {
     setRecord((prev) => {
       const newTitle = experimentTitle.trim() || prev.title.trim();
@@ -209,12 +260,18 @@ export default function Home() {
         />
 
         <PreviewPanel
+          record={record}
           pages={pages}
           rrn={record.rrn}
           watermark={watermark}
-          onSavePdf={handleSavePdf}
+          onFieldChange={handleFieldChange}
+          onSave={handleSave}
           onPrint={handlePrint}
-          isSavingPdf={isSavingPdf}
+          isSaving={isSavingPdf}
+          downloadFormat={downloadFormat}
+          onDownloadFormatChange={setDownloadFormat}
+          pdfEngine={pdfEngine}
+          onPdfEngineChange={setPdfEngine}
           visible={mobilePanel === "preview"}
         />
       </div>
