@@ -5,6 +5,7 @@ import { RecordEditorPanel } from "@/components/RecordEditorPanel";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { MobileNav } from "@/components/MobileNav";
 import { AiAssistantModal } from "@/components/AiAssistantModal";
+import { Onboarding } from "@/components/Onboarding";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
@@ -294,6 +295,8 @@ export default function Home() {
       />
 
       <AiAssistantModal open={aiModalOpen} onClose={() => setAiModalOpen(false)} onImport={handleAiImport} />
+
+      <Onboarding activePanel={mobilePanel} onRequestPanel={setMobilePanel} />
     </>
   );
 }

@@ -45,7 +45,7 @@ export function RecordEditorPanel({
       className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex w-full md:w-[380px] lg:w-[400px] shrink-0 flex-col rounded-2xl border border-line bg-white shadow-sm overflow-hidden`}
     >
       <div className="flex shrink-0 items-center justify-between border-b border-line p-4 bg-white">
-        <div>
+        <div data-onboarding="brand">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
             Lab Notebook
           </p>
@@ -85,6 +85,7 @@ export function RecordEditorPanel({
             type="button"
             title="Generate with AI"
             aria-label="Generate with AI"
+            data-onboarding="ai-generate"
             onClick={onOpenAiModal}
             className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
           >
@@ -94,7 +95,7 @@ export function RecordEditorPanel({
       </div>
 
       <div className="editor-surface min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3.5">
-        <div className="rounded-2xl border border-line bg-white p-4 shadow-sm">
+        <div data-onboarding="record-details" className="rounded-2xl border border-line bg-white p-4 shadow-sm">
           <p className="mb-3 text-xs font-bold uppercase tracking-wider text-ink">Record Details</p>
 
           <div className="space-y-3">
@@ -157,19 +158,21 @@ export function RecordEditorPanel({
 
         <WatermarkOptionsSection watermark={watermark} onChange={onWatermarkChange} />
 
-        <AccordionSection title="AIM" index="01" defaultOpen>
-          <label htmlFor="aimInput" className="sr-only">
-            Aim
-          </label>
-          <textarea
-            id="aimInput"
-            rows={8}
-            placeholder="Enter the aim of the experiment..."
-            className={textareaClass}
-            value={record.aim}
-            onChange={(e) => onFieldChange("aim", e.target.value)}
-          />
-        </AccordionSection>
+        <div data-onboarding="sections">
+          <AccordionSection title="AIM" index="01" defaultOpen>
+            <label htmlFor="aimInput" className="sr-only">
+              Aim
+            </label>
+            <textarea
+              id="aimInput"
+              rows={8}
+              placeholder="Enter the aim of the experiment..."
+              className={textareaClass}
+              value={record.aim}
+              onChange={(e) => onFieldChange("aim", e.target.value)}
+            />
+          </AccordionSection>
+        </div>
 
         <AccordionSection title="ALGORITHM" index="02">
           <label htmlFor="algorithmInput" className="sr-only">
