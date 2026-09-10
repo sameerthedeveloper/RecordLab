@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { FileDown, Loader2, Printer } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 import { A4Page } from "./A4Page";
+import { AccountMenu } from "./AccountMenu";
 import type { DownloadFormat, PageObject, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
 
 // Tiptap (react + core + starter-kit) adds ~130KB — load it only once
@@ -18,7 +19,7 @@ interface PreviewPanelProps {
   watermark: WatermarkOptions;
   onFieldChange: <K extends keyof RecordState>(field: K, value: RecordState[K]) => void;
   onSave: () => void;
-  onPrint: () => void;
+  onToast: (message: string) => void;
   isSaving: boolean;
   downloadFormat: DownloadFormat;
   onDownloadFormatChange: (format: DownloadFormat) => void;
@@ -39,7 +40,7 @@ export function PreviewPanel({
   watermark,
   onFieldChange,
   onSave,
-  onPrint,
+  onToast,
   isSaving,
   downloadFormat,
   onDownloadFormatChange,
@@ -88,14 +89,7 @@ export function PreviewPanel({
             </select>
           </div>
 
-          <button
-            type="button"
-            onClick={onPrint}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-line bg-white px-4 py-2 text-xs font-semibold text-ink-soft shadow-sm transition-all hover:border-accent/40 hover:text-accent-ink active:bg-accent-soft"
-          >
-            <Printer className="h-3.5 w-3.5" strokeWidth={2.5} />
-            <span>Print</span>
-          </button>
+          <AccountMenu onToast={onToast} />
         </div>
       </div>
 

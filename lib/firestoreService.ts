@@ -1,4 +1,4 @@
-import { onAuthStateChanged, signInAnonymously, type User } from "firebase/auth";
+import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   addDoc,
   collection,
@@ -37,37 +37,36 @@ export interface CloudDocument {
 }
 
 /**
- * Firestore documents are owned by the Firebase anonymous-auth uid
- * (`request.auth.uid` in firestore.rules), not by any Puter identity —
- * Firebase Auth can't verify a Puter session, so it can't be the security
- * boundary. Anonymous auth persists across reloads (same browser/device)
- * via Firebase's own local storage, and is silent — no popup, no login form.
+ * Firestore documents are owned by the Firebase Auth uid (`request.auth.uid`
+ * in firestore.rules) of a real Google sign-in — see lib/authService.ts.
+ * There's deliberately no anonymous-auth fallback: forcing a silent
+ * signInAnonymously() before Firebase had a chance to restore a persisted
+ * Google session (an async process) raced with that restore on every page
+ * refresh, sometimes winning and leaving the app on a fresh anonymous uid
+ * that couldn't see the signed-in user's documents (Missing or insufficient
+ * permissions). Waiting for the first real onAuthStateChanged event instead
+ * avoids the race entirely.
  */
-let authReadyPromise: Promise<User> | null = null;
+let authInitPromise: Promise<void> | null = null;
 
-export function ensureFirebaseAuth(): Promise<User> {
-  if (!authReadyPromise) {
+function waitForAuthInit(): Promise<void> {
+  if (!authInitPromise) {
     const auth = getFirebaseAuth();
-    authReadyPromise = new Promise((resolve, reject) => {
-      const unsubscribe = onAuthStateChanged(
-        auth,
-        (user) => {
-          if (user) {
-            unsubscribe();
-            resolve(user);
-          }
-        },
-        reject
-      );
-      if (!auth.currentUser) {
-        signInAnonymously(auth).catch((err) => {
-          unsubscribe();
-          reject(err);
-        });
-      }
+    authInitPromise = new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, () => {
+        unsubscribe();
+        resolve();
+      });
     });
   }
-  return authReadyPromise;
+  return authInitPromise;
+}
+
+async function requireUser(): Promise<User> {
+  await waitForAuthInit();
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error("Sign in with Google to use cloud features.");
+  return user;
 }
 
 function toCloudDocument(id: string, data: Record<string, unknown>): CloudDocument {
@@ -85,7 +84,7 @@ function toCloudDocument(id: string, data: Record<string, unknown>): CloudDocume
 
 /** Saves a new document. Puter linking is best-effort and silent (no sign-in popup) — see `getPuterIdentity`. */
 export async function saveDocument(payload: RlabPayload, title: string): Promise<string> {
-  const user = await ensureFirebaseAuth();
+  const user = await requireUser();
   const puterUser = await getPuterIdentity();
 
   const docRef = await addDoc(collection(getDb(), COLLECTION), {
@@ -105,7 +104,7 @@ export async function watchUserDocuments(
   onChange: (documents: CloudDocument[]) => void,
   onError: (error: Error) => void
 ): Promise<() => void> {
-  const user = await ensureFirebaseAuth();
+  const user = await requireUser();
   const q = query(collection(getDb(), COLLECTION), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
 
   return onSnapshot(
@@ -118,7 +117,7 @@ export async function watchUserDocuments(
 }
 
 export async function updateDocument(docId: string, payload: RlabPayload, title: string): Promise<void> {
-  await ensureFirebaseAuth();
+  await requireUser();
   await updateDoc(doc(getDb(), COLLECTION, docId), {
     title: title.trim() || "Untitled",
     data: payload,
@@ -127,6 +126,6 @@ export async function updateDocument(docId: string, payload: RlabPayload, title:
 }
 
 export async function deleteDocument(docId: string): Promise<void> {
-  await ensureFirebaseAuth();
+  await requireUser();
   await deleteDoc(doc(getDb(), COLLECTION, docId));
 }

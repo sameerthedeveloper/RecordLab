@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useRef, useState } from "react";
 import { RecordEditorPanel } from "@/components/RecordEditorPanel";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { MobileNav } from "@/components/MobileNav";
 import { AiAssistantModal } from "@/components/AiAssistantModal";
+import { DashboardModal } from "@/components/DashboardModal";
 import { Onboarding } from "@/components/Onboarding";
 import { ToastViewport, useToast } from "@/components/Toast";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
 import { saveDocument } from "@/lib/firestoreService";
-import { consumeCloudLoad } from "@/lib/cloudBridge";
+import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
@@ -43,12 +43,12 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 export default function Home() {
-  const router = useRouter();
   const { toast, showToast } = useToast();
   const [record, setRecord] = useState<RecordState>(DEFAULT_RECORD);
   const [watermark, setWatermark] = useState<WatermarkOptions>(DEFAULT_WATERMARK);
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
@@ -58,18 +58,13 @@ export default function Home() {
 
   const pages = usePaginatedPages(record);
 
-  // Picks up a document handed off from the dashboard's "Load into Editor"
-  // button (see lib/cloudBridge.ts) — one-shot, cleared on read.
-  useEffect(() => {
-    const payload = consumeCloudLoad();
-    if (!payload) return;
+  function handleLoadFromDashboard(payload: RlabPayload) {
     setRecord({ ...DEFAULT_RECORD, ...payload.record });
     if (payload.watermark) {
       setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
     }
     showToast("Loaded from cloud.");
-    track("load_cloud");
-  }, [showToast]);
+  }
 
   const handleFieldChange = useCallback(
     <K extends keyof RecordState>(field: K, value: RecordState[K]) => {
@@ -143,7 +138,8 @@ export default function Home() {
       track("save_cloud");
     } catch (error) {
       console.error("Cloud save failed:", error);
-      showToast("Unable to save to the cloud. Please try again.");
+      const message = error instanceof Error ? error.message : "Unable to save to the cloud. Please try again.";
+      showToast(message);
     } finally {
       setIsSavingCloud(false);
     }
@@ -300,7 +296,7 @@ export default function Home() {
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}
           onSaveCloud={handleSaveCloud}
-          onOpenDashboard={() => router.push("/dashboard")}
+          onOpenDashboard={() => setDashboardOpen(true)}
           isSavingCloud={isSavingCloud}
           visible={mobilePanel === "inputs"}
         />
@@ -312,7 +308,7 @@ export default function Home() {
           watermark={watermark}
           onFieldChange={handleFieldChange}
           onSave={handleSave}
-          onPrint={handlePrint}
+          onToast={showToast}
           isSaving={isSavingPdf}
           downloadFormat={downloadFormat}
           onDownloadFormatChange={setDownloadFormat}
@@ -340,6 +336,13 @@ export default function Home() {
       />
 
       <AiAssistantModal open={aiModalOpen} onClose={() => setAiModalOpen(false)} onImport={handleAiImport} />
+
+      <DashboardModal
+        open={dashboardOpen}
+        onClose={() => setDashboardOpen(false)}
+        onLoad={handleLoadFromDashboard}
+        onToast={showToast}
+      />
 
       <Onboarding activePanel={mobilePanel} onRequestPanel={setMobilePanel} />
 

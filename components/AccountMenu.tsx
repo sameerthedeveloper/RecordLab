@@ -36,9 +36,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
     }
   }
 
-  if (!user) return null;
-
-  if (user.isAnonymous) {
+  if (!user) {
     return (
       <button
         type="button"
