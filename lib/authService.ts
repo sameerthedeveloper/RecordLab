@@ -24,10 +24,18 @@ const googleProvider = new GoogleAuthProvider();
  * from signing in elsewhere, linking fails with `auth/credential-already-in-use`
  * — we fall back to signing into that existing identity instead. Anything
  * saved under the anonymous id in *this* browser is not migrated in that case.
+ *
+ * Deliberately does NOT await anything before calling linkWithPopup/
+ * signInWithPopup: browsers only allow a popup opened synchronously within
+ * a user-gesture call stack, and an `await` before it — even one that
+ * resolves near-instantly — breaks that chain and gets it blocked
+ * (auth/popup-blocked). useAuthUser() already kicks off ensureFirebaseAuth()
+ * in the background on mount, so auth.currentUser is essentially always
+ * populated by the time a user can actually click the button; the null
+ * fallback below just signs in fresh instead of upgrading in that rare race.
  */
 export async function signInWithGoogle(): Promise<User> {
   const auth = getFirebaseAuth();
-  await ensureFirebaseAuth();
   const current = auth.currentUser;
 
   if (current?.isAnonymous) {
