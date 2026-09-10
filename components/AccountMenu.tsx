@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { LogIn, LogOut } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, LogIn, LogOut } from "lucide-react";
 import { signInWithGoogle, signOutUser, useAuthUser } from "@/lib/authService";
 import { PuterLinkButton } from "./PuterLinkButton";
 
@@ -12,6 +12,17 @@ interface AccountMenuProps {
 export function AccountMenu({ onToast }: AccountMenuProps) {
   const user = useAuthUser();
   const [signingIn, setSigningIn] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   async function handleSignIn() {
     setSigningIn(true);
@@ -27,6 +38,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
   }
 
   async function handleSignOut() {
+    setMenuOpen(false);
     try {
       await signOutUser();
       onToast("Signed out.");
@@ -51,10 +63,12 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <PuterLinkButton user={user} onLinked={(username) => onToast(`Linked Puter account @${username}.`)} onError={onToast} />
-
-      <div className="flex items-center gap-2 rounded-xl border border-line bg-white py-1 pl-1 pr-2 shadow-sm">
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setMenuOpen((open) => !open)}
+        className="flex items-center gap-2 rounded-xl border border-line bg-white py-1 pl-1 pr-2 shadow-sm transition-colors hover:border-accent/40"
+      >
         {user.photoURL ? (
           <img src={user.photoURL} alt="" referrerPolicy="no-referrer" className="h-6 w-6 rounded-full" />
         ) : (
@@ -65,16 +79,27 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
         <span className="max-w-[120px] truncate text-xs font-semibold text-ink">
           {user.displayName || user.email}
         </span>
-        <button
-          type="button"
-          title="Sign out"
-          aria-label="Sign out"
-          onClick={handleSignOut}
-          className="flex items-center justify-center text-ink-soft/60 transition-colors hover:text-accent"
-        >
-          <LogOut className="h-3.5 w-3.5" strokeWidth={2} />
-        </button>
-      </div>
+        <ChevronDown className="h-3.5 w-3.5 text-ink-soft/60" strokeWidth={2} />
+      </button>
+
+      {menuOpen && (
+        <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-60 rounded-xl border border-line bg-white p-2 shadow-lg">
+          <PuterLinkButton
+            user={user}
+            onLinked={(username) => onToast(`Linked Puter account @${username}.`)}
+            onError={onToast}
+          />
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-ink-soft transition-colors hover:bg-accent-soft/40 hover:text-accent-ink"
+          >
+            <LogOut className="h-3.5 w-3.5" strokeWidth={2} />
+            Sign out
+          </button>
+        </div>
+      )}
     </div>
   );
 }

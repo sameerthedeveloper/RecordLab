@@ -64,7 +64,7 @@ export function PuterLinkButton({ user, onLinked, onError }: PuterLinkButtonProp
       type="button"
       onClick={handleClick}
       disabled={linking || !!liveUsername}
-      className="flex items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-2 text-xs font-semibold text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent disabled:cursor-default disabled:hover:border-line disabled:hover:text-ink-soft"
+      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-ink-soft transition-colors hover:bg-accent-soft/40 hover:text-accent-ink disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-ink-soft"
     >
       <LinkIcon className="h-3.5 w-3.5" strokeWidth={2} />
       {label}
