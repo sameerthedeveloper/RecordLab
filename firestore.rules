@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Identity note: `documents` are owned by the Firebase Anonymous Auth uid
+// (see lib/firestoreService.ts — ensureFirebaseAuth), not by any Puter
+// identity. Firebase Auth has no way to verify a Puter session, so it can't
+// be the security boundary; `puterUserId`/`puterUsername` on each document
+// are informational only (for cross-device linking display), never checked
+// here.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /documents/{docId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.title is string
+        && request.resource.data.data is map;
+    }
+
+    // Per-user profile: currently just the last-linked Puter account (see
+    // lib/userProfile.ts), used to offer a one-click Puter reconnect on
+    // future Google sign-ins. Doc id == Firebase Auth uid, so "own doc" is
+    // the whole access rule — no separate userId field to check.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

@@ -13,12 +13,24 @@ interface PuterChatChunk {
   text?: string;
 }
 
+export interface PuterUser {
+  uuid: string;
+  username: string;
+  email?: string;
+}
+
 interface PuterGlobal {
   ai: {
     chat: (
       prompt: string,
       options?: PuterChatOptions
     ) => Promise<string | { message?: { content?: string } } | AsyncIterable<PuterChatChunk>>;
+  };
+  auth: {
+    isSignedIn: () => boolean;
+    signIn: () => Promise<void>;
+    getUser: () => Promise<PuterUser>;
+    signOut: () => void;
   };
 }
 
@@ -68,6 +80,39 @@ export async function generateContent(prompt: string, options: { model?: string 
   }
 
   throw lastError instanceof Error ? lastError : new Error("AI generation failed. Please try again.");
+}
+
+/**
+ * Puter.js identity — used to tag saved documents with a `puterUserId` so
+ * they're linkable back to the same Puter account across browsers/devices.
+ * This is separate from Firestore's own auth (see lib/firebaseConfig.ts):
+ * Firestore security rules key off the Firebase anonymous-auth uid, not this
+ * one, since Firebase Auth has no way to verify a Puter session directly.
+ *
+ * Passive — never prompts a sign-in popup. Returns null if the visitor
+ * hasn't linked a Puter account yet (call `linkPuterAccount` for that).
+ */
+export async function getPuterIdentity(): Promise<PuterUser | null> {
+  try {
+    const puter = getPuter();
+    if (!puter.auth.isSignedIn()) return null;
+    return await puter.auth.getUser();
+  } catch {
+    return null;
+  }
+}
+
+/** Opens the Puter sign-in popup. Only call this from a direct user action (e.g. a "Link Puter account" button click) — never automatically, since popups triggered outside a click get blocked. */
+export async function linkPuterAccount(): Promise<PuterUser | null> {
+  try {
+    const puter = getPuter();
+    if (!puter.auth.isSignedIn()) {
+      await puter.auth.signIn();
+    }
+    return await puter.auth.getUser();
+  } catch {
+    return null;
+  }
 }
 
 /**

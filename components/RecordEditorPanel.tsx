@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { FolderOpen, ImagePlus, Save, Sparkles, X } from "lucide-react";
+import { Cloud, Files, FolderOpen, ImagePlus, Save, Sparkles, X } from "lucide-react";
 import { AccordionSection } from "./AccordionSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
@@ -16,6 +16,9 @@ interface RecordEditorPanelProps {
   onOpenAiModal: () => void;
   onSaveWork: () => void;
   onLoadWork: (file: File) => void;
+  onSaveCloud: () => void;
+  onOpenDashboard: () => void;
+  isSavingCloud: boolean;
   visible: boolean;
 }
 
@@ -35,6 +38,9 @@ export function RecordEditorPanel({
   onOpenAiModal,
   onSaveWork,
   onLoadWork,
+  onSaveCloud,
+  onOpenDashboard,
+  isSavingCloud,
   visible,
 }: RecordEditorPanelProps) {
   const loadInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +86,25 @@ export function RecordEditorPanel({
             className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
           >
             <Save className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            title="Save to Cloud"
+            aria-label="Save to Cloud"
+            onClick={onSaveCloud}
+            disabled={isSavingCloud}
+            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft disabled:cursor-wait disabled:opacity-60"
+          >
+            <Cloud className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            title="My Documents"
+            aria-label="My Documents"
+            onClick={onOpenDashboard}
+            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
+          >
+            <Files className="h-5 w-5" strokeWidth={2} />
           </button>
           <button
             type="button"

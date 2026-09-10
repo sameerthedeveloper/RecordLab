@@ -1,14 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { RecordEditorPanel } from "@/components/RecordEditorPanel";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { MobileNav } from "@/components/MobileNav";
 import { AiAssistantModal } from "@/components/AiAssistantModal";
 import { Onboarding } from "@/components/Onboarding";
+import { ToastViewport, useToast } from "@/components/Toast";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
+import { saveDocument } from "@/lib/firestoreService";
+import { consumeCloudLoad } from "@/lib/cloudBridge";
+import { track } from "@/lib/analytics";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
 import type { ParsedLabRecord } from "@/lib/aiAssistant";
@@ -38,17 +43,33 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const { toast, showToast } = useToast();
   const [record, setRecord] = useState<RecordState>(DEFAULT_RECORD);
   const [watermark, setWatermark] = useState<WatermarkOptions>(DEFAULT_WATERMARK);
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
   const [pdfEngine, setPdfEngine] = useState<PdfEngine>("html2pdf");
 
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = usePaginatedPages(record);
+
+  // Picks up a document handed off from the dashboard's "Load into Editor"
+  // button (see lib/cloudBridge.ts) — one-shot, cleared on read.
+  useEffect(() => {
+    const payload = consumeCloudLoad();
+    if (!payload) return;
+    setRecord({ ...DEFAULT_RECORD, ...payload.record });
+    if (payload.watermark) {
+      setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
+    }
+    showToast("Loaded from cloud.");
+    track("load_cloud");
+  }, [showToast]);
 
   const handleFieldChange = useCallback(
     <K extends keyof RecordState>(field: K, value: RecordState[K]) => {
@@ -87,6 +108,7 @@ export default function Home() {
     filename += ".rlab.json";
 
     downloadBlob(blob, filename);
+    track("save_work_local");
   }
 
   function handleLoadWork(file: File) {
@@ -104,12 +126,27 @@ export default function Home() {
         if (data.watermark && typeof data.watermark === "object") {
           setWatermark({ ...DEFAULT_WATERMARK, ...data.watermark });
         }
+        track("load_work_local");
       } catch (error) {
         console.error("Load work failed:", error);
         alert("Unable to load this file. Please choose a valid Record Lab work file.");
       }
     };
     reader.readAsText(file);
+  }
+
+  async function handleSaveCloud() {
+    setIsSavingCloud(true);
+    try {
+      await saveDocument({ version: 1, record, watermark }, record.title || "Untitled");
+      showToast("Saved to cloud.");
+      track("save_cloud");
+    } catch (error) {
+      console.error("Cloud save failed:", error);
+      showToast("Unable to save to the cloud. Please try again.");
+    } finally {
+      setIsSavingCloud(false);
+    }
   }
 
   function writePrintDocument(): Document | null {
@@ -132,6 +169,7 @@ export default function Home() {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
     }, 500);
+    track("print_record");
   }
 
   async function handleSaveCanvasPdf() {
@@ -143,6 +181,7 @@ export default function Home() {
       const { buildCanvasPdf } = await import("@/lib/buildCanvasPdf");
       const blob = await buildCanvasPdf(record, watermark);
       downloadBlob(blob, buildFilename(record, "pdf"));
+      track("export_pdf", { engine: "canvas2pdf" });
     } catch (error) {
       console.error("Canvas PDF generation failed:", error);
       alert("Unable to generate the PDF.");
@@ -195,6 +234,7 @@ export default function Home() {
         })
         .from(pdfContent)
         .save();
+      track("export_pdf", { engine: "html2pdf" });
     } catch (error) {
       console.error("PDF generation failed:", error);
       alert("Unable to generate the PDF.");
@@ -208,6 +248,7 @@ export default function Home() {
     try {
       const blob = await buildRecordDocx(record, watermark);
       downloadBlob(blob, buildFilename(record, "docx"));
+      track("export_docx");
     } catch (error) {
       console.error("DOCX generation failed:", error);
       alert("Unable to generate the DOCX file.");
@@ -227,6 +268,7 @@ export default function Home() {
   }
 
   function handleAiImport(parsed: ParsedLabRecord, experimentTitle: string) {
+    track("ai_assist_used");
     setRecord((prev) => {
       const newTitle = experimentTitle.trim() || prev.title.trim();
       return {
@@ -257,6 +299,9 @@ export default function Home() {
           onOpenAiModal={() => setAiModalOpen(true)}
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}
+          onSaveCloud={handleSaveCloud}
+          onOpenDashboard={() => router.push("/dashboard")}
+          isSavingCloud={isSavingCloud}
           visible={mobilePanel === "inputs"}
         />
 
@@ -297,6 +342,8 @@ export default function Home() {
       <AiAssistantModal open={aiModalOpen} onClose={() => setAiModalOpen(false)} onImport={handleAiImport} />
 
       <Onboarding activePanel={mobilePanel} onRequestPanel={setMobilePanel} />
+
+      <ToastViewport toast={toast} />
     </>
   );
 }
