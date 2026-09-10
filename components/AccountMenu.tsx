@@ -52,6 +52,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
     return (
       <button
         type="button"
+        data-onboarding="account-menu"
         onClick={handleSignIn}
         disabled={signingIn}
         className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-accent-hover disabled:opacity-60"
@@ -63,7 +64,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
   }
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef} data-onboarding="account-menu" className="relative">
       <button
         type="button"
         onClick={() => setMenuOpen((open) => !open)}

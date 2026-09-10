@@ -41,6 +41,13 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     body: "Paste your rough notes in here and Record Lab fills in the aim, algorithm, code, and result for you.",
   },
   {
+    target: '[data-onboarding="save-cloud"]',
+    panel: "inputs",
+    side: "bottom",
+    title: "Save to your account",
+    body: "Sign in with Google (top right of the preview) to save records to the cloud and pick them up on any device from My Documents.",
+  },
+  {
     target: '[data-onboarding="sections"]',
     panel: "inputs",
     side: "right",
@@ -60,5 +67,12 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     side: "top",
     title: "Export when it's ready",
     body: "Download a print-ready PDF or DOCX — page border and watermark included.",
+  },
+  {
+    target: '[data-onboarding="account-menu"]',
+    panel: "preview",
+    side: "bottom",
+    title: "Your account",
+    body: "Sign in with Google to sync records across devices. Once signed in, link your Puter account here too for AI drafting under your own name.",
   },
 ];

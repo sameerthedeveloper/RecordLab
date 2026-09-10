@@ -3,9 +3,13 @@ import type { Metadata } from "next";
 import {
   ArrowRight,
   Check,
+  Cloud,
+  ExternalLink,
   FileDown,
   FolderOpen,
+  Globe,
   Layers,
+  Mail,
   Ruler,
   Save,
   Sparkles,
@@ -56,13 +60,45 @@ const index = [
   },
   {
     icon: Save,
-    title: "Save & resume",
+    title: "Save & resume, offline",
     body: "Export a record as a .rlab.json file partway through and pick it back up later, on this device or another.",
+  },
+  {
+    icon: Cloud,
+    title: "Cloud sync with Google",
+    body: "Sign in with Google to save records to your account, browse them under My Documents, and pick up where you left off on any device.",
   },
   {
     icon: Layers,
     title: "Automatic pagination",
     body: "Long code listings and multi-image outputs split across pages on their own, never mid-line or mid-image.",
+  },
+];
+
+const contributors = [
+  {
+    name: "Mohamed Sameer S",
+    role: "Frontend & Full-Stack Developer",
+    bio: "Builds React and Next.js apps out of Chennai, with a focus on offline-first PWAs, real-time/sync systems, and accessible UI.",
+    links: [
+      { label: "Portfolio", href: "https://mohamedsameer.tech", icon: Globe },
+      { label: "GitHub", href: "https://github.com/sameerthedeveloper", icon: ExternalLink },
+      { label: "LinkedIn", href: "https://linkedin.com/in/mdsameers/", icon: ExternalLink },
+    ],
+  },
+  {
+    name: "Mohammed Imran A",
+    role: "Contributor",
+    bio: "Contributor to Record Lab — reach out on LinkedIn or by email.",
+    links: [
+      { label: "Portfolio", href: "https://portfolio1-wheat-two.vercel.app", icon: Globe },
+      { label: "Email", href: "mailto:mohammed2007imran@gmail.com", icon: Mail },
+      {
+        label: "LinkedIn",
+        href: "https://www.linkedin.com/in/mohamed-imran-a-b18aaa375?utm_source=share_via&utm_content=profile&utm_medium=member_android",
+        icon: ExternalLink,
+      },
+    ],
   },
 ];
 
@@ -269,6 +305,44 @@ export default function LandingPage() {
           Open Record Lab
           <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
         </Link>
+      </section>
+
+      {/* ============ CONTRIBUTORS ============ */}
+      <section className="border-t border-line bg-white">
+        <div className="mx-auto max-w-5xl px-5 py-20">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/60">
+            Credits
+          </p>
+          <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">
+            Built by.
+          </h2>
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-2">
+            {contributors.map((person) => (
+              <div key={person.name} className="rounded-2xl border border-line bg-[#faf7f0] p-5">
+                <h3 className="font-serif text-lg font-bold text-ink">{person.name}</h3>
+                <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
+                  {person.role}
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-ink-soft">{person.bio}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {person.links.map(({ label, href, icon: Icon }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      target={href.startsWith("mailto:") ? undefined : "_blank"}
+                      rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
+                      className="flex items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent-ink"
+                    >
+                      <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                      {label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       <footer className="border-t border-line">

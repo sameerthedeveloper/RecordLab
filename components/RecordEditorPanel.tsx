@@ -91,6 +91,7 @@ export function RecordEditorPanel({
             type="button"
             title="Save to Cloud"
             aria-label="Save to Cloud"
+            data-onboarding="save-cloud"
             onClick={onSaveCloud}
             disabled={isSavingCloud}
             className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft disabled:cursor-wait disabled:opacity-60"
