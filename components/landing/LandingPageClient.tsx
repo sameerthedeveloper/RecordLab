@@ -130,6 +130,13 @@ export function LandingPageClient() {
           "-=0.35"
         );
 
+      // `<main>` (not the window) is the actual scroll container — it's
+      // `fixed inset-0 overflow-y-auto` so the page itself never scrolls.
+      // Every ScrollTrigger below must watch it explicitly, or the trigger
+      // never fires (window scroll position never changes) and content
+      // stays stuck at the gsap.from() starting opacity of 0 forever.
+      const scroller = rootRef.current;
+
       // Every other full-screen section reveals once as it scrolls into
       // view — a single, consistent motion language rather than a
       // different effect per section.
@@ -140,7 +147,7 @@ export function LandingPageClient() {
           stagger: 0.06,
           duration: 0.7,
           ease: "power2.out",
-          scrollTrigger: { trigger: group, start: "top 72%", toggleActions: "play none none none" },
+          scrollTrigger: { trigger: group, scroller, start: "top 72%", toggleActions: "play none none none" },
         });
       });
 
@@ -153,10 +160,12 @@ export function LandingPageClient() {
           opacity: 0,
           duration: 0.4,
           ease: "back.out(2.2)",
-          scrollTrigger: { trigger: check, start: "top 85%", toggleActions: "play none none none" },
+          scrollTrigger: { trigger: check, scroller, start: "top 85%", toggleActions: "play none none none" },
           delay: 0.25,
         });
       });
+
+      ScrollTrigger.refresh();
     }, rootRef);
 
     return () => ctx.revert();
