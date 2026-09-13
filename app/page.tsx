@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RecordEditorPanel } from "@/components/RecordEditorPanel";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { MobileNav } from "@/components/MobileNav";
@@ -15,7 +15,7 @@ import { buildRecordDocx } from "@/lib/buildDocx";
 import { saveDocument } from "@/lib/firestoreService";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
-import { loadSettings, saveSettings } from "@/lib/settings";
+import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
@@ -47,18 +47,16 @@ function downloadBlob(blob: Blob, filename: string): void {
 
 export default function Home() {
   const { toast, showToast } = useToast();
-  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
-  // New records start pre-filled with the saved RRN/header size/watermark
-  // style defaults (see lib/settings.ts) but stay independently editable —
-  // this only seeds the initial value, it doesn't keep them in sync.
-  const [record, setRecord] = useState<RecordState>(() => {
-    const s = loadSettings();
-    return { ...DEFAULT_RECORD, rrn: s.rrn, headerLayout: s.headerLayout };
-  });
-  const [watermark, setWatermark] = useState<WatermarkOptions>(() => {
-    const s = loadSettings();
-    return { ...DEFAULT_WATERMARK, ...s.watermark };
-  });
+  // Start from the neutral defaults, matching what the server/static render
+  // has no choice but to use (it never sees this browser's localStorage) —
+  // then apply the saved settings once mounted. Reading localStorage in a
+  // useState initializer instead would make the client's *first* render
+  // differ from the server-rendered HTML whenever a real saved value (e.g.
+  // watermark.opacity) differs from the default, which React's hydration
+  // then flags as a text mismatch.
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [record, setRecord] = useState<RecordState>(DEFAULT_RECORD);
+  const [watermark, setWatermark] = useState<WatermarkOptions>(DEFAULT_WATERMARK);
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
@@ -71,6 +69,17 @@ export default function Home() {
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = usePaginatedPages(record);
+
+  // Runs once after the initial (hydration-safe) render — see the comment
+  // on the state above. record/watermark are still exactly DEFAULT_RECORD/
+  // DEFAULT_WATERMARK at this point (nothing else can have changed them
+  // yet), so seeding them directly here is safe.
+  useEffect(() => {
+    const s = loadSettings();
+    setSettings(s);
+    setRecord((prev) => ({ ...prev, rrn: s.rrn, headerLayout: s.headerLayout }));
+    setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
+  }, []);
 
   function handleSaveSettings(next: AppSettings) {
     const prevSettings = settings;
