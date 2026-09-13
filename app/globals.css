@@ -143,7 +143,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-family: Arial, sans-serif;
+  font-family: var(--doc-font, Arial, sans-serif);
   color: #000000;
 }
 
@@ -184,7 +184,7 @@ body {
   width: 100%;
   border-collapse: collapse;
   border: 1px solid #111827;
-  font-family: Arial, sans-serif;
+  font-family: var(--doc-font, Arial, sans-serif);
 }
 
 .record-header td {
@@ -238,7 +238,7 @@ body {
 
 .record-heading {
   margin: 0 0 5px 0;
-  font-family: Arial, sans-serif;
+  font-family: var(--doc-font, Arial, sans-serif);
   font-size: 14pt;
   font-weight: 700;
   line-height: 1.5;
@@ -250,12 +250,12 @@ body {
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: Arial, sans-serif;
+  font-family: var(--doc-font, Arial, sans-serif);
 }
 
 .source-code {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: var(--doc-font, Arial, sans-serif);
   font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
@@ -269,7 +269,7 @@ body {
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: Arial, sans-serif;
+  font-family: var(--doc-font, Arial, sans-serif);
 }
 
 /* =====================================================

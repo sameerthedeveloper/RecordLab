@@ -23,7 +23,7 @@ export function createA4PageHTML(page: PageObject, rrn: string, watermark: Water
   `;
 }
 
-export function buildPrintDocumentHTML(pages: PageObject[], rrn: string, watermark: WatermarkOptions): string {
+export function buildPrintDocumentHTML(pages: PageObject[], rrn: string, watermark: WatermarkOptions, font: string): string {
   const pagesHTML = pages.map((p) => createA4PageHTML(p, rrn, watermark)).join("");
   return `
     <!DOCTYPE html>
@@ -33,7 +33,7 @@ export function buildPrintDocumentHTML(pages: PageObject[], rrn: string, waterma
       <title>Record Lab</title>
       <style>${PRINT_CSS}</style>
     </head>
-    <body>
+    <body style="--doc-font: ${escapeHTML(font)}">
       <div class="print-document">
         ${pagesHTML}
       </div>

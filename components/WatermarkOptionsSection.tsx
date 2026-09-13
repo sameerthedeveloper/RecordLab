@@ -1,23 +1,13 @@
 "use client";
 
 import { AccordionSection } from "./AccordionSection";
+import { FONT_OPTIONS } from "@/lib/fonts";
 import type { WatermarkOptions } from "@/lib/types";
 
 interface WatermarkOptionsSectionProps {
   watermark: WatermarkOptions;
   onChange: (next: WatermarkOptions) => void;
 }
-
-const FONT_OPTIONS = [
-  { value: "Arial, sans-serif", label: "Arial" },
-  { value: "Calibri, sans-serif", label: "Calibri" },
-  { value: "'Times New Roman', serif", label: "Times New Roman" },
-  { value: "'Courier New', monospace", label: "Courier New" },
-  { value: "Georgia, serif", label: "Georgia" },
-  { value: "Impact, sans-serif", label: "Impact" },
-  { value: "'Trebuchet MS', sans-serif", label: "Trebuchet MS" },
-  { value: "Verdana, sans-serif", label: "Verdana" },
-];
 
 export function WatermarkOptionsSection({ watermark, onChange }: WatermarkOptionsSectionProps) {
   const inputClass =

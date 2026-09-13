@@ -4,6 +4,7 @@ import {
   convertMillimetersToTwip,
   Document,
   Header,
+  HeightRule,
   HorizontalPositionAlign,
   HorizontalPositionRelativeFrom,
   ImageRun,
@@ -20,12 +21,9 @@ import {
   VerticalPositionRelativeFrom,
   WidthType,
 } from "docx";
+import { toDocxFontName } from "./fonts";
+import { CONTENT_WIDTH_MM } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
-
-// The printed/PDF record is hard-locked to Arial for cross-device fidelity
-// (see app/globals.css) — the .docx export mirrors that everywhere, headings
-// and body text alike, rather than picking up Word's Times New Roman default.
-const FONT = "Arial";
 
 /**
  * Builds a .docx rendition of the record. Unlike the PDF/print path, this
@@ -104,23 +102,23 @@ async function buildWatermarkImage(rrn: string, watermark: WatermarkOptions): Pr
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-function linesToRuns(text: string, runOptions: { size?: number } = {}): TextRun[] {
+function linesToRuns(text: string, font: string, runOptions: { size?: number } = {}): TextRun[] {
   const lines = text.split("\n");
-  return lines.map((line, i) => new TextRun({ text: line, break: i > 0 ? 1 : undefined, font: FONT, ...runOptions }));
+  return lines.map((line, i) => new TextRun({ text: line, break: i > 0 ? 1 : undefined, font, ...runOptions }));
 }
 
-function headingParagraph(text: string): Paragraph {
+function headingParagraph(text: string, font: string): Paragraph {
   return new Paragraph({
     spacing: { before: 240, after: 80 },
-    children: [new TextRun({ text, bold: true, size: 28, font: FONT })],
+    children: [new TextRun({ text, bold: true, size: 28, font })],
   });
 }
 
-function bodyParagraph(text: string): Paragraph {
+function bodyParagraph(text: string, font: string): Paragraph {
   if (!text.trim()) return new Paragraph({ children: [] });
   return new Paragraph({
     spacing: { after: 120 },
-    children: linesToRuns(text, { size: 24 }),
+    children: linesToRuns(text, font, { size: 24 }),
   });
 }
 
@@ -144,11 +142,19 @@ async function outputImageParagraph(image: OutputImage): Promise<Paragraph> {
   });
 }
 
-function headerTable(record: RecordState): Table {
+function headerTable(record: RecordState, font: string): Table {
+  // Mirrors createHeader() in lib/paginate.ts: table width scales with
+  // headerLayout.width relative to the fixed 176mm content area, and row
+  // height follows headerLayout.height — the same field the canvas2pdf
+  // drag-resize and the Settings modal's default both read and write.
+  const widthPct = Math.min(100, (record.headerLayout.width / CONTENT_WIDTH_MM) * 100);
+  const rowHeightTwips = convertMillimetersToTwip(record.headerLayout.height);
+
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: widthPct, type: WidthType.PERCENTAGE },
     rows: [
       new TableRow({
+        height: { value: rowHeightTwips, rule: HeightRule.ATLEAST },
         children: [
           new TableCell({
             width: { size: 28, type: WidthType.PERCENTAGE },
@@ -157,15 +163,15 @@ function headerTable(record: RecordState): Table {
             children: [
               new Paragraph({
                 children: [
-                  new TextRun({ text: "EX NO : ", bold: true, size: 20, font: FONT }),
-                  new TextRun({ text: record.exercise_number.trim(), size: 20, font: FONT }),
+                  new TextRun({ text: "EX NO : ", bold: true, size: 20, font }),
+                  new TextRun({ text: record.exercise_number.trim(), size: 20, font }),
                 ],
               }),
               new Paragraph({
                 spacing: { before: 80 },
                 children: [
-                  new TextRun({ text: "DATE : ", bold: true, size: 20, font: FONT }),
-                  new TextRun({ text: formatDate(record.date), size: 20, font: FONT }),
+                  new TextRun({ text: "DATE : ", bold: true, size: 20, font }),
+                  new TextRun({ text: formatDate(record.date), size: 20, font }),
                 ],
               }),
             ],
@@ -178,7 +184,7 @@ function headerTable(record: RecordState): Table {
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font: FONT })],
+                children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })],
               }),
             ],
           }),
@@ -188,30 +194,31 @@ function headerTable(record: RecordState): Table {
   });
 }
 
-export async function buildRecordDocx(record: RecordState, watermark: WatermarkOptions): Promise<Blob> {
-  const children: (Paragraph | Table)[] = [headerTable(record), new Paragraph({ children: [] })];
+export async function buildRecordDocx(record: RecordState, watermark: WatermarkOptions, docFont: string): Promise<Blob> {
+  const font = toDocxFontName(docFont);
+  const children: (Paragraph | Table)[] = [headerTable(record, font), new Paragraph({ children: [] })];
 
   if (record.aim.trim()) {
-    children.push(headingParagraph("AIM:"), bodyParagraph(record.aim));
+    children.push(headingParagraph("AIM:", font), bodyParagraph(record.aim, font));
   }
   if (record.algorithm.trim()) {
-    children.push(headingParagraph("ALGORITHM:"), bodyParagraph(record.algorithm));
+    children.push(headingParagraph("ALGORITHM:", font), bodyParagraph(record.algorithm, font));
   }
   if (record.source_code.trim()) {
-    children.push(headingParagraph("SOURCE CODE:"), bodyParagraph(record.source_code));
+    children.push(headingParagraph("SOURCE CODE:", font), bodyParagraph(record.source_code, font));
   }
   if (record.output.trim() || record.output_images.length > 0) {
-    children.push(headingParagraph("OUTPUT:"));
-    if (record.output.trim()) children.push(bodyParagraph(record.output));
+    children.push(headingParagraph("OUTPUT:", font));
+    if (record.output.trim()) children.push(bodyParagraph(record.output, font));
     for (const image of record.output_images) {
       children.push(await outputImageParagraph(image));
     }
   }
   if (record.review_questions_enabled && record.review_questions.trim()) {
-    children.push(headingParagraph("REVIEW QUESTIONS:"), bodyParagraph(record.review_questions));
+    children.push(headingParagraph("REVIEW QUESTIONS:", font), bodyParagraph(record.review_questions, font));
   }
   if (record.result.trim()) {
-    children.push(headingParagraph("RESULT:"), bodyParagraph(record.result));
+    children.push(headingParagraph("RESULT:", font), bodyParagraph(record.result, font));
   }
 
   const watermarkBytes = await buildWatermarkImage(record.rrn, watermark);
@@ -239,7 +246,7 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
   const doc = new Document({
     styles: {
       default: {
-        document: { run: { font: FONT } },
+        document: { run: { font } },
       },
     },
     sections: [

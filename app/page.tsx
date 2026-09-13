@@ -6,6 +6,7 @@ import { PreviewPanel } from "@/components/PreviewPanel";
 import { MobileNav } from "@/components/MobileNav";
 import { AiAssistantModal } from "@/components/AiAssistantModal";
 import { DashboardModal } from "@/components/DashboardModal";
+import { SettingsModal } from "@/components/SettingsModal";
 import { Onboarding } from "@/components/Onboarding";
 import { ToastViewport, useToast } from "@/components/Toast";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
@@ -14,6 +15,8 @@ import { buildRecordDocx } from "@/lib/buildDocx";
 import { saveDocument } from "@/lib/firestoreService";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
+import { loadSettings, saveSettings } from "@/lib/settings";
+import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
 import type { ParsedLabRecord } from "@/lib/aiAssistant";
@@ -44,11 +47,22 @@ function downloadBlob(blob: Blob, filename: string): void {
 
 export default function Home() {
   const { toast, showToast } = useToast();
-  const [record, setRecord] = useState<RecordState>(DEFAULT_RECORD);
-  const [watermark, setWatermark] = useState<WatermarkOptions>(DEFAULT_WATERMARK);
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
+  // New records start pre-filled with the saved RRN/header size/watermark
+  // style defaults (see lib/settings.ts) but stay independently editable —
+  // this only seeds the initial value, it doesn't keep them in sync.
+  const [record, setRecord] = useState<RecordState>(() => {
+    const s = loadSettings();
+    return { ...DEFAULT_RECORD, rrn: s.rrn, headerLayout: s.headerLayout };
+  });
+  const [watermark, setWatermark] = useState<WatermarkOptions>(() => {
+    const s = loadSettings();
+    return { ...DEFAULT_WATERMARK, ...s.watermark };
+  });
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
@@ -57,6 +71,30 @@ export default function Home() {
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = usePaginatedPages(record);
+
+  function handleSaveSettings(next: AppSettings) {
+    const prevSettings = settings;
+    setSettings(next);
+    saveSettings(next);
+
+    // Only carry a changed default into the record/watermark that's
+    // currently open if it hasn't been customized away from the old
+    // default — never clobber something the user already typed/dragged.
+    setRecord((prev) => ({
+      ...prev,
+      rrn: prev.rrn.trim() ? prev.rrn : next.rrn,
+      headerLayout:
+        JSON.stringify(prev.headerLayout) === JSON.stringify(prevSettings.headerLayout)
+          ? next.headerLayout
+          : prev.headerLayout,
+    }));
+    setWatermark((prev) =>
+      JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? next.watermark : prev
+    );
+
+    showToast("Settings saved.");
+    track("save_settings");
+  }
 
   function handleLoadFromDashboard(payload: RlabPayload) {
     setRecord({ ...DEFAULT_RECORD, ...payload.record });
@@ -152,7 +190,7 @@ export default function Home() {
     if (!iframeDocument) return null;
 
     iframeDocument.open();
-    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark));
+    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font));
     iframeDocument.close();
     return iframeDocument;
   }
@@ -175,7 +213,7 @@ export default function Home() {
       // (standard-font metrics included), so it shouldn't weigh down the
       // initial page load for users who never pick this engine.
       const { buildCanvasPdf } = await import("@/lib/buildCanvasPdf");
-      const blob = await buildCanvasPdf(record, watermark);
+      const blob = await buildCanvasPdf(record, watermark, settings.font);
       downloadBlob(blob, buildFilename(record, "pdf"));
       track("export_pdf", { engine: "canvas2pdf" });
     } catch (error) {
@@ -242,7 +280,7 @@ export default function Home() {
   async function handleSaveDocx() {
     setIsSavingPdf(true);
     try {
-      const blob = await buildRecordDocx(record, watermark);
+      const blob = await buildRecordDocx(record, watermark, settings.font);
       downloadBlob(blob, buildFilename(record, "docx"));
       track("export_docx");
     } catch (error) {
@@ -297,6 +335,7 @@ export default function Home() {
           onLoadWork={handleLoadWork}
           onSaveCloud={handleSaveCloud}
           onOpenDashboard={() => setDashboardOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
           isSavingCloud={isSavingCloud}
           visible={mobilePanel === "inputs"}
         />
@@ -309,6 +348,7 @@ export default function Home() {
           onFieldChange={handleFieldChange}
           onSave={handleSave}
           onToast={showToast}
+          docFont={settings.font}
           isSaving={isSavingPdf}
           downloadFormat={downloadFormat}
           onDownloadFormatChange={setDownloadFormat}
@@ -342,6 +382,13 @@ export default function Home() {
         onClose={() => setDashboardOpen(false)}
         onLoad={handleLoadFromDashboard}
         onToast={showToast}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        settings={settings}
+        onClose={() => setSettingsOpen(false)}
+        onSave={handleSaveSettings}
       />
 
       <Onboarding activePanel={mobilePanel} onRequestPanel={setMobilePanel} />

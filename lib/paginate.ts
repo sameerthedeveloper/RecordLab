@@ -1,4 +1,5 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
+import { CONTENT_WIDTH_MM } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
 
 /**
@@ -51,10 +52,18 @@ function createHeader(record: RecordState): string {
   const formattedDate = escapeHTML(formatDate(record.date));
   const title = escapeHTML(record.title.trim());
 
+  // `.record-header` defaults to width:100% of the content area, matching
+  // headerLayout.width === CONTENT_WIDTH_MM out of the box (see
+  // DEFAULT_HEADER_LAYOUT) — resizing it here (Settings modal default, or a
+  // per-record override) narrows the table and grows/shrinks its min-height,
+  // same field the canvas2pdf drag-resize already reads and writes.
+  const widthPct = Math.min(100, (record.headerLayout.width / CONTENT_WIDTH_MM) * 100);
+  const minHeightMm = record.headerLayout.height;
+
   return `
-    <table class="record-header">
+    <table class="record-header" style="width:${widthPct}%">
       <tr>
-        <td class="record-meta">
+        <td class="record-meta" style="min-height:${minHeightMm}mm">
           <div>
             <span class="label">EX NO :</span>
             <span class="value">${exNo}</span>
@@ -65,7 +74,7 @@ function createHeader(record: RecordState): string {
             <span class="value">${formattedDate}</span>
           </div>
         </td>
-        <td class="record-title">
+        <td class="record-title" style="min-height:${minHeightMm}mm">
           ${title}
         </td>
       </tr>

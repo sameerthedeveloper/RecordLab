@@ -1,4 +1,5 @@
 import { formatDate } from "./escapeHtml";
+import { mapToPdfKitFont } from "./fonts";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -81,11 +82,15 @@ const HEADING_GAP = 6;
 const SECTION_GAP = 14;
 
 /** Builds a vector (real, selectable text) PDF of the record via canvas2pdf/PDFKit. */
-export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions): Promise<Blob> {
+export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions, font: string): Promise<Blob> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("PDF generation is only available in the browser."));
   }
   window.PDFDocument = PDFDocumentCtor;
+  // PDFKit only ships the 14 standard PDF fonts (see file header) — map the
+  // chosen document font onto the nearest one rather than the fixed
+  // Helvetica/Helvetica-Bold used before per-document fonts existed.
+  const { regular: BODY_FONT, bold: BOLD_FONT } = mapToPdfKitFont(font);
 
   return new Promise((resolve, reject) => {
     try {
@@ -152,16 +157,16 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions)
         doc.restore();
 
         doc.fillColor(INK);
-        doc.font("Helvetica-Bold").fontSize(10);
+        doc.font(BOLD_FONT).fontSize(10);
         doc.text("EX NO : ", boxX + 10, boxY + 12, { continued: true });
-        doc.font("Helvetica").text(record.exercise_number.trim());
+        doc.font(BODY_FONT).text(record.exercise_number.trim());
 
-        doc.font("Helvetica-Bold").fontSize(10);
+        doc.font(BOLD_FONT).fontSize(10);
         doc.text("DATE : ", boxX + 10, dividerY + 8, { continued: true });
-        doc.font("Helvetica").text(formatDate(record.date));
+        doc.font(BODY_FONT).text(formatDate(record.date));
 
         const title = record.title.trim();
-        doc.font("Helvetica-Bold").fontSize(14);
+        doc.font(BOLD_FONT).fontSize(14);
         const titleHeight = doc.heightOfString(title, { width: rightW - 20, align: "center" });
         doc.text(title, boxX + leftW + 10, boxY + Math.max(10, (boxH - titleHeight) / 2), {
           width: rightW - 20,
@@ -171,16 +176,16 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions)
 
       function drawTextSection(heading: string, body: string): void {
         const text = body.trim();
-        doc.font("Helvetica").fontSize(BODY_FONT_SIZE);
+        doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
         const bodyHeight = text ? doc.heightOfString(text, { width: CONTENT_WIDTH }) : BODY_FONT_SIZE * 1.5;
 
         ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + bodyHeight + SECTION_GAP);
 
-        doc.font("Helvetica-Bold").fontSize(HEADING_FONT_SIZE).fillColor(INK);
+        doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
         doc.text(heading, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
         y = doc.y + HEADING_GAP;
 
-        doc.font("Helvetica").fontSize(BODY_FONT_SIZE).fillColor(INK);
+        doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE).fillColor(INK);
         if (text) {
           doc.text(text, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
           y = doc.y + SECTION_GAP;
@@ -194,16 +199,16 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions)
         const images = record.output_images;
         if (!text && images.length === 0) return;
 
-        doc.font("Helvetica").fontSize(BODY_FONT_SIZE);
+        doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
         const bodyHeight = text ? doc.heightOfString(text, { width: CONTENT_WIDTH }) : 0;
         ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + bodyHeight + SECTION_GAP);
 
-        doc.font("Helvetica-Bold").fontSize(HEADING_FONT_SIZE).fillColor(INK);
+        doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
         doc.text("OUTPUT:", MARGIN_LEFT, y, { width: CONTENT_WIDTH });
         y = doc.y + HEADING_GAP;
 
         if (text) {
-          doc.font("Helvetica").fontSize(BODY_FONT_SIZE).fillColor(INK);
+          doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE).fillColor(INK);
           doc.text(text, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
           y = doc.y + SECTION_GAP;
         }

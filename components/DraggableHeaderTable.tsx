@@ -5,8 +5,11 @@ import { Move } from "lucide-react";
 import { CONTENT_HEIGHT_MM, CONTENT_WIDTH_MM } from "@/lib/types";
 import type { HeaderLayout, RecordState } from "@/lib/types";
 
-const MIN_WIDTH_MM = 40;
-const MIN_HEIGHT_MM = 14;
+export const MIN_WIDTH_MM = 40;
+export const MIN_HEIGHT_MM = 14;
+// Past this, the header eats too much of the page for a two-line title —
+// the Settings modal's default-size inputs cap out here too.
+export const MAX_HEIGHT_MM = 60;
 
 interface DraggableHeaderTableProps {
   record: RecordState;

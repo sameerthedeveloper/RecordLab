@@ -48,6 +48,13 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     body: "Sign in with Google (top right of the preview) to save records to the cloud and pick them up on any device from My Documents.",
   },
   {
+    target: '[data-onboarding="open-settings"]',
+    panel: "inputs",
+    side: "bottom",
+    title: "Set your defaults",
+    body: "Register your RRN once, pick a document font, and size the title table — new records start with these, and you can still adjust any of it per record.",
+  },
+  {
     target: '[data-onboarding="sections"]',
     panel: "inputs",
     side: "right",

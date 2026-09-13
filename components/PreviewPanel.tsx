@@ -20,6 +20,7 @@ interface PreviewPanelProps {
   onFieldChange: <K extends keyof RecordState>(field: K, value: RecordState[K]) => void;
   onSave: () => void;
   onToast: (message: string) => void;
+  docFont: string;
   isSaving: boolean;
   downloadFormat: DownloadFormat;
   onDownloadFormatChange: (format: DownloadFormat) => void;
@@ -41,6 +42,7 @@ export function PreviewPanel({
   onFieldChange,
   onSave,
   onToast,
+  docFont,
   isSaving,
   downloadFormat,
   onDownloadFormatChange,
@@ -94,7 +96,11 @@ export function PreviewPanel({
       </div>
 
       <div className="preview-area min-h-0 flex-1">
-        <div id="previewPages" className="preview-pages">
+        <div
+          id="previewPages"
+          className="preview-pages"
+          style={{ "--doc-font": docFont } as React.CSSProperties}
+        >
           {isCanvasEditMode ? (
             <div className="preview-page-group">
               <CanvasEditPreview record={record} watermark={watermark} onFieldChange={onFieldChange} />

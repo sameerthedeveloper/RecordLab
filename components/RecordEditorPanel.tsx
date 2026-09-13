@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { Cloud, Files, FolderOpen, ImagePlus, Save, Sparkles, X } from "lucide-react";
+import { Cloud, Files, FolderOpen, ImagePlus, Save, Settings, Sparkles, X } from "lucide-react";
 import { AccordionSection } from "./AccordionSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
@@ -18,6 +18,7 @@ interface RecordEditorPanelProps {
   onLoadWork: (file: File) => void;
   onSaveCloud: () => void;
   onOpenDashboard: () => void;
+  onOpenSettings: () => void;
   isSavingCloud: boolean;
   visible: boolean;
 }
@@ -40,6 +41,7 @@ export function RecordEditorPanel({
   onLoadWork,
   onSaveCloud,
   onOpenDashboard,
+  onOpenSettings,
   isSavingCloud,
   visible,
 }: RecordEditorPanelProps) {
@@ -116,6 +118,16 @@ export function RecordEditorPanel({
             className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
           >
             <Sparkles className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            title="Settings"
+            aria-label="Settings"
+            data-onboarding="open-settings"
+            onClick={onOpenSettings}
+            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
+          >
+            <Settings className="h-5 w-5" strokeWidth={2} />
           </button>
         </div>
       </div>
