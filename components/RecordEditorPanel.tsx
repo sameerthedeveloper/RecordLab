@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Sparkles, X } from "lucide-react";
+import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
+import { TerminalImageModal } from "./TerminalImageModal";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
 
 interface RecordEditorPanelProps {
@@ -14,6 +15,8 @@ interface RecordEditorPanelProps {
   onWatermarkChange: (next: WatermarkOptions) => void;
   onImageUpload: (files: FileList) => void;
   onRemoveImage: (id: number) => void;
+  /** Adds a generated image (data URL); `clearText` also empties the plain output text. */
+  onAddOutputImage: (src: string, name: string, clearText: boolean) => void;
   onOpenAiModal: () => void;
   onSaveWork: () => void;
   onLoadWork: (file: File) => void;
@@ -49,6 +52,7 @@ export function RecordEditorPanel({
   onWatermarkChange,
   onImageUpload,
   onRemoveImage,
+  onAddOutputImage,
   onOpenAiModal,
   onSaveWork,
   onLoadWork,
@@ -64,6 +68,7 @@ export function RecordEditorPanel({
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>("details");
+  const [terminalOpen, setTerminalOpen] = useState(false);
 
   const filled: Record<SectionId, boolean> = {
     details: Boolean(record.rrn.trim() || record.exercise_number.trim() || record.title.trim()),
@@ -393,6 +398,14 @@ export function RecordEditorPanel({
             />
 
             <div className="image-upload-area mt-2">
+              <button
+                type="button"
+                onClick={() => setTerminalOpen(true)}
+                className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-ink p-2.5 text-xs font-semibold text-paper transition-colors hover:bg-ink/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <TerminalSquare className="h-4 w-4" strokeWidth={2} />
+                <span>Make terminal screenshot from output</span>
+              </button>
               <label
                 htmlFor="outputImagesInput"
                 className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-[#fdfcf8] p-2.5 text-xs font-semibold text-ink-soft transition-all hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent-ink"
@@ -429,6 +442,12 @@ export function RecordEditorPanel({
                 ))}
               </div>
             </div>
+            <TerminalImageModal
+              open={terminalOpen}
+              onClose={() => setTerminalOpen(false)}
+              initialOutput={record.output}
+              onAdd={onAddOutputImage}
+            />
           </EditorSection>
 
           <EditorSection

@@ -178,6 +178,15 @@ export default function Home() {
     });
   }, []);
 
+  const handleAddOutputImage = useCallback((src: string, name: string, clearText: boolean) => {
+    const image: OutputImage = { id: Date.now() + Math.random(), src, name };
+    setRecord((prev) => ({
+      ...prev,
+      output: clearText ? "" : prev.output,
+      output_images: [...prev.output_images, image],
+    }));
+  }, []);
+
   const handleRemoveImage = useCallback((id: number) => {
     setRecord((prev) => ({ ...prev, output_images: prev.output_images.filter((img) => img.id !== id) }));
   }, []);
@@ -383,6 +392,7 @@ export default function Home() {
           onWatermarkChange={setWatermark}
           onImageUpload={handleImageUpload}
           onRemoveImage={handleRemoveImage}
+          onAddOutputImage={handleAddOutputImage}
           onOpenAiModal={() => setAiModalOpen(true)}
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}
