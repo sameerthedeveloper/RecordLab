@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  confirmPasswordReset,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -10,6 +11,7 @@ import {
   signInWithPopup,
   signOut,
   updateProfile,
+  verifyPasswordResetCode,
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebaseConfig";
@@ -43,6 +45,15 @@ export async function resetPassword(email: string): Promise<void> {
   await sendPasswordResetEmail(getFirebaseAuth(), email.trim());
 }
 
+/** Checks a reset link's code; resolves to the account email, rejects if expired/used. */
+export function verifyResetCode(oobCode: string): Promise<string> {
+  return verifyPasswordResetCode(getFirebaseAuth(), oobCode);
+}
+
+export async function confirmReset(oobCode: string, newPassword: string): Promise<void> {
+  await confirmPasswordReset(getFirebaseAuth(), oobCode, newPassword);
+}
+
 /** Firebase error code -> message a human can act on. */
 export function authErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
@@ -55,6 +66,9 @@ export function authErrorMessage(err: unknown): string {
       return "Wrong email or password.";
     case "auth/email-already-in-use":
       return "An account with this email already exists. Sign in instead.";
+    case "auth/expired-action-code":
+    case "auth/invalid-action-code":
+      return "This reset link is invalid or already used.";
     case "auth/weak-password":
       return "Password too weak. Use at least 6 characters.";
     case "auth/too-many-requests":
