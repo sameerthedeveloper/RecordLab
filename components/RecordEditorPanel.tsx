@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Sparkles, TerminalSquare, X } from "lucide-react";
+import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import { TerminalImageModal } from "./TerminalImageModal";
+import type { TerminalImageOptions } from "@/lib/terminalImage";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
 
 interface RecordEditorPanelProps {
@@ -16,7 +17,8 @@ interface RecordEditorPanelProps {
   onImageUpload: (files: FileList) => void;
   onRemoveImage: (id: number) => void;
   /** Adds a generated image (data URL); `clearText` also empties the plain output text. */
-  onAddOutputImage: (src: string, name: string, clearText: boolean) => void;
+  onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => void;
+  onUpdateOutputImage: (id: number, src: string, terminal: TerminalImageOptions) => void;
   onOpenAiModal: () => void;
   onSaveWork: () => void;
   onLoadWork: (file: File) => void;
@@ -53,6 +55,7 @@ export function RecordEditorPanel({
   onImageUpload,
   onRemoveImage,
   onAddOutputImage,
+  onUpdateOutputImage,
   onOpenAiModal,
   onSaveWork,
   onLoadWork,
@@ -69,6 +72,7 @@ export function RecordEditorPanel({
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>("details");
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [editingImage, setEditingImage] = useState<OutputImage | null>(null);
 
   const filled: Record<SectionId, boolean> = {
     details: Boolean(record.rrn.trim() || record.exercise_number.trim() || record.title.trim()),
@@ -400,7 +404,10 @@ export function RecordEditorPanel({
             <div className="image-upload-area mt-2">
               <button
                 type="button"
-                onClick={() => setTerminalOpen(true)}
+                onClick={() => {
+                  setEditingImage(null);
+                  setTerminalOpen(true);
+                }}
                 className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-ink p-2.5 text-xs font-semibold text-paper transition-colors hover:bg-ink/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <TerminalSquare className="h-4 w-4" strokeWidth={2} />
@@ -430,6 +437,20 @@ export function RecordEditorPanel({
                   <div className="uploaded-image-card" key={image.id}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={image.src} alt={image.name} />
+                    {image.terminal && (
+                      <button
+                        type="button"
+                        className="edit-image-button"
+                        aria-label={`Edit terminal screenshot ${image.name}`}
+                        title="Edit terminal screenshot"
+                        onClick={() => {
+                          setEditingImage(image);
+                          setTerminalOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="remove-image-button"
@@ -446,7 +467,9 @@ export function RecordEditorPanel({
               open={terminalOpen}
               onClose={() => setTerminalOpen(false)}
               initialOutput={record.output}
+              editing={editingImage}
               onAdd={onAddOutputImage}
+              onUpdate={onUpdateOutputImage}
             />
           </EditorSection>
 

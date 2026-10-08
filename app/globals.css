@@ -458,6 +458,28 @@ body {
   background-color: #fee2e2;
 }
 
+.edit-image-button {
+  position: absolute;
+  top: 6px;
+  right: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9999px;
+  background: white;
+  color: #c2410c;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 150ms ease;
+}
+
+.edit-image-button:hover {
+  background-color: #fde8d8;
+}
+
 /* =====================================================
    RESPONSIVE & MOBILE NAVIGATION
 ===================================================== */

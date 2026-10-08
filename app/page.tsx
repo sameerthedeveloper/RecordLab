@@ -12,6 +12,7 @@ import { ToastViewport, useToast } from "@/components/Toast";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
+import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
@@ -191,8 +192,15 @@ export default function Home() {
     });
   }, []);
 
-  const handleAddOutputImage = useCallback((src: string, name: string, clearText: boolean) => {
-    const image: OutputImage = { id: Date.now() + Math.random(), src, name };
+  const handleUpdateOutputImage = useCallback((id: number, src: string, terminal: TerminalImageOptions) => {
+    setRecord((prev) => ({
+      ...prev,
+      output_images: prev.output_images.map((img) => (img.id === id ? { ...img, src, terminal } : img)),
+    }));
+  }, []);
+
+  const handleAddOutputImage = useCallback((src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => {
+    const image: OutputImage = { id: Date.now() + Math.random(), src, name, terminal };
     setRecord((prev) => ({
       ...prev,
       output: clearText ? "" : prev.output,
@@ -420,6 +428,7 @@ export default function Home() {
           onImageUpload={handleImageUpload}
           onRemoveImage={handleRemoveImage}
           onAddOutputImage={handleAddOutputImage}
+          onUpdateOutputImage={handleUpdateOutputImage}
           onOpenAiModal={() => setAiModalOpen(true)}
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}

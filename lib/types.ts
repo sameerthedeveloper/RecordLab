@@ -1,7 +1,11 @@
+import type { TerminalImageOptions } from "./terminalImage";
+
 export interface OutputImage {
   id: number;
   src: string;
   name: string;
+  /** Present on generated terminal screenshots; lets the user reopen and edit them. */
+  terminal?: TerminalImageOptions;
 }
 
 /**

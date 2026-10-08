@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ImagePlus, TerminalSquare } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
+import type { OutputImage } from "@/lib/types";
 import { PLATFORMS, renderTerminalImage, type TerminalImageOptions, type TerminalPlatform } from "@/lib/terminalImage";
 
 interface TerminalImageModalProps {
@@ -10,8 +11,12 @@ interface TerminalImageModalProps {
   onClose: () => void;
   /** Output text already in the record; used to prefill. */
   initialOutput: string;
+  /** Existing terminal image being edited; null/undefined = make a new one. */
+  editing?: OutputImage | null;
   /** Adds the PNG to the record. `clearText` asks the caller to drop the plain output text. */
-  onAdd: (src: string, name: string, clearText: boolean) => void;
+  onAdd: (src: string, name: string, clearText: boolean, options: TerminalImageOptions) => void;
+  /** Replaces the editing image's PNG (and stored settings) in place. */
+  onUpdate: (id: number, src: string, options: TerminalImageOptions) => void;
 }
 
 const STORE_KEY = "recordlab.terminal-image";
@@ -30,7 +35,7 @@ function loadIdentity(): Pick<TerminalImageOptions, "user" | "host" | "dir"> {
   }
 }
 
-export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: TerminalImageModalProps) {
+export function TerminalImageModal({ open, onClose, initialOutput, editing, onAdd, onUpdate }: TerminalImageModalProps) {
   const [identity, setIdentity] = useState(loadIdentity);
   const [platform, setPlatform] = useState<TerminalPlatform>("macos");
   const [symbol, setSymbol] = useState("%");
@@ -43,6 +48,19 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
 
   useEffect(() => {
     if (!open) return;
+    const saved = editing?.terminal;
+    if (saved) {
+      setIdentity({ user: saved.user, host: saved.host, dir: saved.dir });
+      setPlatform(saved.platform);
+      setSymbol(saved.symbol);
+      setCommands(saved.commands);
+      setOutput(saved.output);
+      setTheme(saved.theme);
+      setWindowBar(saved.windowBar);
+      setEndPrompt(saved.endPrompt);
+      setClearText(false);
+      return;
+    }
     setIdentity(loadIdentity());
     setOutput(initialOutput);
     setClearText(Boolean(initialOutput.trim()));
@@ -74,7 +92,9 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
     } catch {
       /* storage blocked — settings just won't persist */
     }
-    onAdd(preview, "terminal-output.png", clearText && Boolean(output.trim()));
+    const options: TerminalImageOptions = { ...identity, platform, symbol, commands, output, theme, windowBar, endPrompt };
+    if (editing) onUpdate(editing.id, preview, options);
+    else onAdd(preview, "terminal-output.png", clearText && Boolean(output.trim()), options);
     onClose();
   }
 
@@ -87,7 +107,7 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
     <Modal
       open={open}
       onClose={onClose}
-      title="Terminal screenshot"
+      title={editing ? "Edit terminal screenshot" : "Terminal screenshot"}
       description="Turn your output into a terminal-style image."
       icon={TerminalSquare}
       size="lg"
@@ -98,7 +118,7 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
           </button>
           <button type="button" onClick={handleAdd} className={`${modalButton.primary} flex items-center gap-1.5`}>
             <ImagePlus className="h-3.5 w-3.5" strokeWidth={2.25} />
-            Add to record
+            {editing ? "Save changes" : "Add to record"}
           </button>
         </>
       }
@@ -184,7 +204,7 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
             <input type="checkbox" className="accent-[#c2410c]" checked={endPrompt} onChange={(e) => setEndPrompt(e.target.checked)} />
             Ending prompt
           </label>
-          {initialOutput.trim() && (
+          {!editing && initialOutput.trim() && (
             <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-soft">
               <input type="checkbox" className="accent-[#c2410c]" checked={clearText} onChange={(e) => setClearText(e.target.checked)} />
               Replace output text with image
