@@ -412,7 +412,7 @@ export default function Home() {
         />
       </div>
 
-      <MobileNav activePanel={mobilePanel} onSelect={setMobilePanel} />
+      <MobileNav activePanel={mobilePanel} onSelect={setMobilePanel} onOpenFiles={() => setDashboardOpen(true)} />
 
       <iframe
         ref={printFrameRef}

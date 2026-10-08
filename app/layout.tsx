@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -23,6 +23,13 @@ const monoFont = JetBrains_Mono({
   variable: "--font-mono",
   display: "swap",
 });
+
+// viewport-fit=cover lets the mobile tab bar extend under the iOS home indicator.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://record-lab.vercel.app"),

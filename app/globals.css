@@ -471,13 +471,19 @@ body {
   .mobile-panel {
     width: 100% !important;
     min-width: 100% !important;
-    height: calc(100% - 64px) !important;
+    height: 100% !important;
     border-radius: 0 !important;
     border: none !important;
   }
 
+  /* Content scrolls underneath the floating glass tab bar, so leave room to
+     scroll the last field / page clear of it. */
+  .editor-surface {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
   .preview-pages {
-    padding: 14px;
+    padding: 14px 14px calc(96px + env(safe-area-inset-bottom, 0px));
     gap: 20px;
     align-items: center;
   }
@@ -491,6 +497,44 @@ body {
   .preview-pages .a4-page {
     transform-origin: top center;
     zoom: 0.45;
+  }
+}
+
+/* iOS 26 Liquid Glass tab bar: floats 8px above the home indicator. */
+.ios-tabbar {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.9);
+  backdrop-filter: blur(22px) saturate(1.9);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 10px 30px -8px rgba(28, 43, 51, 0.28),
+    0 2px 6px rgba(28, 43, 51, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.liquid-lens {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.45));
+  box-shadow:
+    0 2px 8px rgba(28, 43, 51, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  transition: transform 420ms cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-lens {
+    transition: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.92);
   }
 }
 
