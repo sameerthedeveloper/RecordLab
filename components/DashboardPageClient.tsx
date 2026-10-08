@@ -29,9 +29,10 @@ export function DashboardPageClient() {
   const [documents, setDocuments] = useState<CloudDocument[] | null>(null);
 
   const handleLoad = useCallback(
-    (payload: RlabPayload) => {
+    (payload: RlabPayload, docId: string) => {
       try {
         sessionStorage.setItem("recordlab.pendingLoad", JSON.stringify(payload));
+        sessionStorage.setItem("recordlab.pendingLoadId", docId);
       } catch {
         showToast("Unable to open this record. Free up browser storage and try again.");
         return;

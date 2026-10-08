@@ -12,7 +12,7 @@ import { ToastViewport, useToast } from "@/components/Toast";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
-import { saveDocument } from "@/lib/firestoreService";
+import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
@@ -65,6 +65,8 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
+  // Firestore id of the cloud file being edited; null = not saved yet, so the next save creates it.
+  const [cloudDocId, setCloudDocId] = useState<string | null>(null);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
   const [pdfEngine, setPdfEngine] = useState<PdfEngine>("html2pdf");
 
@@ -72,6 +74,14 @@ export default function Home() {
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = usePaginatedPages(record);
+
+  // A cloud file belongs to one account: forget it if the user signs out or switches accounts.
+  const lastUidRef = useRef<string | null>(null);
+  useEffect(() => {
+    const uid = authUser?.uid ?? null;
+    if (lastUidRef.current && lastUidRef.current !== uid) setCloudDocId(null);
+    lastUidRef.current = uid;
+  }, [authUser]);
 
   // Runs once after the initial (hydration-safe) render — see the comment
   // on the state above. record/watermark are still exactly DEFAULT_RECORD/
@@ -89,6 +99,8 @@ export default function Home() {
       const pending = sessionStorage.getItem("recordlab.pendingLoad");
       if (pending) {
         sessionStorage.removeItem("recordlab.pendingLoad");
+        setCloudDocId(sessionStorage.getItem("recordlab.pendingLoadId"));
+        sessionStorage.removeItem("recordlab.pendingLoadId");
         const payload = JSON.parse(pending) as RlabPayload;
         setRecord({ ...DEFAULT_RECORD, ...payload.record });
         if (payload.watermark) setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
@@ -149,7 +161,8 @@ export default function Home() {
     track("save_settings");
   }
 
-  function handleLoadFromDashboard(payload: RlabPayload) {
+  function handleLoadFromDashboard(payload: RlabPayload, docId: string) {
+    setCloudDocId(docId);
     setRecord({ ...DEFAULT_RECORD, ...payload.record });
     if (payload.watermark) {
       setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
@@ -218,6 +231,7 @@ export default function Home() {
           throw new Error("This doesn't look like a Record Lab work file.");
         }
         setRecord({ ...DEFAULT_RECORD, ...loadedRecord });
+        setCloudDocId(null);
         if (data.watermark && typeof data.watermark === "object") {
           setWatermark({ ...DEFAULT_WATERMARK, ...data.watermark });
         }
@@ -233,7 +247,20 @@ export default function Home() {
   async function handleSaveCloud() {
     setIsSavingCloud(true);
     try {
-      await saveDocument({ version: 1, record, watermark }, record.title || "Untitled");
+      const payload = { version: 1, record, watermark };
+      const title = record.title || "Untitled";
+      if (cloudDocId) {
+        try {
+          await updateDocument(cloudDocId, payload, title);
+          showToast("Cloud file updated.");
+          track("update_cloud");
+          return;
+        } catch (error) {
+          // File was deleted elsewhere: fall through and recreate it. Anything else is a real failure.
+          if ((error as { code?: string })?.code !== "not-found") throw error;
+        }
+      }
+      setCloudDocId(await saveDocument(payload, title));
       showToast("Saved to cloud.");
       track("save_cloud");
     } catch (error) {

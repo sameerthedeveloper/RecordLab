@@ -26,7 +26,8 @@ import { track } from "@/lib/analytics";
 interface DashboardModalProps {
   open: boolean;
   onClose: () => void;
-  onLoad: (payload: RlabPayload) => void;
+  /** `docId` lets the editor update this file on later saves instead of creating a copy. */
+  onLoad: (payload: RlabPayload, docId: string) => void;
   onToast: (message: string) => void;
   /** Render inline as the /dashboard page body instead of a dialog. */
   embedded?: boolean;
@@ -143,7 +144,7 @@ export function DashboardModal({
   if (!open) return null;
 
   function handleLoad(doc: CloudDocument) {
-    onLoad(doc.data);
+    onLoad(doc.data, doc.id);
     track("load_cloud");
     if (!embedded) onClose();
   }
