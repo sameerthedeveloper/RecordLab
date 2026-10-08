@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ImagePlus, TerminalSquare } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
-import { renderTerminalImage, type TerminalImageOptions } from "@/lib/terminalImage";
+import { PLATFORMS, renderTerminalImage, type TerminalImageOptions, type TerminalPlatform } from "@/lib/terminalImage";
 
 interface TerminalImageModalProps {
   open: boolean;
@@ -20,8 +20,8 @@ const inputClass =
   "w-full rounded-lg border border-line bg-white px-2.5 py-2 font-mono text-xs text-ink outline-none transition-colors placeholder:text-ink-soft/50 focus:border-accent focus:ring-2 focus:ring-accent/15";
 const labelClass = "mb-1 block text-[11px] font-semibold text-ink-soft";
 
-function loadIdentity(): Pick<TerminalImageOptions, "user" | "host" | "dir" | "symbol"> {
-  const fallback = { user: "student", host: "lab-pc", dir: "record", symbol: "%" };
+function loadIdentity(): Pick<TerminalImageOptions, "user" | "host" | "dir"> {
+  const fallback = { user: "student", host: "lab-pc", dir: "record" };
   try {
     const raw = localStorage.getItem(STORE_KEY);
     return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
@@ -32,6 +32,8 @@ function loadIdentity(): Pick<TerminalImageOptions, "user" | "host" | "dir" | "s
 
 export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: TerminalImageModalProps) {
   const [identity, setIdentity] = useState(loadIdentity);
+  const [platform, setPlatform] = useState<TerminalPlatform>("macos");
+  const [symbol, setSymbol] = useState("%");
   const [commands, setCommands] = useState("");
   const [output, setOutput] = useState("");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -49,8 +51,17 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
 
   const preview = useMemo(() => {
     if (!open) return "";
-    return renderTerminalImage({ ...identity, commands, output, theme, windowBar, endPrompt });
-  }, [open, identity, commands, output, theme, windowBar, endPrompt]);
+    return renderTerminalImage({ ...identity, platform, symbol, commands, output, theme, windowBar, endPrompt });
+  }, [open, identity, platform, symbol, commands, output, theme, windowBar, endPrompt]);
+
+  function pickPlatform(id: TerminalPlatform) {
+    setPlatform(id);
+    setSymbol(PLATFORMS.find((p) => p.id === id)?.symbol ?? "%");
+  }
+
+  const isWindows = platform === "cmd" || platform === "powershell";
+  const placeholderCmds =
+    platform === "cmd" || platform === "powershell" ? "javac Main.java\njava Main" : "javac Main.java\njava Main";
 
   function setId(key: keyof typeof identity, value: string) {
     setIdentity((prev) => ({ ...prev, [key]: value }));
@@ -99,22 +110,36 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
           {preview && <img src={preview} alt="Terminal preview" className="mx-auto max-h-64 max-w-full rounded-md shadow-lg" />}
         </div>
 
+        <div>
+          <span className={labelClass}>Terminal</span>
+          <div className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-paper p-1 sm:grid-cols-4" role="group" aria-label="Terminal">
+            {PLATFORMS.map((p) => (
+              <button key={p.id} type="button" className={seg(platform === p.id)} onClick={() => pickPlatform(p.id)}>
+                {p.label}
+                <span className="ml-1 hidden font-mono text-[10px] font-medium opacity-70 lg:inline">{p.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <label>
             <span className={labelClass}>User</span>
             <input className={inputClass} value={identity.user} onChange={(e) => setId("user", e.target.value)} />
           </label>
-          <label>
-            <span className={labelClass}>Host</span>
-            <input className={inputClass} value={identity.host} onChange={(e) => setId("host", e.target.value)} />
-          </label>
+          {!isWindows && (
+            <label>
+              <span className={labelClass}>Host</span>
+              <input className={inputClass} value={identity.host} onChange={(e) => setId("host", e.target.value)} />
+            </label>
+          )}
           <label>
             <span className={labelClass}>Folder</span>
             <input className={inputClass} value={identity.dir} onChange={(e) => setId("dir", e.target.value)} />
           </label>
           <label>
             <span className={labelClass}>Prompt</span>
-            <input className={inputClass} value={identity.symbol} maxLength={2} onChange={(e) => setId("symbol", e.target.value)} />
+            <input className={inputClass} value={symbol} maxLength={2} onChange={(e) => setSymbol(e.target.value)} />
           </label>
         </div>
 
@@ -123,7 +148,7 @@ export function TerminalImageModal({ open, onClose, initialOutput, onAdd }: Term
           <textarea
             rows={2}
             className={`${inputClass} resize-y`}
-            placeholder={"javac Main.java\njava Main"}
+            placeholder={placeholderCmds}
             value={commands}
             onChange={(e) => setCommands(e.target.value)}
             spellCheck={false}
