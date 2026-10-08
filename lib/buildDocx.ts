@@ -23,6 +23,7 @@ import {
 } from "docx";
 import { toDocxFontName } from "./fonts";
 import { CONTENT_WIDTH_MM } from "./types";
+import { resolveHeaderBorder } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -35,8 +36,24 @@ import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 const A4_WIDTH_PX = 794; // 210mm at 96dpi — matches the on-screen .a4-page width
 const A4_HEIGHT_PX = 1123; // 297mm at 96dpi
 
-const BORDER = { style: BorderStyle.SINGLE, size: 4, color: "111827" } as const;
-const CELL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
+const DOCX_BORDER_STYLE = {
+  solid: BorderStyle.SINGLE,
+  double: BorderStyle.DOUBLE,
+  dashed: BorderStyle.DASHED,
+  dotted: BorderStyle.DOTTED,
+  none: BorderStyle.NONE,
+} as const;
+
+function headerCellBorders(layout: RecordState["headerLayout"]) {
+  const b = resolveHeaderBorder(layout);
+  // docx border size is in eighths of a point; CSS px -> pt is x0.75.
+  const side = {
+    style: DOCX_BORDER_STYLE[b.style],
+    size: b.style === "none" ? 0 : Math.max(2, Math.round(b.width * 0.75 * 8)),
+    color: b.color.replace("#", ""),
+  };
+  return { top: side, bottom: side, left: side, right: side };
+}
 const PAGE_BORDER = { style: BorderStyle.SINGLE, size: 4, color: "111827" } as const;
 // 8mm inset from the page edge, matching `.a4-border`'s `top/right/bottom/left: 8mm`.
 const PAGE_BORDER_SPACE_PT = Math.round(8 * (72 / 25.4));
@@ -149,6 +166,7 @@ function headerTable(record: RecordState, font: string): Table {
   // drag-resize and the Settings modal's default both read and write.
   const widthPct = Math.min(100, (record.headerLayout.width / CONTENT_WIDTH_MM) * 100);
   const rowHeightTwips = convertMillimetersToTwip(record.headerLayout.height);
+  const cellBorders = headerCellBorders(record.headerLayout);
 
   return new Table({
     width: { size: widthPct, type: WidthType.PERCENTAGE },
@@ -158,7 +176,7 @@ function headerTable(record: RecordState, font: string): Table {
         children: [
           new TableCell({
             width: { size: 28, type: WidthType.PERCENTAGE },
-            borders: CELL_BORDERS,
+            borders: cellBorders,
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
             children: [
               new Paragraph({
@@ -178,7 +196,7 @@ function headerTable(record: RecordState, font: string): Table {
           }),
           new TableCell({
             width: { size: 72, type: WidthType.PERCENTAGE },
-            borders: CELL_BORDERS,
+            borders: cellBorders,
             verticalAlign: "center",
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
             children: [

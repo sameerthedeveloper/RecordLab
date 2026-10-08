@@ -74,11 +74,11 @@ export const PRINT_CSS = `
   .record-header {
     width: 100%;
     border-collapse: collapse;
-    border: 1px solid #111827;
+    border: var(--header-border, 1px solid #111827);
     font-family: Arial, sans-serif;
   }
   .record-header td {
-    border: 1px solid #111827;
+    border: var(--header-border, 1px solid #111827);
   }
   .record-meta {
     width: 28%;
@@ -95,7 +95,7 @@ export const PRINT_CSS = `
   }
   .record-meta-divider {
     margin: 5px -10px;
-    border-top: 1px solid #111827;
+    border-top: var(--header-border, 1px solid #111827);
   }
   .record-title {
     width: 72%;

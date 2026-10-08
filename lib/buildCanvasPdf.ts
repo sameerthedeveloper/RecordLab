@@ -1,5 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
+import { resolveHeaderBorder } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -37,6 +38,8 @@ interface PdfKitDoc {
   fillColor(color: string, opacity?: number): PdfKitDoc;
   strokeColor(color: string): PdfKitDoc;
   lineWidth(width: number): PdfKitDoc;
+  lineCap(cap: "butt" | "round" | "square"): PdfKitDoc;
+  dash(length: number, options?: { space?: number; phase?: number }): PdfKitDoc;
   rect(x: number, y: number, w: number, h: number): PdfKitDoc;
   moveTo(x: number, y: number): PdfKitDoc;
   lineTo(x: number, y: number): PdfKitDoc;
@@ -139,6 +142,8 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
       }
 
       /** Draws the header at its draggable/resizable layout (record.headerLayout, in mm) — see DraggableHeaderTable.tsx. */
+      const double = (style: string) => style === "double";
+
       function drawHeaderTable(): void {
         const layout = record.headerLayout;
         const boxX = MARGIN_LEFT + mm(layout.x);
@@ -148,13 +153,23 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         const leftW = boxW * 0.28;
         const rightW = boxW - leftW;
 
-        doc.save();
-        doc.lineWidth(1).strokeColor(INK);
-        doc.rect(boxX, boxY, boxW, boxH).stroke();
-        doc.moveTo(boxX + leftW, boxY).lineTo(boxX + leftW, boxY + boxH).stroke();
+        const border = resolveHeaderBorder(layout);
         const dividerY = boxY + boxH / 2;
-        doc.moveTo(boxX + 8, dividerY).lineTo(boxX + leftW - 8, dividerY).stroke();
-        doc.restore();
+        if (border.style !== "none") {
+          const lw = border.width * PX_TO_PT;
+          doc.save();
+          doc.strokeColor(border.color).lineWidth(double(border.style) ? lw / 3 : lw);
+          if (border.style === "dashed") doc.dash(lw * 4, { space: lw * 3 });
+          if (border.style === "dotted") doc.lineCap("round").dash(0.01, { space: lw * 2 });
+          // A double rule is two thin strokes straddling the line, with a gap of one stroke.
+          const offsets = double(border.style) ? [-lw / 3, lw / 3] : [0];
+          for (const o of offsets) {
+            doc.rect(boxX - o, boxY - o, boxW + o * 2, boxH + o * 2).stroke();
+            doc.moveTo(boxX + leftW + o, boxY).lineTo(boxX + leftW + o, boxY + boxH).stroke();
+            doc.moveTo(boxX + 8, dividerY + o).lineTo(boxX + leftW - 8, dividerY + o).stroke();
+          }
+          doc.restore();
+        }
 
         doc.fillColor(INK);
         doc.font(BOLD_FONT).fontSize(10);

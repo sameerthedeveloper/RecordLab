@@ -183,12 +183,12 @@ body {
 .record-header {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid #111827;
+  border: var(--header-border, 1px solid #111827);
   font-family: var(--doc-font, Arial, sans-serif);
 }
 
 .record-header td {
-  border: 1px solid #111827;
+  border: var(--header-border, 1px solid #111827);
 }
 
 .record-meta {
@@ -209,7 +209,7 @@ body {
 
 .record-meta-divider {
   margin: 5px -10px;
-  border-top: 1px solid #111827;
+  border-top: var(--header-border, 1px solid #111827);
 }
 
 .record-title {

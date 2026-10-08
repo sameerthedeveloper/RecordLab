@@ -20,6 +20,38 @@ export interface HeaderLayout {
   y: number;
   width: number;
   height: number;
+  /** Title-table border; optional so records saved before this existed fall back to the default. */
+  borderStyle?: HeaderBorderStyle;
+  /** CSS px (0.5–4). */
+  borderWidth?: number;
+  borderColor?: string;
+}
+
+export type HeaderBorderStyle = "solid" | "double" | "dashed" | "dotted" | "none";
+
+export interface HeaderBorder {
+  style: HeaderBorderStyle;
+  width: number;
+  color: string;
+}
+
+export const DEFAULT_HEADER_BORDER: HeaderBorder = { style: "solid", width: 1, color: "#111827" };
+export const HEADER_BORDER_MIN_WIDTH = 0.5;
+export const HEADER_BORDER_MAX_WIDTH = 4;
+
+/** Border with defaults filled in. Double lines need room for both strokes, so they never go thinner than 3px. */
+export function resolveHeaderBorder(layout: Partial<HeaderLayout> | undefined): HeaderBorder {
+  const style = layout?.borderStyle ?? DEFAULT_HEADER_BORDER.style;
+  const raw = Number(layout?.borderWidth ?? DEFAULT_HEADER_BORDER.width);
+  const width = Math.min(HEADER_BORDER_MAX_WIDTH, Math.max(HEADER_BORDER_MIN_WIDTH, Number.isFinite(raw) ? raw : 1));
+  const color = /^#[0-9a-fA-F]{6}$/.test(layout?.borderColor ?? "") ? (layout!.borderColor as string) : DEFAULT_HEADER_BORDER.color;
+  return { style, width: style === "double" ? Math.max(3, width) : width, color };
+}
+
+/** Value for the `--header-border` custom property that `.record-header` borders read. */
+export function headerBorderCssValue(layout: Partial<HeaderLayout> | undefined): string {
+  const b = resolveHeaderBorder(layout);
+  return b.style === "none" ? "none" : `${b.width}px ${b.style} ${b.color}`;
 }
 
 export interface RecordState {

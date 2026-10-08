@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Move } from "lucide-react";
 import { CONTENT_HEIGHT_MM, CONTENT_WIDTH_MM } from "@/lib/types";
+import { headerBorderCssValue } from "@/lib/types";
 import type { HeaderLayout, RecordState } from "@/lib/types";
 
 export const MIN_WIDTH_MM = 40;
@@ -116,7 +117,10 @@ export function DraggableHeaderTable({ record, layout, onFieldChange }: Draggabl
         <Move className="h-3 w-3" strokeWidth={2.5} />
       </button>
 
-      <table className="record-header" style={{ height: "100%" }}>
+      <table
+        className="record-header"
+        style={{ height: "100%", ["--header-border" as string]: headerBorderCssValue(layout) }}
+      >
         <tbody>
           <tr>
             <td className="record-meta">

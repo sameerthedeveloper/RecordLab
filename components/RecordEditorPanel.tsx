@@ -6,6 +6,8 @@ import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import { TerminalImageModal } from "./TerminalImageModal";
+import { HeaderBorderControls } from "./HeaderBorderControls";
+import { resolveHeaderBorder } from "@/lib/types";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
 
@@ -341,6 +343,22 @@ export function RecordEditorPanel({
                   onChange={(e) => onFieldChange("title", e.target.value)}
                 />
               </div>
+
+              <details className="group rounded-xl border border-line bg-paper/60 px-3 py-2">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-soft">
+                  Title table border
+                  <span className="text-[11px] font-medium capitalize text-ink-soft/60">
+                    {resolveHeaderBorder(record.headerLayout).style}
+                  </span>
+                </summary>
+                <div className="pt-3">
+                  <HeaderBorderControls
+                    idPrefix="record"
+                    layout={record.headerLayout}
+                    onChange={(next) => onFieldChange("headerLayout", next)}
+                  />
+                </div>
+              </details>
             </div>
           </EditorSection>
         </div>

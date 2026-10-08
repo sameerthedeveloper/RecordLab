@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Settings as SettingsIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM, MIN_WIDTH_MM } from "./DraggableHeaderTable";
+import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { CONTENT_WIDTH_MM } from "@/lib/types";
 import type { AppSettings } from "@/lib/settings";
@@ -74,6 +75,16 @@ export function SettingsModal({ open, settings, onClose, onSave }: SettingsModal
           Fills in automatically on new records — the Record Details panel can still override it for a one-off
           record.
         </p>
+      </section>
+
+      <section className="border-t border-line pt-5">
+        <h3 className="mb-3 font-serif text-sm font-bold text-ink">Title table border</h3>
+        <HeaderBorderControls
+          idPrefix="settings"
+          layout={draft.headerLayout}
+          onChange={(headerLayout) => setDraft({ ...draft, headerLayout })}
+        />
+        <p className="mt-1.5 text-xs text-ink-soft/70">Default for new records. Each record can override it under Record details.</p>
       </section>
 
       <section className="border-t border-line pt-5">
