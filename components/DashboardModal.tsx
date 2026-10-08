@@ -19,7 +19,8 @@ import { FileCard, FileRow, FileThumb, relativeTime } from "./CloudFileViews";
 import { DriveDetails } from "./DriveDetails";
 import { deleteDocument, renameDocument, watchUserDocuments } from "@/lib/firestoreService";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
-import { signInWithGoogle, useAuthUser } from "@/lib/authService";
+import { useAuthUser } from "@/lib/authService";
+import { AuthModal } from "./AuthModal";
 import { track } from "@/lib/analytics";
 
 interface DashboardModalProps {
@@ -60,7 +61,7 @@ export function DashboardModal({
 }: DashboardModalProps) {
   const user = useAuthUser();
   const [documents, setDocuments] = useState<CloudDocument[] | null>(null);
-  const [signingIn, setSigningIn] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<View>("grid");
   const [sort, setSort] = useState<Sort>("modified");
@@ -140,18 +141,6 @@ export function DashboardModal({
   const selected = documents?.find((d) => d.id === selectedId) ?? null;
 
   if (!open) return null;
-
-  async function handleSignIn() {
-    setSigningIn(true);
-    try {
-      await signInWithGoogle();
-    } catch (err) {
-      console.error("Google sign-in failed:", err);
-      onToast("Unable to sign in with Google.");
-    } finally {
-      setSigningIn(false);
-    }
-  }
 
   function handleLoad(doc: CloudDocument) {
     onLoad(doc.data);
@@ -297,13 +286,13 @@ export function DashboardModal({
                 </p>
                 <button
                   type="button"
-                  onClick={handleSignIn}
-                  disabled={signingIn}
-                  className="mt-1 flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-60"
+                  onClick={() => setAuthOpen(true)}
+                  className="mt-1 flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
                 >
                   <LogIn className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  {signingIn ? "Signing in…" : "Sign in with Google"}
+                  Sign in
                 </button>
+                <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onToast={onToast} />
               </div>
             )}
 
