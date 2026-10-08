@@ -23,7 +23,7 @@ import {
 } from "docx";
 import { toDocxFontName } from "./fonts";
 import { CONTENT_WIDTH_MM } from "./types";
-import { resolveHeaderBorder } from "./types";
+import { resolveHeaderBorder, resolvePageBorder, PAGE_BORDER_SIDES } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -54,9 +54,32 @@ function headerCellBorders(layout: RecordState["headerLayout"]) {
   };
   return { top: side, bottom: side, left: side, right: side };
 }
-const PAGE_BORDER = { style: BorderStyle.SINGLE, size: 4, color: "111827" } as const;
-// 8mm inset from the page edge, matching `.a4-border`'s `top/right/bottom/left: 8mm`.
-const PAGE_BORDER_SPACE_PT = Math.round(8 * (72 / 25.4));
+
+/** Word page borders: size is eighths of a point (2-96), space is points from the page edge (0-31). */
+function docxPageBorders(record: RecordState) {
+  const pb = resolvePageBorder(record.pageBorder);
+  const sides = PAGE_BORDER_SIDES.map((name) => {
+    const side = pb[name];
+    return {
+      name,
+      border: {
+        style: DOCX_BORDER_STYLE[side.style],
+        size: side.style === "none" ? 0 : Math.min(96, Math.max(2, Math.round(side.width * 0.75 * 8))),
+        color: side.color.replace("#", ""),
+        space: Math.min(31, Math.round(pb.inset[name] * (72 / 25.4))),
+      },
+    };
+  });
+  if (sides.every((s) => s.border.size === 0)) return undefined;
+  const by = (n: string) => sides.find((s) => s.name === n)!.border;
+  return {
+    pageBorders: { display: PageBorderDisplay.ALL_PAGES, offsetFrom: PageBorderOffsetFrom.PAGE },
+    pageBorderTop: by("top"),
+    pageBorderRight: by("right"),
+    pageBorderBottom: by("bottom"),
+    pageBorderLeft: by("left"),
+  };
+}
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -278,18 +301,8 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
               left: convertMillimetersToTwip(17),
               right: convertMillimetersToTwip(17),
             },
-            // Mirrors the preview/PDF's `.a4-border` — a thin rule inset 8mm
-            // from the page edge, drawn independently of the content margin.
-            borders: {
-              pageBorders: {
-                display: PageBorderDisplay.ALL_PAGES,
-                offsetFrom: PageBorderOffsetFrom.PAGE,
-              },
-              pageBorderTop: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
-              pageBorderBottom: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
-              pageBorderLeft: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
-              pageBorderRight: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
-            },
+            // Mirrors the preview/PDF's `.a4-border`, drawn independently of the content margin.
+            borders: docxPageBorders(record),
           },
         },
         headers: { default: new Header({ children: headerChildren }) },

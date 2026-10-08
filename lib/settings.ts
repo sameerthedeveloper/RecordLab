@@ -1,5 +1,13 @@
 import { DEFAULT_DOC_FONT } from "./fonts";
-import { DEFAULT_HEADER_LAYOUT, DEFAULT_WATERMARK, type HeaderLayout, type WatermarkOptions } from "./types";
+import {
+  DEFAULT_HEADER_LAYOUT,
+  DEFAULT_PAGE_BORDER,
+  DEFAULT_WATERMARK,
+  resolvePageBorder,
+  type HeaderLayout,
+  type PageBorder,
+  type WatermarkOptions,
+} from "./types";
 
 /**
  * App-wide preferences, separate from any one record's .rlab.json payload —
@@ -15,6 +23,7 @@ export interface AppSettings {
   watermark: WatermarkOptions;
   font: string;
   headerLayout: HeaderLayout;
+  pageBorder: PageBorder;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -22,6 +31,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   watermark: DEFAULT_WATERMARK,
   font: DEFAULT_DOC_FONT,
   headerLayout: DEFAULT_HEADER_LAYOUT,
+  pageBorder: DEFAULT_PAGE_BORDER,
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -37,6 +47,7 @@ export function loadSettings(): AppSettings {
       ...parsed,
       watermark: { ...DEFAULT_WATERMARK, ...(parsed?.watermark ?? {}) },
       headerLayout: { ...DEFAULT_HEADER_LAYOUT, ...(parsed?.headerLayout ?? {}) },
+      pageBorder: resolvePageBorder(parsed?.pageBorder),
     };
   } catch {
     return DEFAULT_SETTINGS;

@@ -7,6 +7,8 @@ import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import { TerminalImageModal } from "./TerminalImageModal";
 import { HeaderBorderControls } from "./HeaderBorderControls";
+import { PageBorderControls } from "./PageBorderControls";
+import { AccordionSection } from "./AccordionSection";
 import { resolveHeaderBorder } from "@/lib/types";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
@@ -364,6 +366,14 @@ export function RecordEditorPanel({
         </div>
 
         <WatermarkOptionsSection watermark={watermark} onChange={onWatermarkChange} />
+
+        <AccordionSection title="PAGE BORDER">
+          <PageBorderControls
+            idPrefix="record-page-border"
+            value={record.pageBorder}
+            onChange={(next) => onFieldChange("pageBorder", next)}
+          />
+        </AccordionSection>
 
         <div data-onboarding="sections" className="space-y-3.5">
           <EditorSection id="aim" title="Aim" index="01" filled={filled.aim}>

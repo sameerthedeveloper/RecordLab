@@ -131,7 +131,7 @@ export function PreviewPanel({
           ) : (
             pages.map((page, idx) => (
               <div className="preview-page-group" key={idx}>
-                <A4Page page={page} rrn={rrn} watermark={watermark} />
+                <A4Page page={page} rrn={rrn} watermark={watermark} pageBorder={record.pageBorder} />
                 <span className="preview-page-caption">
                   PAGE {String(idx + 1).padStart(2, "0")} / {String(pages.length).padStart(2, "0")}
                 </span>
