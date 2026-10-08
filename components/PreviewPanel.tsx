@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { FileDown, Loader2 } from "lucide-react";
 import { A4Page } from "./A4Page";
@@ -51,6 +52,23 @@ export function PreviewPanel({
   visible,
 }: PreviewPanelProps) {
   const isCanvasEditMode = downloadFormat === "pdf" && pdfEngine === "canvas2pdf";
+  const areaRef = useRef<HTMLDivElement>(null);
+
+  // On phones the A4 page (210mm ≈ 794px) is scaled to the panel's width so a
+  // full page always fits and is as large as it can be. CSS reads --page-zoom.
+  useEffect(() => {
+    const area = areaRef.current;
+    if (!area) return;
+    const A4_PX = 793.7;
+    const fit = () => {
+      const zoom = Math.min(1, Math.max(0.3, (area.clientWidth - 28) / A4_PX));
+      area.style.setProperty("--page-zoom", zoom.toFixed(3));
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, []);
   return (
     <div
       id="previewPanel"
@@ -71,9 +89,13 @@ export function PreviewPanel({
               onClick={onSave}
               disabled={isSaving}
               data-onboarding="save-button"
-              className="flex items-center justify-center gap-1.5 bg-accent px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-accent-hover active:bg-accent-ink disabled:opacity-60"
+              className="flex items-center justify-center gap-1.5 bg-accent px-4 py-2 text-xs max-md:min-h-11 max-md:text-sm font-semibold text-white transition-all hover:bg-accent-hover active:bg-accent-ink disabled:opacity-60"
             >
-              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.5} /> : <FileDown className="h-3.5 w-3.5" strokeWidth={2.5} />}
+              {isSaving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.5} />
+              ) : (
+                <FileDown className="h-3.5 w-3.5" strokeWidth={2.5} />
+              )}
               <span>{isSaving ? "Generating..." : `Save ${FORMAT_LABELS[downloadFormat]}`}</span>
             </button>
             <label className="sr-only" htmlFor="downloadFormatSelect">
@@ -84,7 +106,7 @@ export function PreviewPanel({
               value={downloadFormat}
               onChange={(e) => onDownloadFormatChange(e.target.value as DownloadFormat)}
               disabled={isSaving}
-              className="h-full border-l border-line bg-white px-2 py-2 text-xs font-semibold text-ink-soft outline-none transition-colors hover:text-accent-ink disabled:opacity-60"
+              className="h-full border-l border-line bg-white px-2 py-2 text-xs max-md:min-h-11 font-semibold text-ink-soft outline-none transition-colors hover:text-accent-ink disabled:opacity-60"
             >
               <option value="pdf">PDF</option>
               <option value="docx">DOCX</option>
@@ -95,7 +117,7 @@ export function PreviewPanel({
         </div>
       </div>
 
-      <div className="preview-area min-h-0 flex-1">
+      <div ref={areaRef} className="preview-area min-h-0 flex-1">
         <div
           id="previewPages"
           className="preview-pages"

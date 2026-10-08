@@ -496,8 +496,32 @@ body {
      breaks that differ from desktop (and get baked into the mobile PDF). */
   .preview-pages .a4-page {
     transform-origin: top center;
-    zoom: 0.45;
+    /* --page-zoom is set by PreviewPanel so the page always fits the screen width. */
+    zoom: var(--page-zoom, 0.45);
   }
+
+  /* iOS Safari zooms the whole page when a field under 16px gets focus. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  .a4-page input,
+  .a4-page textarea {
+    font-size: inherit !important;
+  }
+}
+
+/* Taps respond at once (no double-tap-zoom delay) and don't flash grey. */
+button,
+a,
+label,
+select,
+summary,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* iOS 26 Liquid Glass tab bar: floats 8px above the home indicator. */
@@ -586,6 +610,35 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .drive-shell,
   .drive-backdrop {
+    animation: none;
+  }
+}
+
+
+/* =====================================================
+   BOTTOM SHEET (dialogs on phones)
+===================================================== */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .drive-shell {
+    animation: sheet-up 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .sheet-footer {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+
+@media (max-width: 639px) and (prefers-reduced-motion: reduce) {
+  .drive-shell {
     animation: none;
   }
 }

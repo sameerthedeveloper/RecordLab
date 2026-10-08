@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -60,6 +60,24 @@ export function Modal({
   const shellRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const [drag, setDrag] = useState<number | null>(null);
+  const dragStart = useRef(0);
+
+  // Phones: the dialog is a bottom sheet, and the grabber / header can be
+  // dragged down to dismiss it, like a native iOS sheet.
+  function onGrabStart(e: React.PointerEvent) {
+    dragStart.current = e.clientY;
+    setDrag(0);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function onGrabMove(e: React.PointerEvent) {
+    if (drag === null) return;
+    setDrag(Math.max(0, e.clientY - dragStart.current));
+  }
+  function onGrabEnd() {
+    if (drag !== null && drag > 110) onClose();
+    setDrag(null);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -86,7 +104,7 @@ export function Modal({
 
   return (
     <div
-      className="drive-backdrop fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-2 backdrop-blur-sm sm:p-5"
+      className="drive-backdrop fixed inset-0 z-50 flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center sm:p-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -97,10 +115,21 @@ export function Modal({
         role={role}
         aria-modal="true"
         aria-labelledby={`${id}-title`}
+        style={drag ? { transform: `translateY(${drag}px)`, transition: "none" } : undefined}
         className={`drive-shell flex w-full ${SIZE[size]} ${
-          fullHeight ? "h-full max-h-[760px]" : "max-h-[90vh]"
-        } flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-2xl outline-none`}
+          fullHeight ? "h-[92dvh] sm:h-full sm:max-h-[760px]" : "max-h-[92dvh] sm:max-h-[90vh]"
+        } flex-col overflow-hidden rounded-t-3xl border border-line bg-white shadow-2xl outline-none transition-transform sm:rounded-3xl`}
       >
+        <div
+          className="flex shrink-0 cursor-grab touch-none justify-center pb-1 pt-2 sm:hidden"
+          onPointerDown={onGrabStart}
+          onPointerMove={onGrabMove}
+          onPointerUp={onGrabEnd}
+          onPointerCancel={onGrabEnd}
+          aria-hidden
+        >
+          <span className="h-1.5 w-10 rounded-full bg-ink/20" />
+        </div>
         <header className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-2.5">
             {Icon && (
@@ -134,7 +163,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink/[0.06] text-ink-soft max-sm:h-10 max-sm:w-10 transition-colors hover:bg-ink/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
           >
             <X className="h-5 w-5" strokeWidth={2} />
           </button>
@@ -143,7 +172,7 @@ export function Modal({
         <div className={`min-h-0 flex-1 overflow-y-auto ${bodyClassName}`}>{children}</div>
 
         {footer && (
-          <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-paper px-4 py-3 sm:px-5">
+          <footer className="sheet-footer flex shrink-0 items-center justify-end gap-2 border-t border-line bg-paper px-4 py-3 max-sm:[&>button]:min-h-11 sm:px-5">
             {footer}
           </footer>
         )}

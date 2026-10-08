@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Eye, Files, Pencil } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -21,9 +22,34 @@ export function MobileNav({ activePanel, onSelect, onOpenFiles }: MobileNavProps
     { id: "files", label: "Files", Icon: Files, onPress: onOpenFiles },
   ];
   const activeIndex = activePanel === "inputs" ? 0 : 1;
+  const [typing, setTyping] = useState(false);
+
+  // Slide the bar away while a field is focused, so it never sits between the
+  // on-screen keyboard and what you are typing.
+  useEffect(() => {
+    const isField = (t: EventTarget | null) =>
+      t instanceof HTMLElement &&
+      t.matches(
+        'input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select, [contenteditable="true"]',
+      );
+    const onIn = (e: FocusEvent) => isField(e.target) && setTyping(true);
+    const onOut = () => setTyping(false);
+    document.addEventListener("focusin", onIn);
+    document.addEventListener("focusout", onOut);
+    return () => {
+      document.removeEventListener("focusin", onIn);
+      document.removeEventListener("focusout", onOut);
+    };
+  }, []);
 
   return (
-    <nav aria-label="Main" className="ios-tabbar fixed inset-x-0 bottom-0 z-50 px-4 md:hidden">
+    <nav
+      aria-label="Main"
+      aria-hidden={typing}
+      className={`ios-tabbar fixed inset-x-0 bottom-0 z-50 px-4 transition-[transform,opacity] duration-300 md:hidden ${
+        typing ? "pointer-events-none translate-y-full opacity-0" : ""
+      }`}
+    >
       <div className="liquid-glass relative mx-auto flex h-[62px] max-w-sm items-stretch rounded-full p-1">
         <span
           aria-hidden

@@ -39,7 +39,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
+  "w-full rounded-xl border border-line bg-white p-2.5 max-md:min-h-11 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
 export function RecordEditorPanel({
@@ -125,7 +125,7 @@ export function RecordEditorPanel({
   }
 
   const iconBtn =
-    "flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+    "flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft max-md:h-11 max-md:w-11 max-md:p-0 transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
   const menuItem =
     "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink";
 
@@ -233,7 +233,7 @@ export function RecordEditorPanel({
           data-onboarding="save-cloud"
           onClick={onSaveCloud}
           disabled={isSavingCloud}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs max-md:min-h-11 max-md:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Cloud className="h-4 w-4" strokeWidth={2.25} />
           {isSavingCloud ? "Saving…" : "Save to cloud"}
@@ -254,7 +254,7 @@ export function RecordEditorPanel({
               type="button"
               onClick={() => jumpTo(s.id)}
               aria-current={active ? "true" : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs max-md:min-h-9 max-md:px-3.5 font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
                 active ? "bg-accent-soft text-accent-ink" : "text-ink-soft hover:bg-ink/5"
               } ${off ? "opacity-50" : ""}`}
             >

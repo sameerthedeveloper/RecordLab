@@ -27,7 +27,7 @@ export function ToastViewport({ toast }: { toast: ToastState | null }) {
   if (!toast) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex justify-center px-3">
+    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] max-md:bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] flex justify-center px-3">
       <div className="pointer-events-auto flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs text-red-700 shadow-lg">
         <AlertCircle className="h-4 w-4 shrink-0" strokeWidth={2} />
         <span>{toast.message}</span>
