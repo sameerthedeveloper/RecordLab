@@ -15,6 +15,8 @@ import { buildRecordDocx } from "@/lib/buildDocx";
 import { saveDocument } from "@/lib/firestoreService";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
+import { useAuthUser } from "@/lib/authService";
+import { getWatermarkSettings, saveWatermarkSettings } from "@/lib/userProfile";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
@@ -66,6 +68,7 @@ export default function Home() {
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
   const [pdfEngine, setPdfEngine] = useState<PdfEngine>("html2pdf");
 
+  const authUser = useAuthUser();
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = usePaginatedPages(record);
@@ -79,12 +82,53 @@ export default function Home() {
     setSettings(s);
     setRecord((prev) => ({ ...prev, rrn: s.rrn, headerLayout: s.headerLayout }));
     setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
+
+    // A file opened from /dashboard is handed over through sessionStorage,
+    // since the editor's state lives in this page's memory only.
+    try {
+      const pending = sessionStorage.getItem("recordlab.pendingLoad");
+      if (pending) {
+        sessionStorage.removeItem("recordlab.pendingLoad");
+        const payload = JSON.parse(pending) as RlabPayload;
+        setRecord({ ...DEFAULT_RECORD, ...payload.record });
+        if (payload.watermark) setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
+        showToast("Loaded from cloud.");
+      }
+    } catch {}
   }, []);
+
+  // Once signed in, prefer the watermark default saved to this account (see
+  // lib/userProfile.ts) over whatever this browser's localStorage has, so the
+  // default follows the user across devices. Only overrides the watermark that's
+  // currently open if it still matches the pre-cloud default — never clobbers
+  // something the user already customized in this session.
+  useEffect(() => {
+    if (!authUser) return;
+    let cancelled = false;
+    getWatermarkSettings(authUser.uid).then((cloudWatermark) => {
+      if (cancelled || !cloudWatermark) return;
+      setSettings((prevSettings) => {
+        setWatermark((prev) =>
+          JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? cloudWatermark : prev
+        );
+        return { ...prevSettings, watermark: cloudWatermark };
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
 
   function handleSaveSettings(next: AppSettings) {
     const prevSettings = settings;
     setSettings(next);
     saveSettings(next);
+    if (authUser) {
+      saveWatermarkSettings(authUser.uid, next.watermark).catch(() => {
+        // Best-effort — the local save above already succeeded, so the
+        // setting isn't lost, just not synced to this account yet.
+      });
+    }
 
     // Only carry a changed default into the record/watermark that's
     // currently open if it hasn't been customized away from the old
@@ -346,6 +390,7 @@ export default function Home() {
           onOpenDashboard={() => setDashboardOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
           isSavingCloud={isSavingCloud}
+          pageCount={pages.length}
           visible={mobilePanel === "inputs"}
         />
 

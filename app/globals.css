@@ -499,3 +499,49 @@ body {
     zoom: 0.7;
   }
 }
+
+/* =====================================================
+   CLOUD FILES (Drive-style browser)
+===================================================== */
+@keyframes drive-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes drive-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.drive-shell {
+  animation: drive-rise 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.drive-backdrop {
+  animation: drive-fade 160ms ease-out;
+}
+
+.drive-thumb {
+  background-color: #fdfcf8;
+  background-image:
+    linear-gradient(to right, rgba(28, 43, 51, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 43, 51, 0.04) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drive-shell,
+  .drive-backdrop {
+    animation: none;
+  }
+}

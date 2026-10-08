@@ -129,3 +129,11 @@ export async function deleteDocument(docId: string): Promise<void> {
   await requireUser();
   await deleteDoc(doc(getDb(), COLLECTION, docId));
 }
+
+export async function renameDocument(docId: string, title: string): Promise<void> {
+  await requireUser();
+  await updateDoc(doc(getDb(), COLLECTION, docId), {
+    title: title.trim() || "Untitled",
+    updatedAt: serverTimestamp(),
+  });
+}

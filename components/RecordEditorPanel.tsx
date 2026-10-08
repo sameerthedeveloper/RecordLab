@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef } from "react";
-import { Cloud, Files, FolderOpen, ImagePlus, Save, Settings, Sparkles, X } from "lucide-react";
-import { AccordionSection } from "./AccordionSection";
+import { useEffect, useRef, useState } from "react";
+import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Sparkles, X } from "lucide-react";
+import { AutoTextarea } from "./AutoTextarea";
+import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
 
@@ -20,14 +21,26 @@ interface RecordEditorPanelProps {
   onOpenDashboard: () => void;
   onOpenSettings: () => void;
   isSavingCloud: boolean;
+  /** Pages the record currently paginates to. */
+  pageCount?: number;
   visible: boolean;
 }
+
+type SectionId = "details" | "aim" | "algorithm" | "code" | "output" | "review" | "result";
+
+const SECTIONS: { id: SectionId; label: string }[] = [
+  { id: "details", label: "Details" },
+  { id: "aim", label: "Aim" },
+  { id: "algorithm", label: "Algorithm" },
+  { id: "code", label: "Code" },
+  { id: "output", label: "Output" },
+  { id: "review", label: "Review" },
+  { id: "result", label: "Result" },
+];
 
 const inputClass =
   "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
-const textareaClass =
-  "w-full resize-none rounded-xl border border-line bg-white p-3 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
 
 export function RecordEditorPanel({
   record,
@@ -43,301 +56,431 @@ export function RecordEditorPanel({
   onOpenDashboard,
   onOpenSettings,
   isSavingCloud,
+  pageCount,
   visible,
 }: RecordEditorPanelProps) {
   const loadInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileMenuRef = useRef<HTMLDivElement>(null);
+  const [fileMenuOpen, setFileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionId>("details");
+
+  const filled: Record<SectionId, boolean> = {
+    details: Boolean(record.rrn.trim() || record.exercise_number.trim() || record.title.trim()),
+    aim: Boolean(record.aim.trim()),
+    algorithm: Boolean(record.algorithm.trim()),
+    code: Boolean(record.source_code.trim()),
+    output: Boolean(record.output.trim() || record.output_images.length),
+    review: record.review_questions_enabled && Boolean(record.review_questions.trim()),
+    result: Boolean(record.result.trim()),
+  };
+  const trackedIds = SECTIONS.filter((s) => s.id !== "review" || record.review_questions_enabled);
+  const doneCount = trackedIds.filter((s) => filled[s.id]).length;
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const nodes = SECTIONS.map((s) => root.querySelector<HTMLElement>(`#${s.id}`)).filter(
+      (n): n is HTMLElement => Boolean(n)
+    );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const top = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top) setActiveSection(top.target.id as SectionId);
+      },
+      { root, rootMargin: "0px 0px -70% 0px", threshold: 0 }
+    );
+    nodes.forEach((n) => observer.observe(n));
+    // Short final sections can't reach the observer's top band, so hand the
+    // highlight to the last chip once the list is scrolled to its end.
+    function onScroll() {
+      if (root && root.scrollTop + root.clientHeight >= root.scrollHeight - 4) setActiveSection("result");
+    }
+    root.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      root.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!fileMenuOpen) return;
+    function away(e: MouseEvent) {
+      if (fileMenuRef.current && !fileMenuRef.current.contains(e.target as Node)) setFileMenuOpen(false);
+    }
+    document.addEventListener("mousedown", away);
+    return () => document.removeEventListener("mousedown", away);
+  }, [fileMenuOpen]);
+
+  function jumpTo(id: SectionId) {
+    const container = scrollRef.current;
+    const target = document.getElementById(id);
+    if (!container || !target) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - 14;
+    container.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+    setActiveSection(id);
+  }
+
+  const iconBtn =
+    "flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+  const menuItem =
+    "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink";
 
   return (
     <div
       id="inputPanel"
-      className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex w-full md:w-[380px] lg:w-[400px] shrink-0 flex-col rounded-2xl border border-line bg-white shadow-sm overflow-hidden`}
+      className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex w-full md:w-[400px] lg:w-[440px] shrink-0 flex-col rounded-2xl border border-line bg-white shadow-sm overflow-hidden`}
     >
-      <div className="flex shrink-0 items-center justify-between border-b border-line p-4 bg-white">
-        <div data-onboarding="brand">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-            Lab Notebook
-          </p>
-          <h1 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">Record Lab</h1>
+      <div className="shrink-0 border-b border-line bg-white p-4 pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <div data-onboarding="brand" className="min-w-0">
+            <h1 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">Record Lab</h1>
+            <p className="truncate text-xs text-ink-soft/70">
+              {record.title.trim() || "Untitled record"}
+              {pageCount ? ` · ${pageCount} ${pageCount === 1 ? "page" : "pages"}` : ""}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              title="My files"
+              aria-label="My files"
+              onClick={onOpenDashboard}
+              className={iconBtn}
+            >
+              <Files className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              title="Generate with AI"
+              aria-label="Generate with AI"
+              data-onboarding="ai-generate"
+              onClick={onOpenAiModal}
+              className={iconBtn}
+            >
+              <Sparkles className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              title="Settings"
+              aria-label="Settings"
+              data-onboarding="open-settings"
+              onClick={onOpenSettings}
+              className={iconBtn}
+            >
+              <Settings className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <div ref={fileMenuRef} className="relative">
+              <button
+                type="button"
+                title="File"
+                aria-label="File menu"
+                aria-haspopup="menu"
+                aria-expanded={fileMenuOpen}
+                onClick={() => setFileMenuOpen((v) => !v)}
+                className={iconBtn}
+              >
+                <MoreHorizontal className="h-5 w-5" strokeWidth={2} />
+              </button>
+              {fileMenuOpen && (
+                <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-20 w-52 rounded-xl border border-line bg-white p-1 shadow-lg">
+                  <button
+                    role="menuitem"
+                    type="button"
+                    className={menuItem}
+                    onClick={() => {
+                      setFileMenuOpen(false);
+                      loadInputRef.current?.click();
+                    }}
+                  >
+                    <FolderOpen className="h-3.5 w-3.5" strokeWidth={2} /> Open a .rlab file
+                  </button>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    className={menuItem}
+                    onClick={() => {
+                      setFileMenuOpen(false);
+                      onSaveWork();
+                    }}
+                  >
+                    <Save className="h-3.5 w-3.5" strokeWidth={2} /> Download as .rlab
+                  </button>
+                </div>
+              )}
+            </div>
+            <input
+              ref={loadInputRef}
+              type="file"
+              accept="application/json,.json,.rlab"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onLoadWork(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            title="Load Work"
-            aria-label="Load Work"
-            onClick={() => loadInputRef.current?.click()}
-            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
-          >
-            <FolderOpen className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <input
-            ref={loadInputRef}
-            type="file"
-            accept="application/json,.json,.rlab"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onLoadWork(file);
-              e.target.value = "";
-            }}
-          />
-          <button
-            type="button"
-            title="Save Work"
-            aria-label="Save Work"
-            onClick={onSaveWork}
-            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
-          >
-            <Save className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            title="Save to Cloud"
-            aria-label="Save to Cloud"
-            data-onboarding="save-cloud"
-            onClick={onSaveCloud}
-            disabled={isSavingCloud}
-            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft disabled:cursor-wait disabled:opacity-60"
-          >
-            <Cloud className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            title="My Documents"
-            aria-label="My Documents"
-            onClick={onOpenDashboard}
-            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
-          >
-            <Files className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            title="Generate with AI"
-            aria-label="Generate with AI"
-            data-onboarding="ai-generate"
-            onClick={onOpenAiModal}
-            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
-          >
-            <Sparkles className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            title="Settings"
-            aria-label="Settings"
-            data-onboarding="open-settings"
-            onClick={onOpenSettings}
-            className="flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft"
-          >
-            <Settings className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </div>
+
+        <button
+          type="button"
+          title="Save to cloud"
+          data-onboarding="save-cloud"
+          onClick={onSaveCloud}
+          disabled={isSavingCloud}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <Cloud className="h-4 w-4" strokeWidth={2.25} />
+          {isSavingCloud ? "Saving…" : "Save to cloud"}
+        </button>
       </div>
 
-      <div className="editor-surface min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3.5">
-        <div data-onboarding="record-details" className="rounded-2xl border border-line bg-white p-4 shadow-sm">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-ink">Record Details</p>
-
-          <div className="space-y-3">
-            <div>
-              <label htmlFor="rrnInput" className={labelClass}>
-                RRN Number
-              </label>
-              <input
-                id="rrnInput"
-                type="text"
-                placeholder="Enter RRN number..."
-                className={inputClass}
-                value={record.rrn}
-                onChange={(e) => onFieldChange("rrn", e.target.value)}
+      {/* Section rail: sticky, shows what's filled, follows scroll */}
+      <nav
+        aria-label="Record sections"
+        className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-line bg-paper px-3 py-2"
+      >
+        {SECTIONS.map((s) => {
+          const off = s.id === "review" && !record.review_questions_enabled;
+          const active = activeSection === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => jumpTo(s.id)}
+              aria-current={active ? "true" : undefined}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                active ? "bg-accent-soft text-accent-ink" : "text-ink-soft hover:bg-ink/5"
+              } ${off ? "opacity-50" : ""}`}
+            >
+              <span
+                aria-hidden
+                className={`h-1.5 w-1.5 rounded-full ${
+                  filled[s.id] ? "bg-emerald-600" : off ? "bg-transparent ring-1 ring-ink-soft/40" : "bg-ink-soft/25"
+                }`}
               />
-            </div>
+              {s.label}
+            </button>
+          );
+        })}
+        <span className="ml-auto shrink-0 pl-2 text-[11px] text-ink-soft/70">
+          {doneCount}/{trackedIds.length}
+        </span>
+      </nav>
 
-            <div>
-              <label htmlFor="exInput" className={labelClass}>
-                Exercise Number
-              </label>
-              <input
-                id="exInput"
-                type="text"
-                placeholder="Ex : 2"
-                className={inputClass}
-                value={record.exercise_number}
-                onChange={(e) => onFieldChange("exercise_number", e.target.value)}
-              />
-            </div>
+      <div ref={scrollRef} className="editor-surface min-h-0 flex-1 space-y-3.5 overflow-y-auto p-3.5">
+        <div data-onboarding="record-details">
+          <EditorSection id="details" title="Record details" filled={filled.details}>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="rrnInput" className={labelClass}>
+                    RRN
+                  </label>
+                  <input
+                    id="rrnInput"
+                    type="text"
+                    placeholder="Your register number"
+                    className={inputClass}
+                    value={record.rrn}
+                    onChange={(e) => onFieldChange("rrn", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="exInput" className={labelClass}>
+                    Exercise
+                  </label>
+                  <input
+                    id="exInput"
+                    type="text"
+                    placeholder="Ex: 2"
+                    className={inputClass}
+                    value={record.exercise_number}
+                    onChange={(e) => onFieldChange("exercise_number", e.target.value)}
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label htmlFor="dateInput" className={labelClass}>
-                Date
-              </label>
-              <input
-                id="dateInput"
-                type="date"
-                className={inputClass}
-                value={record.date}
-                onChange={(e) => onFieldChange("date", e.target.value)}
-              />
-            </div>
+              <div>
+                <label htmlFor="dateInput" className={labelClass}>
+                  Date
+                </label>
+                <input
+                  id="dateInput"
+                  type="date"
+                  className={inputClass}
+                  value={record.date}
+                  onChange={(e) => onFieldChange("date", e.target.value)}
+                />
+              </div>
 
-            <div>
-              <label htmlFor="titleInput" className={labelClass}>
-                Experiment Title
-              </label>
-              <input
-                id="titleInput"
-                type="text"
-                placeholder="Enter experiment title..."
-                className={inputClass}
-                value={record.title}
-                onChange={(e) => onFieldChange("title", e.target.value)}
-              />
+              <div>
+                <label htmlFor="titleInput" className={labelClass}>
+                  Experiment title
+                </label>
+                <input
+                  id="titleInput"
+                  type="text"
+                  placeholder="Binary search using recursion"
+                  className={inputClass}
+                  value={record.title}
+                  onChange={(e) => onFieldChange("title", e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          </EditorSection>
         </div>
 
         <WatermarkOptionsSection watermark={watermark} onChange={onWatermarkChange} />
 
-        <div data-onboarding="sections">
-          <AccordionSection title="AIM" index="01" defaultOpen>
+        <div data-onboarding="sections" className="space-y-3.5">
+          <EditorSection id="aim" title="Aim" index="01" filled={filled.aim}>
             <label htmlFor="aimInput" className="sr-only">
               Aim
             </label>
-            <textarea
+            <AutoTextarea
               id="aimInput"
-              rows={8}
-              placeholder="Enter the aim of the experiment..."
-              className={textareaClass}
+              minRows={4}
+              placeholder="State what this experiment sets out to do."
               value={record.aim}
-              onChange={(e) => onFieldChange("aim", e.target.value)}
+              onChange={(v) => onFieldChange("aim", v)}
             />
-          </AccordionSection>
-        </div>
+          </EditorSection>
 
-        <AccordionSection title="ALGORITHM" index="02">
-          <label htmlFor="algorithmInput" className="sr-only">
-            Algorithm
-          </label>
-          <textarea
-            id="algorithmInput"
-            rows={10}
-            placeholder="Enter the algorithm..."
-            className={textareaClass}
-            value={record.algorithm}
-            onChange={(e) => onFieldChange("algorithm", e.target.value)}
-          />
-        </AccordionSection>
-
-        <AccordionSection title="SOURCE CODE" index="03">
-          <label htmlFor="programInput" className="sr-only">
-            Source Code
-          </label>
-          <textarea
-            id="programInput"
-            rows={10}
-            placeholder="Enter program / source code..."
-            className="w-full resize-none rounded-xl border border-line bg-[#fdfcf8] p-3 font-mono text-xs leading-relaxed text-ink outline-none transition-all focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50"
-            value={record.source_code}
-            onChange={(e) => onFieldChange("source_code", e.target.value)}
-          />
-        </AccordionSection>
-
-        <AccordionSection title="OUTPUT" index="04">
-          <label htmlFor="outputInput" className={labelClass}>
-            Output Text
-          </label>
-          <textarea
-            id="outputInput"
-            rows={5}
-            placeholder="Enter optional output text..."
-            className={`mb-3 ${textareaClass}`}
-            value={record.output}
-            onChange={(e) => onFieldChange("output", e.target.value)}
-          />
-
-          <div className="image-upload-area">
-            <label
-              htmlFor="outputImagesInput"
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-[#fdfcf8] p-2.5 text-xs font-semibold text-ink-soft transition-all hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent-ink"
-            >
-              <ImagePlus className="h-4 w-4" strokeWidth={2} />
-              <span>Add Output Images</span>
-              <input
-                id="outputImagesInput"
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files) onImageUpload(e.target.files);
-                  e.target.value = "";
-                }}
-              />
+          <EditorSection id="algorithm" title="Algorithm" index="02" filled={filled.algorithm}>
+            <label htmlFor="algorithmInput" className="sr-only">
+              Algorithm
             </label>
+            <AutoTextarea
+              id="algorithmInput"
+              minRows={6}
+              placeholder="Write the steps, one per line."
+              value={record.algorithm}
+              onChange={(v) => onFieldChange("algorithm", v)}
+            />
+          </EditorSection>
 
-            <div className="uploaded-images mt-2.5">
-              {record.output_images.map((image: OutputImage) => (
-                <div className="uploaded-image-card" key={image.id}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image.src} alt={image.name} />
-                  <button
-                    type="button"
-                    className="remove-image-button"
-                    aria-label={`Remove output image ${image.name}`}
-                    onClick={() => onRemoveImage(image.id)}
-                  >
-                    <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="REVIEW QUESTIONS" index="05">
-          <div className="mb-2.5 flex items-center justify-between">
-            <label htmlFor="reviewInput" className="text-xs font-semibold text-ink-soft">
-              Review Questions
+          <EditorSection id="code" title="Source code" index="03" filled={filled.code}>
+            <label htmlFor="programInput" className="sr-only">
+              Source code
             </label>
-            <label htmlFor="reviewEnabledToggle" className="flex cursor-pointer items-center gap-2">
-              <span className="text-xs font-medium text-ink-soft/80">
-                {record.review_questions_enabled ? "Included in record" : "Excluded from record"}
-              </span>
-              <span className="relative inline-flex">
+            <AutoTextarea
+              id="programInput"
+              code
+              minRows={8}
+              maxRows={24}
+              placeholder="Paste or type your program."
+              value={record.source_code}
+              onChange={(v) => onFieldChange("source_code", v)}
+            />
+          </EditorSection>
+
+          <EditorSection id="output" title="Output" index="04" filled={filled.output}>
+            <label htmlFor="outputInput" className={labelClass}>
+              Output text
+            </label>
+            <AutoTextarea
+              id="outputInput"
+              minRows={3}
+              placeholder="Paste what the program printed. Optional."
+              value={record.output}
+              onChange={(v) => onFieldChange("output", v)}
+            />
+
+            <div className="image-upload-area mt-2">
+              <label
+                htmlFor="outputImagesInput"
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-[#fdfcf8] p-2.5 text-xs font-semibold text-ink-soft transition-all hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent-ink"
+              >
+                <ImagePlus className="h-4 w-4" strokeWidth={2} />
+                <span>Add output screenshots</span>
                 <input
-                  id="reviewEnabledToggle"
-                  type="checkbox"
-                  className="peer sr-only"
-                  checked={record.review_questions_enabled}
-                  onChange={(e) => onFieldChange("review_questions_enabled", e.target.checked)}
+                  id="outputImagesInput"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) onImageUpload(e.target.files);
+                    e.target.value = "";
+                  }}
                 />
-                <span className="h-5 w-9 rounded-full bg-gray-200 transition-colors peer-checked:bg-accent" />
-                <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
-              </span>
-            </label>
-          </div>
-          <textarea
-            id="reviewInput"
-            rows={7}
-            placeholder="Enter review questions and answers..."
-            disabled={!record.review_questions_enabled}
-            className={`${textareaClass} ${!record.review_questions_enabled ? "opacity-50 cursor-not-allowed bg-gray-50" : ""}`}
-            value={record.review_questions}
-            onChange={(e) => onFieldChange("review_questions", e.target.value)}
-          />
-        </AccordionSection>
+              </label>
 
-        <AccordionSection title="RESULT" index="06">
-          <label htmlFor="resultInput" className="sr-only">
-            Result
-          </label>
-          <textarea
-            id="resultInput"
-            rows={6}
-            placeholder="Enter final result..."
-            className={textareaClass}
-            value={record.result}
-            onChange={(e) => onFieldChange("result", e.target.value)}
-          />
-        </AccordionSection>
+              <div className="uploaded-images mt-2.5">
+                {record.output_images.map((image: OutputImage) => (
+                  <div className="uploaded-image-card" key={image.id}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={image.src} alt={image.name} />
+                    <button
+                      type="button"
+                      className="remove-image-button"
+                      aria-label={`Remove output image ${image.name}`}
+                      onClick={() => onRemoveImage(image.id)}
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </EditorSection>
+
+          <EditorSection
+            id="review"
+            title="Review questions"
+            index="05"
+            filled={filled.review}
+            aside={
+              <label htmlFor="reviewEnabledToggle" className="flex cursor-pointer items-center gap-2">
+                <span className="text-xs font-medium text-ink-soft/80">
+                  {record.review_questions_enabled ? "In record" : "Left out"}
+                </span>
+                <span className="relative inline-flex">
+                  <input
+                    id="reviewEnabledToggle"
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={record.review_questions_enabled}
+                    onChange={(e) => onFieldChange("review_questions_enabled", e.target.checked)}
+                  />
+                  <span className="h-5 w-9 rounded-full bg-gray-200 transition-colors peer-checked:bg-accent peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent" />
+                  <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
+                </span>
+              </label>
+            }
+          >
+            <label htmlFor="reviewInput" className="sr-only">
+              Review questions
+            </label>
+            <AutoTextarea
+              id="reviewInput"
+              minRows={4}
+              disabled={!record.review_questions_enabled}
+              placeholder="Write each question with its answer."
+              value={record.review_questions}
+              onChange={(v) => onFieldChange("review_questions", v)}
+            />
+          </EditorSection>
+
+          <EditorSection id="result" title="Result" index="06" filled={filled.result}>
+            <label htmlFor="resultInput" className="sr-only">
+              Result
+            </label>
+            <AutoTextarea
+              id="resultInput"
+              minRows={3}
+              placeholder="Conclude in a sentence or two."
+              value={record.result}
+              onChange={(v) => onFieldChange("result", v)}
+            />
+          </EditorSection>
+        </div>
       </div>
     </div>
   );
