@@ -2,6 +2,7 @@
 
 import { FileText, MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CloudDocument } from "@/lib/firestoreService";
 
 export function stripHtml(html: string | undefined): string {
@@ -72,55 +73,104 @@ interface ItemActions {
   onDelete: () => void;
 }
 
+const MENU_W = 160;
+const MENU_H = 124;
+
+/**
+ * The menu is portalled to <body> with fixed positioning: file cards and the
+ * dialog body clip overflow, and later cards paint over an absolutely
+ * positioned menu, so an in-flow menu ended up behind its neighbours.
+ */
 function RowMenu({ onOpen, onRename, onDelete }: Pick<ItemActions, "onOpen" | "onRename" | "onDelete">) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const open = pos !== null;
+
+  function toggle() {
+    if (open) return setPos(null);
+    const r = buttonRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const below = r.bottom + 6 + MENU_H <= window.innerHeight;
+    setPos({
+      top: below ? r.bottom + 6 : Math.max(8, r.top - 6 - MENU_H),
+      left: Math.min(Math.max(8, r.right - MENU_W), window.innerWidth - MENU_W - 8),
+    });
+  }
 
   useEffect(() => {
     if (!open) return;
+    const close = () => setPos(null);
     function away(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!menuRef.current?.contains(t) && !buttonRef.current?.contains(t)) close();
+    }
+    function key(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close();
+        buttonRef.current?.focus();
+      }
     }
     document.addEventListener("mousedown", away);
-    return () => document.removeEventListener("mousedown", away);
+    document.addEventListener("keydown", key, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", key, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    };
   }, [open]);
 
   const item =
-    "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink";
+    "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink";
+  const run = (fn: () => void) => () => {
+    setPos(null);
+    fn();
+  };
 
   return (
-    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+    <div className="relative" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
       <button
+        ref={buttonRef}
         type="button"
         aria-label="More actions"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-7 w-7 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        onClick={toggle}
+        className="flex h-7 w-7 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent max-sm:h-9 max-sm:w-9"
       >
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
       </button>
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-8 z-20 w-40 rounded-xl border border-line bg-white p-1 shadow-lg"
-        >
-          <button role="menuitem" type="button" className={item} onClick={() => { setOpen(false); onOpen(); }}>
-            <FolderOpen className="h-3.5 w-3.5" strokeWidth={2} /> Open in editor
-          </button>
-          <button role="menuitem" type="button" className={item} onClick={() => { setOpen(false); onRename(); }}>
-            <Pencil className="h-3.5 w-3.5" strokeWidth={2} /> Rename
-          </button>
-          <button
-            role="menuitem"
-            type="button"
-            className={`${item} hover:!bg-red-50 hover:!text-red-600`}
-            onClick={() => { setOpen(false); onDelete(); }}
+      {pos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            style={{ top: pos.top, left: pos.left, width: MENU_W }}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className="fixed z-[70] rounded-xl border border-line bg-white p-1 shadow-xl"
           >
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} /> Delete
-          </button>
-        </div>
-      )}
+            <button role="menuitem" type="button" className={item} onClick={run(onOpen)}>
+              <FolderOpen className="h-3.5 w-3.5" strokeWidth={2} /> Open in editor
+            </button>
+            <button role="menuitem" type="button" className={item} onClick={run(onRename)}>
+              <Pencil className="h-3.5 w-3.5" strokeWidth={2} /> Rename
+            </button>
+            <button
+              role="menuitem"
+              type="button"
+              className={`${item} hover:!bg-red-50 hover:!text-red-600`}
+              onClick={run(onDelete)}
+            >
+              <Trash2 className="h-3.5 w-3.5" strokeWidth={2} /> Delete
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
