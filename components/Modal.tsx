@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -62,6 +63,7 @@ export function Modal({
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const [drag, setDrag] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
   const dragStart = useRef(0);
 
   // Phones: the dialog is a bottom sheet, and the grabber / header can be
@@ -79,6 +81,8 @@ export function Modal({
     if (drag !== null && drag > 110) onClose();
     setDrag(null);
   }
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -101,9 +105,11 @@ export function Modal({
     };
   }, [open, id]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // Portalled to <body>: a dialog rendered inside a panel with backdrop-filter (the Modern UI)
+  // would otherwise be positioned against that panel instead of the viewport.
+  return createPortal(
     <div
       className="drive-backdrop fixed inset-0 z-50 flex items-end justify-center ui-modal-backdrop sm:items-center sm:p-5"
       onMouseDown={(e) => {
@@ -178,7 +184,8 @@ export function Modal({
           </footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
