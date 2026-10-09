@@ -397,6 +397,17 @@ export default function Home() {
           pagebreak: { mode: ["css"] },
         })
         .from(pdfContent)
+        .toPdf()
+        .get("pdf")
+        .then((pdf) => {
+          // html2pdf slices one tall canvas into pages, so a fraction of a pixel of rounding over
+          // N x 297mm spills a blank page after the last real one. Drop anything beyond the
+          // A4 pages we actually rendered.
+          const realPages = pdfContent.querySelectorAll(".a4-page").length;
+          while (realPages > 0 && pdf.internal.getNumberOfPages() > realPages) {
+            pdf.deletePage(pdf.internal.getNumberOfPages());
+          }
+        })
         .save();
       track("export_pdf", { engine: "html2pdf" });
     } catch (error) {
