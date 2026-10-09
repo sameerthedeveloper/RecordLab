@@ -134,7 +134,7 @@ const steps = [
   { n: "03", t: "Export the fair copy", d: "Save a PDF, print directly, or save your work to finish later." },
 ];
 
-const TOTAL_PAGES = 8;
+const TOTAL_PAGES = 7;
 
 /* ------------------------------------------------------------------ */
 /* Interactive demos                                                  */
@@ -426,14 +426,7 @@ export function LandingPageClient() {
       // laid down on the desk.
       gsap
         .timeline({ defaults: { ease: "power2.out", duration: 0.6 } })
-        .from("[data-hero-text] > *", { opacity: 0, y: 16, stagger: 0.08 })
-        .from(
-          "[data-hero-mockup]",
-          { opacity: 0, y: 36, rotate: -8, duration: 0.8, ease: "back.out(1.5)" },
-          "-=0.35"
-        );
-
-      gsap.to("[data-float]", { y: -7, duration: 3, ease: "sine.inOut", repeat: -1, yoyo: true });
+        .from("[data-hero-text] > *", { opacity: 0, y: 16, stagger: 0.08 });
 
       // `<main>` (not the window) is the actual scroll container — it's
       // `fixed inset-0 overflow-y-auto` so the page itself never scrolls.
@@ -501,124 +494,53 @@ export function LandingPageClient() {
       </header>
 
       {/* ============ HERO ============ */}
-      <section
-        className="relative mx-auto grid max-w-[66rem] items-center gap-12 px-5 py-14 sm:py-20 md:grid-cols-[1.05fr_0.95fr]"
-      >
-        <div data-hero-text>
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b3261e]">
-            Skip the rough copy
-          </p>
-          <h1 className="mt-4 font-serif text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
-            Straight to the fair copy.
-          </h1>
-          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-soft">
-            Curated for Crescent CSE students
-          </p>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-ink-soft sm:text-lg">
-            Type the aim, algorithm, and code once. Record Lab lays it out on true A4
-            pages, watermarks your register number, and hands you the fair copy —
-            no rewriting it out by hand the night before.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-hover active:bg-accent-ink"
-            >
-              Start your fair copy
-              <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
-            </Link>
-            <a
-              href="#index"
-              className="border-b border-line pb-0.5 text-sm text-ink-soft transition-colors hover:border-accent hover:text-accent-ink"
-            >
-              See the index
-            </a>
-          </div>
-          <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-ink-soft">
-            {["Free, in your browser", "PDF + Word + print", "No sign-in needed"].map((t) => (
-              <li key={t} className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-accent" strokeWidth={3} />
-                {t}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Ruled-page mockup — the product's own output, drawn as a stack */}
-        <div data-hero-mockup className="relative mx-auto w-full max-w-[300px] sm:max-w-[340px]">
-          <div className="absolute inset-0 translate-x-3 translate-y-4 rotate-3 rounded-sm border border-line bg-white" />
-          <div
-            className="relative rotate-[-2deg] rounded-sm border border-line bg-white p-5 shadow-[0_18px_40px_-16px_rgba(28,43,51,0.35)]"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(to bottom, transparent, transparent 26px, rgba(96,132,199,0.22) 27px)",
-              backgroundPosition: "0 38px",
-            }}
-          >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-8 w-px bg-[#c0392b]/45"
-            />
-            <span
-              aria-hidden
-              className="pointer-events-none absolute right-3 top-8 select-none whitespace-nowrap font-serif text-3xl font-bold text-ink/[0.05]"
-              style={{ transform: "rotate(-28deg)" }}
-            >
-              24CS118
-            </span>
-            <div className="pl-6">
-              <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">
-                Aim
+      <section aria-label="Record Lab" className="relative overflow-hidden bg-paper">
+        <div aria-hidden className="lp-grain pointer-events-none absolute inset-x-0 top-0 h-[34rem] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+        <ContainerScroll
+          scrollContainer={rootRef}
+          titleComponent={
+            <div data-hero-text className="relative mx-auto max-w-3xl px-2">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b3261e]">
+                Skip the rough copy
               </p>
-              <p className="mt-1 text-[11.5px] leading-[1.7] text-ink/80">
-                To construct a binary search tree and perform insertion, deletion,
-                and inorder traversal on it.
+              <h1 className="mt-4 font-serif text-4xl font-bold leading-[1.06] tracking-tight text-ink sm:text-6xl">
+                Straight to the fair copy.
+              </h1>
+              <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-soft">
+                Curated for Crescent CSE students
               </p>
-              <p className="mt-3 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">
-                Algorithm
+              <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-ink-soft sm:text-lg">
+                Type the aim, algorithm, and code once. Record Lab lays it out on true A4 pages, watermarks your
+                register number, and hands you the fair copy. No rewriting it out by hand the night before.
               </p>
-              <p className="mt-1 font-mono text-[10.5px] leading-[1.8] text-ink/70">
-                1. Start&nbsp;&nbsp;2. Read the value&nbsp;&nbsp;3. If root is
-                empty, insert&nbsp;&nbsp;4. Else recurse left or right
-              </p>
-              <p className="mt-3 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">
-                Result
-              </p>
-              <p className="mt-1 text-[11.5px] leading-[1.7] text-ink/80">
-                Thus the program was executed and the output verified.
-              </p>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-hover active:bg-accent-ink"
+                >
+                  Start your fair copy
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+                </Link>
+                <a
+                  href="#index"
+                  className="border-b border-line pb-0.5 text-sm text-ink-soft transition-colors hover:border-accent hover:text-accent-ink"
+                >
+                  See the index
+                </a>
+              </div>
+              <ul className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium text-ink-soft">
+                {["Free, in your browser", "PDF + Word + print", "No sign-in needed"].map((t) => (
+                  <li key={t} className="flex items-center gap-1.5">
+                    <Check className="h-3.5 w-3.5 text-accent" strokeWidth={3} />
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="mt-4 border-t border-line pt-2 pl-6 text-right font-mono text-[9px] text-ink-soft/60">
-              Page 1 of 3
-            </p>
-          </div>
-
-          {/* output screenshot, the way Record Lab generates it */}
-          <div
-            data-float
-            aria-hidden
-            className="absolute -bottom-9 -left-4 w-[62%] rotate-[3deg] overflow-hidden rounded-md bg-[#1e1e1e] font-mono text-[8.5px] leading-[1.65] text-[#ececec] shadow-[0_18px_34px_-12px_rgba(0,0,0,0.6)] sm:-left-10"
-          >
-            <div className="flex gap-1 bg-[#2b2b2b] px-2 py-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#ff5f57]" />
-              <span className="h-1.5 w-1.5 rounded-full bg-[#febc2e]" />
-              <span className="h-1.5 w-1.5 rounded-full bg-[#28c840]" />
-            </div>
-            <div className="whitespace-pre px-2.5 py-2">
-              <div><span className="text-[#7be0a2]">student@lab-pc</span> <span className="text-[#6ea8fe]">bst</span> % python bst.py</div>
-              <div>Inorder: 10 20 30 40 50</div>
-              <div><span className="text-[#7be0a2]">student@lab-pc</span> <span className="text-[#6ea8fe]">bst</span> % <span className="lp-caret inline-block h-[1em] w-[0.5em] translate-y-[2px] bg-[#9a9a9a]" /></div>
-            </div>
-          </div>
-          <div
-            aria-hidden
-            className="absolute -right-3 -top-6 flex h-[74px] w-[74px] rotate-[10deg] items-center justify-center rounded-full border-2 border-dashed border-[#b3261e]/60 bg-paper/80 text-center font-mono text-[8.5px] font-bold uppercase leading-tight tracking-[0.08em] text-[#b3261e]/85 sm:-right-6"
-          >
-            Format
-            <br />
-            Verified
-          </div>
-        </div>
+          }
+        >
+          <AppMockup />
+        </ContainerScroll>
       </section>
 
       {/* ============ MARQUEE ============ */}
@@ -633,30 +555,11 @@ export function LandingPageClient() {
         </div>
       </div>
 
-      {/* ============ SCROLL REVEAL ============ */}
-      <section aria-label="The editor" className="overflow-hidden border-b border-line bg-paper">
-        <ContainerScroll
-          scrollContainer={rootRef}
-          titleComponent={
-            <>
-              <PageLabel n={2}>The editor</PageLabel>
-              <h2 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                Type on the left.
-                <br />
-                <span className="text-4xl font-bold leading-none md:text-[5.5rem]">Print on the right.</span>
-              </h2>
-            </>
-          }
-        >
-          <AppMockup />
-        </ContainerScroll>
-      </section>
-
       {/* ============ SEE IT ============ */}
       <section id="see-it" data-reveal-group className="lp-grain px-5 py-20 sm:py-24">
         <div className="mx-auto w-full max-w-5xl">
           <div data-reveal>
-            <PageLabel n={3}>See it</PageLabel>
+            <PageLabel n={2}>See it</PageLabel>
             <h2 className="mt-3 max-w-xl font-serif text-3xl font-bold tracking-tight sm:text-4xl">
               The fiddly parts, already handled.
             </h2>
@@ -712,7 +615,7 @@ export function LandingPageClient() {
       >
         <div className="mx-auto w-full max-w-5xl">
           <div data-reveal>
-            <PageLabel n={4}>Index</PageLabel>
+            <PageLabel n={3}>Index</PageLabel>
             <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">Index.</h2>
           </div>
 
@@ -754,7 +657,7 @@ export function LandingPageClient() {
       >
         <div className="mx-auto w-full max-w-5xl px-5">
           <div data-reveal>
-            <PageLabel n={5}>How it works</PageLabel>
+            <PageLabel n={4}>How it works</PageLabel>
             <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">
               Three steps, no formatting.
             </h2>
@@ -777,7 +680,7 @@ export function LandingPageClient() {
       <section id="faq" data-reveal-group className="border-t border-line bg-white px-5 py-20 sm:py-24">
         <div className="mx-auto w-full max-w-3xl">
           <div data-reveal>
-            <PageLabel n={6}>Questions</PageLabel>
+            <PageLabel n={5}>Questions</PageLabel>
             <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">Before you start.</h2>
           </div>
           <div className="mt-8 divide-y divide-line border-y border-line">
@@ -800,7 +703,7 @@ export function LandingPageClient() {
         className="flex flex-col items-center justify-center border-t border-line bg-white px-5 py-24 text-center"
       >
         <div data-reveal>
-          <PageLabel n={7}>Get started</PageLabel>
+          <PageLabel n={6}>Get started</PageLabel>
         </div>
         <FolderOpen data-reveal className="mx-auto mt-6 h-8 w-8 text-accent" strokeWidth={1.75} />
         <h2 data-reveal className="mx-auto mt-5 max-w-lg font-serif text-3xl font-bold tracking-tight sm:text-4xl">
@@ -826,7 +729,7 @@ export function LandingPageClient() {
       >
         <div className="mx-auto w-full max-w-5xl px-5 py-20">
           <div data-reveal>
-            <PageLabel n={8}>Credits</PageLabel>
+            <PageLabel n={7}>Credits</PageLabel>
             <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">Built by.</h2>
           </div>
 
