@@ -1,10 +1,9 @@
-import { pageBorderStyle, type PageBorder, type PageObject, type WatermarkOptions } from "@/lib/types";
+import type { PageObject, WatermarkOptions } from "@/lib/types";
 
 interface A4PageProps {
   page: PageObject;
   rrn: string;
   watermark: WatermarkOptions;
-  pageBorder?: PageBorder;
 }
 
 /**
@@ -15,8 +14,7 @@ interface A4PageProps {
  * rather than JSX. All user text within those fragments is escaped via
  * escapeHTML before this point.
  */
-export function A4Page({ page, rrn, watermark, pageBorder }: A4PageProps) {
-  const borderStyle = pageBorderStyle(pageBorder);
+export function A4Page({ page, rrn, watermark }: A4PageProps) {
   const watermarkStyle: React.CSSProperties = {
     fontFamily: watermark.font,
     fontSize: `${watermark.size}px`,
@@ -30,7 +28,7 @@ export function A4Page({ page, rrn, watermark, pageBorder }: A4PageProps) {
       <div className="watermark" style={watermarkStyle}>
         {rrn.trim()}
       </div>
-      <div className="a4-border" style={borderStyle} />
+      <div className="a4-border" />
       <div className="a4-content">
         <div className="a4-main-flow" dangerouslySetInnerHTML={{ __html: page.main }} />
         {page.result && (

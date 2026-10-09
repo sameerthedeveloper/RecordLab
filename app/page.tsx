@@ -12,7 +12,6 @@ import { ToastViewport, useToast } from "@/components/Toast";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
-import { resolvePageBorder } from "@/lib/types";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import type { RlabPayload } from "@/lib/firestoreService";
@@ -92,7 +91,7 @@ export default function Home() {
   useEffect(() => {
     const s = loadSettings();
     setSettings(s);
-    setRecord((prev) => ({ ...prev, rrn: s.rrn, headerLayout: s.headerLayout, pageBorder: s.pageBorder }));
+    setRecord((prev) => ({ ...prev, rrn: s.rrn, headerLayout: s.headerLayout }));
     setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
 
     // A file opened from /dashboard is handed over through sessionStorage,
@@ -154,10 +153,6 @@ export default function Home() {
         JSON.stringify(prev.headerLayout) === JSON.stringify(prevSettings.headerLayout)
           ? next.headerLayout
           : prev.headerLayout,
-      pageBorder:
-        JSON.stringify(resolvePageBorder(prev.pageBorder)) === JSON.stringify(resolvePageBorder(prevSettings.pageBorder))
-          ? next.pageBorder
-          : prev.pageBorder,
     }));
     setWatermark((prev) =>
       JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? next.watermark : prev
@@ -292,7 +287,7 @@ export default function Home() {
     if (!iframeDocument) return null;
 
     iframeDocument.open();
-    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font, record.pageBorder));
+    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font));
     iframeDocument.close();
     return iframeDocument;
   }

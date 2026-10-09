@@ -68,96 +68,6 @@ export interface RecordState {
   review_questions_enabled: boolean;
   result: string;
   headerLayout: HeaderLayout;
-  /** Optional so records saved before this existed fall back to the default rule. */
-  pageBorder?: PageBorder;
-}
-
-export interface PageBorderSide {
-  style: HeaderBorderStyle;
-  /** CSS px (0.5-6). */
-  width: number;
-  color: string;
-}
-
-/** The rule drawn around each A4 page: every side has its own line, the inset from the page edge is per side. */
-export interface PageBorder {
-  top: PageBorderSide;
-  right: PageBorderSide;
-  bottom: PageBorderSide;
-  left: PageBorderSide;
-  /** Distance from the page edge, mm, per side. */
-  inset: { top: number; right: number; bottom: number; left: number };
-  /** Corner radius, mm. Preview/print/canvas PDF only; Word page borders can't round corners. */
-  radius: number;
-}
-
-export type PageBorderSideName = "top" | "right" | "bottom" | "left";
-export const PAGE_BORDER_SIDES: PageBorderSideName[] = ["top", "right", "bottom", "left"];
-export const PAGE_BORDER_MIN_WIDTH = 0.5;
-export const PAGE_BORDER_MAX_WIDTH = 6;
-export const PAGE_BORDER_MAX_INSET_MM = 20;
-export const PAGE_BORDER_MAX_RADIUS_MM = 20;
-
-const DEFAULT_SIDE: PageBorderSide = { style: "solid", width: 1, color: "#111827" };
-
-export const DEFAULT_PAGE_BORDER: PageBorder = {
-  top: DEFAULT_SIDE,
-  right: DEFAULT_SIDE,
-  bottom: DEFAULT_SIDE,
-  left: DEFAULT_SIDE,
-  inset: { top: 8, right: 8, bottom: 8, left: 8 },
-  radius: 0,
-};
-
-const clampNum = (v: unknown, min: number, max: number, fallback: number) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
-};
-
-function resolveSide(side: Partial<PageBorderSide> | undefined): PageBorderSide {
-  const style = (["solid", "double", "dashed", "dotted", "none"] as const).includes(side?.style as HeaderBorderStyle)
-    ? (side!.style as HeaderBorderStyle)
-    : DEFAULT_SIDE.style;
-  const width = clampNum(side?.width, PAGE_BORDER_MIN_WIDTH, PAGE_BORDER_MAX_WIDTH, DEFAULT_SIDE.width);
-  const color = /^#[0-9a-fA-F]{6}$/.test(side?.color ?? "") ? (side!.color as string) : DEFAULT_SIDE.color;
-  return { style, width: style === "double" ? Math.max(3, width) : width, color };
-}
-
-/** Page border with every missing/invalid field defaulted, so older records and partial data are safe. */
-export function resolvePageBorder(pb: Partial<PageBorder> | undefined): PageBorder {
-  const inset = (k: PageBorderSideName) => clampNum(pb?.inset?.[k], 0, PAGE_BORDER_MAX_INSET_MM, 8);
-  return {
-    top: resolveSide(pb?.top),
-    right: resolveSide(pb?.right),
-    bottom: resolveSide(pb?.bottom),
-    left: resolveSide(pb?.left),
-    inset: { top: inset("top"), right: inset("right"), bottom: inset("bottom"), left: inset("left") },
-    radius: clampNum(pb?.radius, 0, PAGE_BORDER_MAX_RADIUS_MM, 0),
-  };
-}
-
-/** Style object for the `.a4-border` overlay (React preview). */
-export function pageBorderStyle(pb: Partial<PageBorder> | undefined): Record<string, string> {
-  const b = resolvePageBorder(pb);
-  const side = (s: PageBorderSide) => (s.style === "none" ? "none" : `${s.width}px ${s.style} ${s.color}`);
-  return {
-    top: `${b.inset.top}mm`,
-    right: `${b.inset.right}mm`,
-    bottom: `${b.inset.bottom}mm`,
-    left: `${b.inset.left}mm`,
-    borderTop: side(b.top),
-    borderRight: side(b.right),
-    borderBottom: side(b.bottom),
-    borderLeft: side(b.left),
-    borderRadius: `${b.radius}mm`,
-  };
-}
-
-/** Same declarations as an inline `style` string (print / html2pdf HTML). */
-export function pageBorderCss(pb: Partial<PageBorder> | undefined): string {
-  return Object.entries(pageBorderStyle(pb))
-    .map(([k, v]) => `${k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${v};`)
-    .join("");
 }
 
 export interface WatermarkOptions {
@@ -207,7 +117,6 @@ export const DEFAULT_RECORD: RecordState = {
   review_questions_enabled: true,
   result: "",
   headerLayout: DEFAULT_HEADER_LAYOUT,
-  pageBorder: DEFAULT_PAGE_BORDER,
 };
 
 export const DEFAULT_WATERMARK: WatermarkOptions = {

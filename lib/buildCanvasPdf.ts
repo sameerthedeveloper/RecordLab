@@ -1,6 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
-import { resolveHeaderBorder, resolvePageBorder, type PageBorderSide } from "./types";
+import { resolveHeaderBorder } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -41,7 +41,6 @@ interface PdfKitDoc {
   lineCap(cap: "butt" | "round" | "square"): PdfKitDoc;
   dash(length: number, options?: { space?: number; phase?: number }): PdfKitDoc;
   rect(x: number, y: number, w: number, h: number): PdfKitDoc;
-  roundedRect(x: number, y: number, w: number, h: number, r: number): PdfKitDoc;
   moveTo(x: number, y: number): PdfKitDoc;
   lineTo(x: number, y: number): PdfKitDoc;
   stroke(): PdfKitDoc;
@@ -76,6 +75,7 @@ const MARGIN_TOP = mm(18);
 const MARGIN_BOTTOM = mm(18);
 const MARGIN_LEFT = mm(17);
 const MARGIN_RIGHT = mm(17);
+const BORDER_INSET = mm(8);
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 const INK = "#111827";
 
@@ -107,50 +107,11 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
       );
       const doc = ctx.doc;
 
-      /** One straight rule of a page border, honouring dashed / dotted / double. */
-      function ruleLine(x1: number, y1: number, x2: number, y2: number, side: PageBorderSide): void {
-        if (side.style === "none") return;
-        const lw = side.width * PX_TO_PT;
-        const horizontal = y1 === y2;
-        doc.save();
-        doc.strokeColor(side.color).lineWidth(side.style === "double" ? lw / 3 : lw);
-        if (side.style === "dashed") doc.dash(lw * 4, { space: lw * 3 });
-        if (side.style === "dotted") doc.lineCap("round").dash(0.01, { space: lw * 2 });
-        const offsets = side.style === "double" ? [-lw / 3, lw / 3] : [0];
-        for (const o of offsets) {
-          if (horizontal) doc.moveTo(x1, y1 + o).lineTo(x2, y2 + o).stroke();
-          else doc.moveTo(x1 + o, y1).lineTo(x2 + o, y2).stroke();
-        }
-        doc.restore();
-      }
-
-      function drawPageBorder(): void {
-        const pb = resolvePageBorder(record.pageBorder);
-        const x1 = mm(pb.inset.left);
-        const x2 = PAGE_WIDTH - mm(pb.inset.right);
-        const y1 = mm(pb.inset.top);
-        const y2 = PAGE_HEIGHT - mm(pb.inset.bottom);
-        const uniform = [pb.right, pb.bottom, pb.left].every(
-          (s) => s.style === pb.top.style && s.width === pb.top.width && s.color === pb.top.color
-        );
-        if (pb.radius > 0 && uniform && pb.top.style !== "none" && pb.top.style !== "double") {
-          const lw = pb.top.width * PX_TO_PT;
-          doc.save();
-          doc.strokeColor(pb.top.color).lineWidth(lw);
-          if (pb.top.style === "dashed") doc.dash(lw * 4, { space: lw * 3 });
-          if (pb.top.style === "dotted") doc.lineCap("round").dash(0.01, { space: lw * 2 });
-          doc.roundedRect(x1, y1, x2 - x1, y2 - y1, Math.min(mm(pb.radius), (x2 - x1) / 2, (y2 - y1) / 2)).stroke();
-          doc.restore();
-          return;
-        }
-        ruleLine(x1, y1, x2, y1, pb.top);
-        ruleLine(x2, y1, x2, y2, pb.right);
-        ruleLine(x1, y2, x2, y2, pb.bottom);
-        ruleLine(x1, y1, x1, y2, pb.left);
-      }
-
       function drawPageChrome(): void {
-        drawPageBorder();
+        doc.save();
+        doc.lineWidth(1).strokeColor(INK);
+        doc.rect(BORDER_INSET, BORDER_INSET, PAGE_WIDTH - BORDER_INSET * 2, PAGE_HEIGHT - BORDER_INSET * 2).stroke();
+        doc.restore();
 
         const rrn = record.rrn.trim();
         if (rrn) {

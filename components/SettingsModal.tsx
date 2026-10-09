@@ -5,7 +5,6 @@ import { Settings as SettingsIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM, MIN_WIDTH_MM } from "./DraggableHeaderTable";
 import { HeaderBorderControls } from "./HeaderBorderControls";
-import { PageBorderControls } from "./PageBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { CONTENT_WIDTH_MM } from "@/lib/types";
 import type { AppSettings } from "@/lib/settings";
@@ -86,16 +85,6 @@ export function SettingsModal({ open, settings, onClose, onSave }: SettingsModal
           onChange={(headerLayout) => setDraft({ ...draft, headerLayout })}
         />
         <p className="mt-1.5 text-xs text-ink-soft/70">Default for new records. Each record can override it under Record details.</p>
-      </section>
-
-      <section className="border-t border-line pt-5">
-        <h3 className="mb-3 font-serif text-sm font-bold text-ink">Page border</h3>
-        <PageBorderControls
-          idPrefix="settings-page-border"
-          value={draft.pageBorder}
-          onChange={(pageBorder) => setDraft({ ...draft, pageBorder })}
-        />
-        <p className="mt-2 text-xs text-ink-soft/70">Default for new records. Each record can override it in the editor.</p>
       </section>
 
       <section className="border-t border-line pt-5">
