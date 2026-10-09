@@ -1,30 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowRight,
   Check,
+  ChevronDown,
   Cloud,
   ExternalLink,
   FileDown,
+  Folder,
   FolderOpen,
   Globe,
   Layers,
   Mail,
+  Rows3,
   Ruler,
   Save,
   Sparkles,
   Stamp,
+  TerminalSquare,
 } from "lucide-react";
 
 const index = [
   {
     icon: Sparkles,
     title: "AI-assisted drafting",
-    body: "Paste a program or describe the experiment — Record Lab drafts the aim, algorithm, and viva questions for you to check over.",
+    body: "Paste a program or describe the experiment. Record Lab drafts the aim, algorithm and viva questions for you to check over.",
   },
   {
     icon: Ruler,
@@ -32,29 +36,67 @@ const index = [
     body: "Every section is measured against real A4 dimensions, so the preview on screen is the page you hand in.",
   },
   {
+    icon: TerminalSquare,
+    title: "Terminal-style output screenshots",
+    body: "Turn program output into a macOS, Linux, CMD or PowerShell screenshot in one click. Edit it again any time.",
+  },
+  {
+    icon: Rows3,
+    title: "Heading table, your way",
+    body: "Word-style borders for the title table, line by line, plus an optional rule underneath like a hand-ruled record.",
+  },
+  {
     icon: Stamp,
     title: "Register-number watermark",
-    body: "A faint, rotated watermark of your RRN sits behind every page — set its size, angle, and opacity to taste.",
+    body: "A faint, rotated watermark of your RRN sits behind every page. Set its font, size, angle and opacity.",
   },
   {
     icon: FileDown,
-    title: "One-click PDF export",
-    body: "Export a print-ready PDF with correct margins and page breaks already in place — nothing to nudge into position.",
+    title: "PDF, Word or print",
+    body: "Export a print-ready PDF (picture-perfect or selectable-text), a Word file, or send it straight to the printer.",
+  },
+  {
+    icon: Folder,
+    title: "Subject folders",
+    body: "Keep every record under its subject. Drag files between folders, rename them, search across all of it.",
+  },
+  {
+    icon: Cloud,
+    title: "Cloud sync, any sign-in",
+    body: "Sign in with email or Google. Records save to your account and pick up where you left off on any device.",
   },
   {
     icon: Save,
     title: "Save & resume, offline",
-    body: "Export a record as a .rlab.json file partway through and pick it back up later, on this device or another.",
-  },
-  {
-    icon: Cloud,
-    title: "Cloud sync with Google",
-    body: "Sign in with Google to save records to your account, browse them under My Documents, and pick up where you left off on any device.",
+    body: "Export a .rlab.json file partway through and continue later on this device or another.",
   },
   {
     icon: Layers,
     title: "Automatic pagination",
     body: "Long code listings and multi-image outputs split across pages on their own, never mid-line or mid-image.",
+  },
+];
+
+const faqs = [
+  {
+    q: "Is it really free?",
+    a: "Yes. Record Lab runs in your browser, there is nothing to install and no payment step.",
+  },
+  {
+    q: "Do I need an account?",
+    a: "No. You can write, preview and export without signing in. An account (email or Google) only adds cloud saving, subject folders and sync across devices.",
+  },
+  {
+    q: "What can I export?",
+    a: "A PDF (rendered snapshot or vector with selectable text), a Word .docx you can keep editing, or print directly. Your .rlab.json file saves work-in-progress.",
+  },
+  {
+    q: "Will it match my college's record format?",
+    a: "The layout follows the usual lab-record structure: heading table, aim, algorithm, program, output, result. The heading table's borders, watermark and font are adjustable, so you can match your department's sheet.",
+  },
+  {
+    q: "Where is my data stored?",
+    a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account and are visible only to you.",
   },
 ];
 
@@ -91,7 +133,191 @@ const steps = [
   { n: "03", t: "Export the fair copy", d: "Save a PDF, print directly, or save your work to finish later." },
 ];
 
-const TOTAL_PAGES = 6;
+const TOTAL_PAGES = 7;
+
+/* ------------------------------------------------------------------ */
+/* Interactive demos                                                  */
+/* ------------------------------------------------------------------ */
+
+type TermId = "macos" | "linux" | "cmd" | "powershell";
+
+const TERMS: Record<TermId, { label: string; bg: string; fg: string; user: string; dir: string; bar: string }> = {
+  macos: { label: "macOS", bg: "#1e1e1e", fg: "#ececec", user: "#7be0a2", dir: "#6ea8fe", bar: "#2b2b2b" },
+  linux: { label: "Linux", bg: "#300a24", fg: "#eeeeec", user: "#8ae234", dir: "#729fcf", bar: "#3c3b37" },
+  cmd: { label: "CMD", bg: "#0c0c0c", fg: "#cccccc", user: "#cccccc", dir: "#cccccc", bar: "#1f1f1f" },
+  powershell: { label: "PowerShell", bg: "#012456", fg: "#eeedf0", user: "#eeedf0", dir: "#eeedf0", bar: "#1f1f1f" },
+};
+
+function Prompt({ id }: { id: TermId }) {
+  const t = TERMS[id];
+  if (id === "macos")
+    return (
+      <>
+        <span style={{ color: t.user }}>student@lab-pc</span> <span style={{ color: t.dir }}>record</span> %{" "}
+      </>
+    );
+  if (id === "linux")
+    return (
+      <>
+        <span style={{ color: t.user }}>student@lab-pc</span>:<span style={{ color: t.dir }}>~/record</span>${" "}
+      </>
+    );
+  if (id === "cmd") return <>C:\Users\student\record&gt;</>;
+  return <>PS C:\Users\student\record&gt; </>;
+}
+
+/** The terminal-screenshot feature, switchable between the four prompt styles it can generate. */
+function TerminalDemo() {
+  const [id, setId] = useState<TermId>("macos");
+  const t = TERMS[id];
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-1 rounded-xl border border-line bg-paper p-1" role="tablist" aria-label="Terminal style">
+        {(Object.keys(TERMS) as TermId[]).map((k) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={id === k}
+            onClick={() => setId(k)}
+            className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+              id === k ? "bg-accent text-white shadow-sm" : "text-ink-soft hover:bg-ink/5"
+            }`}
+          >
+            {TERMS[k].label}
+          </button>
+        ))}
+      </div>
+      <div
+        className="overflow-hidden rounded-lg font-mono text-[11px] leading-[1.7] shadow-[0_14px_30px_-14px_rgba(28,43,51,0.55)] transition-colors"
+        style={{ background: t.bg, color: t.fg }}
+      >
+        <div className="flex items-center gap-1.5 px-3 py-2" style={{ background: t.bar }}>
+          {id === "macos" ? (
+            <>
+              <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
+              <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
+              <span className="h-2 w-2 rounded-full bg-[#28c840]" />
+            </>
+          ) : (
+            <span className="text-[10px] opacity-70">
+              {id === "linux" ? "student@lab-pc: ~/record" : id === "cmd" ? "Command Prompt" : "Windows PowerShell"}
+            </span>
+          )}
+        </div>
+        <div className="space-y-0.5 overflow-x-auto px-3.5 py-3 whitespace-pre">
+          <div><Prompt id={id} />python gen.py</div>
+          <div>Name: Sameer   RRN: 24CS118</div>
+          <div>Password: Sam@8452kR!</div>
+          <div>Strength: Strong</div>
+          <div>
+            <Prompt id={id} />
+            <span className="lp-caret inline-block h-[1.05em] w-[0.55em] translate-y-[2px]" style={{ background: t.fg, opacity: 0.7 }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type HeadMode = "box" | "open" | "double";
+
+/** The heading table with its borders and the optional rule underneath. */
+function HeaderDemo() {
+  const [mode, setMode] = useState<HeadMode>("open");
+  const line = (m: HeadMode) => (m === "box" ? "1px solid #111827" : m === "double" ? "3px double #111827" : "none");
+  const edge = line(mode);
+  return (
+    <div>
+      <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl border border-line bg-paper p-1" role="tablist" aria-label="Heading style">
+        {([
+          ["open", "Open + rule"],
+          ["box", "Box"],
+          ["double", "Double"],
+        ] as const).map(([k, label]) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={mode === k}
+            onClick={() => setMode(k)}
+            className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+              mode === k ? "bg-accent text-white shadow-sm" : "text-ink-soft hover:bg-ink/5"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="rounded-lg border border-line bg-white p-4 shadow-[0_14px_30px_-14px_rgba(28,43,51,0.3)]">
+        <div className="grid grid-cols-[30%_1fr] text-[11px] transition-all" style={{ border: edge }}>
+          <div className="px-2.5 py-2 font-semibold" style={{ borderRight: edge }}>
+            <div className="pb-1" style={{ borderBottom: mode === "open" ? "none" : mode === "double" ? "1px solid #111827" : edge }}>
+              EX NO : 01
+            </div>
+            <div className="pt-1">DATE : 24.07.26</div>
+          </div>
+          <div className="flex items-center justify-center px-2 py-2 text-center text-[12px] font-bold">PASSWORD GENERATOR</div>
+        </div>
+        <div
+          className="mt-2.5 transition-all"
+          style={{ borderTop: mode === "open" ? "1px solid #9ca3af" : "1px solid transparent" }}
+        />
+        <p className="mt-2 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">Aim</p>
+        <div className="mt-1 space-y-1">
+          <div className="h-1 rounded bg-ink/10" />
+          <div className="h-1 w-4/5 rounded bg-ink/10" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SUBJECTS = [
+  { name: "Data Structures", n: 8 },
+  { name: "Python Programming", n: 12 },
+  { name: "Digital Logic", n: 5 },
+  { name: "Operating Systems", n: 3 },
+];
+
+/** Subject folders, drawn like the dashboard's folder cards. */
+function SubjectsDemo() {
+  const [active, setActive] = useState(0);
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-2">
+        {SUBJECTS.map((f, i) => (
+          <button
+            key={f.name}
+            onClick={() => setActive(i)}
+            aria-pressed={active === i}
+            className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+              active === i ? "border-accent bg-accent-soft/50" : "border-line bg-paper hover:border-accent/40"
+            }`}
+          >
+            <Folder className="h-5 w-5 shrink-0 fill-accent-soft text-accent" strokeWidth={1.75} />
+            <span className="min-w-0">
+              <span className="block truncate text-[12px] font-semibold text-ink">{f.name}</span>
+              <span className="block text-[10px] text-ink-soft/70">{f.n} files</span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-white text-[12px]">
+        {["Ex 1  Stack using arrays", "Ex 2  Queue operations", "Ex 3  Binary search tree"].map((f, i) => (
+          <li key={f} className="flex items-center justify-between gap-2 px-3 py-2">
+            <span className="truncate font-medium text-ink">{f}</span>
+            <span className="shrink-0 font-mono text-[10px] text-ink-soft/60">{i + 1}d ago</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11px] text-ink-soft/70">
+        in <span className="font-semibold text-ink">{SUBJECTS[active].name}</span>
+      </p>
+    </div>
+  );
+}
+
+const MARQUEE = ["Aim", "Algorithm", "Source code", "Output", "Review questions", "Result", "Heading table", "Watermark", "A4 pagination"];
+
 
 /** Small "PAGE 0N / 06" mono label — the landing page's own section counter,
  * echoing the "PAGE 01 / 03" caption the product prints under every preview
@@ -129,6 +355,8 @@ export function LandingPageClient() {
           { opacity: 0, y: 36, rotate: -8, duration: 0.8, ease: "back.out(1.5)" },
           "-=0.35"
         );
+
+      gsap.to("[data-float]", { y: -7, duration: 3, ease: "sine.inOut", repeat: -1, yoyo: true });
 
       // `<main>` (not the window) is the actual scroll container — it's
       // `fixed inset-0 overflow-y-auto` so the page itself never scrolls.
@@ -172,10 +400,19 @@ export function LandingPageClient() {
   }, []);
 
   return (
-    <main ref={rootRef} className="fixed inset-0 overflow-y-auto bg-paper text-ink" style={{ scrollSnapType: "y proximity" }}>
+    <main ref={rootRef} className="fixed inset-0 overflow-y-auto bg-paper text-ink">
       <header className="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
-          <span className="font-serif text-lg font-bold tracking-tight">Record Lab</span>
+        <div className="mx-auto flex max-w-[66rem] items-center justify-between gap-4 px-5 py-4">
+          <span className="flex items-center gap-2 font-serif text-lg font-bold tracking-tight">
+            <span aria-hidden className="flex h-7 w-7 items-center justify-center rounded-md bg-ink font-serif text-[11px] text-paper">RL</span>
+            Record Lab
+          </span>
+          <nav aria-label="Sections" className="hidden items-center gap-6 text-xs font-semibold text-ink-soft md:flex">
+            <a href="#see-it" className="transition-colors hover:text-accent">See it</a>
+            <a href="#index" className="transition-colors hover:text-accent">Index</a>
+            <a href="#how" className="transition-colors hover:text-accent">How it works</a>
+            <a href="#faq" className="transition-colors hover:text-accent">FAQ</a>
+          </nav>
           <Link
             href="/"
             className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-accent-hover"
@@ -188,8 +425,7 @@ export function LandingPageClient() {
 
       {/* ============ HERO ============ */}
       <section
-        style={{ scrollSnapAlign: "start" }}
-        className="mx-auto grid min-h-screen max-w-5xl items-center gap-12 px-5 py-16 md:grid-cols-[1.05fr_0.95fr]"
+        className="relative mx-auto grid max-w-[66rem] items-center gap-12 px-5 py-14 sm:py-20 md:grid-cols-[1.05fr_0.95fr]"
       >
         <div data-hero-text>
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b3261e]">
@@ -221,6 +457,14 @@ export function LandingPageClient() {
               See the index
             </a>
           </div>
+          <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-ink-soft">
+            {["Free, in your browser", "PDF + Word + print", "No sign-in needed"].map((t) => (
+              <li key={t} className="flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-accent" strokeWidth={3} />
+                {t}
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Ruled-page mockup — the product's own output, drawn as a stack */}
@@ -271,34 +515,95 @@ export function LandingPageClient() {
               Page 1 of 3
             </p>
           </div>
+
+          {/* output screenshot, the way Record Lab generates it */}
+          <div
+            data-float
+            aria-hidden
+            className="absolute -bottom-9 -left-4 w-[62%] rotate-[3deg] overflow-hidden rounded-md bg-[#1e1e1e] font-mono text-[8.5px] leading-[1.65] text-[#ececec] shadow-[0_18px_34px_-12px_rgba(0,0,0,0.6)] sm:-left-10"
+          >
+            <div className="flex gap-1 bg-[#2b2b2b] px-2 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#ff5f57]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#febc2e]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#28c840]" />
+            </div>
+            <div className="whitespace-pre px-2.5 py-2">
+              <div><span className="text-[#7be0a2]">student@lab-pc</span> <span className="text-[#6ea8fe]">bst</span> % python bst.py</div>
+              <div>Inorder: 10 20 30 40 50</div>
+              <div><span className="text-[#7be0a2]">student@lab-pc</span> <span className="text-[#6ea8fe]">bst</span> % <span className="lp-caret inline-block h-[1em] w-[0.5em] translate-y-[2px] bg-[#9a9a9a]" /></div>
+            </div>
+          </div>
+          <div
+            aria-hidden
+            className="absolute -right-3 -top-6 flex h-[74px] w-[74px] rotate-[10deg] items-center justify-center rounded-full border-2 border-dashed border-[#b3261e]/60 bg-paper/80 text-center font-mono text-[8.5px] font-bold uppercase leading-tight tracking-[0.08em] text-[#b3261e]/85 sm:-right-6"
+          >
+            Format
+            <br />
+            Verified
+          </div>
         </div>
       </section>
 
-      {/* ============ CERTIFICATE ============ */}
-      <section
-        data-reveal-group
-        style={{ scrollSnapAlign: "start" }}
-        className="flex min-h-screen flex-col justify-center border-y border-line bg-white"
-      >
-        <div className="mx-auto w-full max-w-5xl px-5">
+      {/* ============ MARQUEE ============ */}
+      <div aria-hidden className="lp-marquee overflow-hidden border-y border-line bg-ink py-3 text-paper">
+        <div className="lp-marquee-track flex w-max gap-10 whitespace-nowrap font-mono text-[11px] font-semibold uppercase tracking-[0.2em]">
+          {[...MARQUEE, ...MARQUEE].map((w, i) => (
+            <span key={i} className="flex items-center gap-10">
+              {w}
+              <span className="text-accent">✦</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ============ SEE IT ============ */}
+      <section id="see-it" data-reveal-group className="lp-grain px-5 py-20 sm:py-24">
+        <div className="mx-auto w-full max-w-5xl">
           <div data-reveal>
-            <PageLabel n={2}>Certificate</PageLabel>
-          </div>
-          <div className="mt-8 flex flex-col items-center gap-8 text-center sm:flex-row sm:text-left">
-            <p data-reveal className="flex-1 font-serif text-lg italic leading-relaxed text-ink/85 sm:text-xl">
-              &ldquo;Certified to be the bonafide format of the laboratory record
-              submitted by every student who has ever rewritten a page at 1&nbsp;a.m. —
-              laid out to true A4 measurements, register number watermarked
-              throughout, no stray page breaks.&rdquo;
+            <PageLabel n={2}>See it</PageLabel>
+            <h2 className="mt-3 max-w-xl font-serif text-3xl font-bold tracking-tight sm:text-4xl">
+              The fiddly parts, already handled.
+            </h2>
+            <p className="mt-3 max-w-lg text-sm leading-relaxed text-ink-soft">
+              Try the three things students spend the most time on: output screenshots, the heading table, and keeping
+              records organised.
             </p>
-            <div
-              data-reveal
-              className="flex h-24 w-24 shrink-0 rotate-[-8deg] items-center justify-center rounded-full border-2 border-dashed border-[#b3261e]/60 text-center font-mono text-[10px] font-bold uppercase leading-tight tracking-[0.08em] text-[#b3261e]/80"
-            >
-              Format
-              <br />
-              Verified
-            </div>
+          </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                icon: TerminalSquare,
+                title: "Output screenshots",
+                body: "Paste what your program printed. Get a clean terminal image in your OS's style.",
+                demo: <TerminalDemo />,
+              },
+              {
+                icon: Rows3,
+                title: "Heading table",
+                body: "Boxed, open or ruled. Every border line and the rule underneath is yours to set.",
+                demo: <HeaderDemo />,
+              },
+              {
+                icon: Folder,
+                title: "Subject folders",
+                body: "One folder per subject. Drag records in, find any of them in seconds.",
+                demo: <SubjectsDemo />,
+              },
+            ].map(({ icon: Icon, title, body, demo }) => (
+              <article
+                key={title}
+                data-reveal
+                className="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-[0_1px_2px_rgba(28,43,51,0.05)] transition-shadow hover:shadow-[0_18px_40px_-22px_rgba(28,43,51,0.4)]"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-soft text-accent-ink">
+                  <Icon className="h-4 w-4" strokeWidth={2.25} />
+                </span>
+                <h3 className="mt-3 font-serif text-lg font-bold text-ink">{title}</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">{body}</p>
+                <div className="mt-4 flex-1">{demo}</div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -307,8 +612,7 @@ export function LandingPageClient() {
       <section
         id="index"
         data-reveal-group
-        style={{ scrollSnapAlign: "start" }}
-        className="flex min-h-screen flex-col justify-center px-5 py-20"
+        className="border-t border-line bg-white px-5 py-20 sm:py-24"
       >
         <div className="mx-auto w-full max-w-5xl">
           <div data-reveal>
@@ -316,7 +620,7 @@ export function LandingPageClient() {
             <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">Index.</h2>
           </div>
 
-          <div data-reveal className="mt-10 overflow-hidden rounded-2xl border border-line bg-white">
+          <div data-reveal className="mt-10 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(28,43,51,0.05)]">
             <div className="grid grid-cols-[44px_1fr_28px] border-b border-line bg-[#faf7f0] px-5 py-3 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft/70 sm:grid-cols-[56px_1fr_36px]">
               <span>S.No</span>
               <span>Particulars</span>
@@ -348,9 +652,9 @@ export function LandingPageClient() {
 
       {/* ============ STEPS ============ */}
       <section
+        id="how"
         data-reveal-group
-        style={{ scrollSnapAlign: "start" }}
-        className="flex min-h-screen flex-col justify-center border-t border-line bg-white"
+        className="border-t border-line py-20 sm:py-24"
       >
         <div className="mx-auto w-full max-w-5xl px-5">
           <div data-reveal>
@@ -373,14 +677,34 @@ export function LandingPageClient() {
         </div>
       </section>
 
+      {/* ============ FAQ ============ */}
+      <section id="faq" data-reveal-group className="border-t border-line bg-white px-5 py-20 sm:py-24">
+        <div className="mx-auto w-full max-w-3xl">
+          <div data-reveal>
+            <PageLabel n={5}>Questions</PageLabel>
+            <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">Before you start.</h2>
+          </div>
+          <div className="mt-8 divide-y divide-line border-y border-line">
+            {faqs.map(({ q, a }) => (
+              <details key={q} data-reveal className="group py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-bold text-ink [&::-webkit-details-marker]:hidden">
+                  {q}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-ink-soft transition-transform group-open:rotate-180" strokeWidth={2.25} />
+                </summary>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">{a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ============ CLOSING CTA ============ */}
       <section
         data-reveal-group
-        style={{ scrollSnapAlign: "start" }}
-        className="flex min-h-screen flex-col items-center justify-center px-5 py-16 text-center"
+        className="flex flex-col items-center justify-center border-t border-line bg-white px-5 py-24 text-center"
       >
         <div data-reveal>
-          <PageLabel n={5}>Get started</PageLabel>
+          <PageLabel n={6}>Get started</PageLabel>
         </div>
         <FolderOpen data-reveal className="mx-auto mt-6 h-8 w-8 text-accent" strokeWidth={1.75} />
         <h2 data-reveal className="mx-auto mt-5 max-w-lg font-serif text-3xl font-bold tracking-tight sm:text-4xl">
@@ -402,18 +726,17 @@ export function LandingPageClient() {
       {/* ============ CONTRIBUTORS ============ */}
       <section
         data-reveal-group
-        style={{ scrollSnapAlign: "start" }}
-        className="flex min-h-screen flex-col justify-center border-t border-line bg-white"
+        className="border-t border-line"
       >
         <div className="mx-auto w-full max-w-5xl px-5 py-20">
           <div data-reveal>
-            <PageLabel n={6}>Credits</PageLabel>
+            <PageLabel n={7}>Credits</PageLabel>
             <h2 className="mt-3 font-serif text-3xl font-bold tracking-tight sm:text-4xl">Built by.</h2>
           </div>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-2">
             {contributors.map((person) => (
-              <div key={person.name} data-reveal className="rounded-2xl border border-line bg-[#faf7f0] p-5">
+              <div key={person.name} data-reveal className="rounded-2xl border border-line bg-white p-5 shadow-[0_1px_2px_rgba(28,43,51,0.05)]">
                 <h3 className="font-serif text-lg font-bold text-ink">{person.name}</h3>
                 <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
                   {person.role}
@@ -441,7 +764,7 @@ export function LandingPageClient() {
 
       <footer className="border-t border-line">
         <div className="mx-auto max-w-5xl px-5 py-8 text-xs text-ink-soft/70">
-          Record Lab — specially curated for Crescent CSE students, built for lab-record season.
+          Record Lab · specially curated for Crescent CSE students, built for lab-record season.
         </div>
       </footer>
     </main>
