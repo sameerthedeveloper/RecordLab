@@ -17,7 +17,7 @@ interface AutoTextareaProps {
 }
 
 const BASE =
-  "block w-full resize-none rounded-[14px] border border-transparent p-3.5 text-ink outline-none transition-all duration-200 placeholder:text-ink-soft/50 hover:bg-black/[0.055] focus:border-accent/50 focus:ring-4 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-paper disabled:opacity-50";
+  "ui-field block w-full resize-none text-ink outline-none placeholder:text-ink-soft/50 disabled:cursor-not-allowed disabled:bg-paper disabled:opacity-50";
 
 export function AutoTextarea({
   id,
@@ -77,7 +77,7 @@ export function AutoTextarea({
         }}
         style={{ minHeight: minRows * lineHeight + padding }}
         className={`${BASE} ${
-          code ? "bg-black/[0.04] font-mono text-xs leading-[19.5px] focus:bg-white" : "bg-black/[0.04] text-[16px] md:text-[15px] leading-5 focus:bg-white"
+          code ? "ui-field--code font-mono leading-[19.5px]" : "leading-5"
         }`}
       />
       <div className="mt-1 flex justify-between px-1 text-[11px] text-ink-soft/60">

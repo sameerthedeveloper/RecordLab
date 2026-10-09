@@ -19,7 +19,7 @@ import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
 import { getWatermarkSettings, saveWatermarkSettings } from "@/lib/userProfile";
-import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/lib/settings";
+import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
@@ -79,6 +79,11 @@ export default function Home() {
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = usePaginatedPages(record);
+
+  // Keep <html data-ui> in step with the saved interface style.
+  useEffect(() => {
+    applyUiStyle(settings.uiStyle);
+  }, [settings.uiStyle]);
 
   // Drop a folder id that no longer exists (subject deleted from the dashboard).
   useEffect(() => {

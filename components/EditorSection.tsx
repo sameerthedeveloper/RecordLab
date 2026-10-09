@@ -20,7 +20,7 @@ export function EditorSection({ id, title, index, filled, aside, children }: Edi
       id={id}
       data-section={id}
       aria-labelledby={`${id}-heading`}
-      className="rounded-[1.5rem] border border-black/[0.05] bg-white p-5 shadow-[0_1px_2px_rgba(28,43,51,0.04),0_10px_28px_-16px_rgba(28,43,51,0.16)]"
+      className="ui-card p-5"
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 id={`${id}-heading`} className="flex items-center gap-2 font-serif text-[17px] font-bold tracking-tight text-ink">

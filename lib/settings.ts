@@ -10,11 +10,22 @@ import { DEFAULT_HEADER_LAYOUT, DEFAULT_WATERMARK, type HeaderLayout, type Water
  * (see app/page.tsx's initial-state seeding and handleSaveSettings). `font`
  * applies uniformly to every export — there's no per-record override for it.
  */
+/** "apple": frosted, rounded, pill buttons (default). "classic": the original flat look. */
+export type UiStyle = "apple" | "classic";
+
+export const UI_STYLES: UiStyle[] = ["apple", "classic"];
+
+/** Flips the look of the whole app by setting `data-ui` on <html> (see the .ui-* classes in globals.css). */
+export function applyUiStyle(style: UiStyle): void {
+  if (typeof document !== "undefined") document.documentElement.dataset.ui = style;
+}
+
 export interface AppSettings {
   rrn: string;
   watermark: WatermarkOptions;
   font: string;
   headerLayout: HeaderLayout;
+  uiStyle: UiStyle;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -22,6 +33,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   watermark: DEFAULT_WATERMARK,
   font: DEFAULT_DOC_FONT,
   headerLayout: DEFAULT_HEADER_LAYOUT,
+  uiStyle: "apple",
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -37,6 +49,7 @@ export function loadSettings(): AppSettings {
       ...parsed,
       watermark: { ...DEFAULT_WATERMARK, ...(parsed?.watermark ?? {}) },
       headerLayout: { ...DEFAULT_HEADER_LAYOUT, ...(parsed?.headerLayout ?? {}) },
+      uiStyle: UI_STYLES.includes(parsed?.uiStyle) ? parsed.uiStyle : "apple",
     };
   } catch {
     return DEFAULT_SETTINGS;

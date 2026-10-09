@@ -104,7 +104,7 @@ export function Modal({
 
   return (
     <div
-      className="drive-backdrop fixed inset-0 z-50 flex items-end justify-center bg-ink/30 backdrop-blur-md sm:items-center sm:p-5"
+      className="drive-backdrop fixed inset-0 z-50 flex items-end justify-center ui-modal-backdrop sm:items-center sm:p-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -118,7 +118,7 @@ export function Modal({
         style={drag ? { transform: `translateY(${drag}px)`, transition: "none" } : undefined}
         className={`drive-shell flex w-full ${SIZE[size]} ${
           fullHeight ? "h-[92dvh] sm:h-full sm:max-h-[760px]" : "max-h-[92dvh] sm:max-h-[90vh]"
-        } flex-col overflow-hidden rounded-t-[2rem] border border-black/[0.06] bg-white/95 shadow-[0_30px_80px_-20px_rgba(28,43,51,0.5)] backdrop-blur-2xl outline-none transition-transform sm:rounded-[2rem]`}
+        } flex-col overflow-hidden ui-modal outline-none transition-transform`}
       >
         <div
           className="flex shrink-0 cursor-grab touch-none justify-center pb-1 pt-2 sm:hidden"
@@ -130,10 +130,10 @@ export function Modal({
         >
           <span className="h-1.5 w-10 rounded-full bg-ink/20" />
         </div>
-        <header className="flex shrink-0 items-center gap-3 border-b border-black/[0.06] px-4 py-3.5 sm:px-6">
+        <header className="ui-modal-head flex shrink-0 items-center gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             {Icon && (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-b from-[#d4500f] to-accent text-white shadow-[0_6px_14px_-6px_rgba(194,65,12,0.7)]">
+              <span className="ui-tile flex h-8 w-8 shrink-0 items-center justify-center">
                 <Icon className="h-4 w-4" strokeWidth={2.25} />
               </span>
             )}
@@ -184,9 +184,9 @@ export function Modal({
 /** Footer button styles, shared so every dialog's actions look the same. */
 export const modalButton = {
   primary:
-    "rounded-full bg-accent px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(194,65,12,0.8)] transition-all hover:bg-accent-hover active:scale-[0.97] disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+    "ui-btn ui-btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   secondary:
-    "rounded-full border border-black/[0.08] bg-white px-5 py-2.5 text-[13px] font-semibold text-ink-soft transition-all active:scale-[0.97] hover:border-accent/40 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+    "ui-btn ui-btn-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
   danger:
-    "rounded-full bg-red-600 px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all active:scale-[0.97] hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600",
+    "ui-btn ui-btn-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600",
 };

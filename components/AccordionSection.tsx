@@ -37,7 +37,7 @@ export function AccordionSection({ title, index, defaultOpen = false, children }
 
   return (
     <details
-      className="record-section rounded-[1.5rem] border border-black/[0.05] bg-white shadow-[0_1px_2px_rgba(28,43,51,0.04),0_10px_28px_-16px_rgba(28,43,51,0.16)] transition-all"
+      className="record-section ui-card transition-all"
       open={open}
     >
       <summary

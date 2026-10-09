@@ -50,8 +50,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${displayFont.variable} ${sansFont.variable} ${monoFont.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${displayFont.variable} ${sansFont.variable} ${monoFont.variable}`}>
       <head>
+        {/* Set the saved UI style before first paint so the app doesn't flash the wrong look. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var s=JSON.parse(localStorage.getItem("recordlab-settings-v1")||"{}");document.documentElement.dataset.ui=s.uiStyle==="classic"?"classic":"apple"}catch(e){document.documentElement.dataset.ui="apple"}',
+          }}
+        />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0"

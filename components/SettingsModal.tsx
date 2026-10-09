@@ -7,7 +7,7 @@ import { MAX_HEIGHT_MM, MIN_HEIGHT_MM, MIN_WIDTH_MM } from "./DraggableHeaderTab
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { CONTENT_WIDTH_MM } from "@/lib/types";
-import type { AppSettings } from "@/lib/settings";
+import { applyUiStyle, type AppSettings, type UiStyle } from "@/lib/settings";
 
 interface SettingsModalProps {
   open: boolean;
@@ -38,10 +38,21 @@ export function SettingsModal({ open, settings, onClose, onSave }: SettingsModal
     onClose();
   }
 
+  /** Close without saving: put the interface back to the saved style, since picking one previews it live. */
+  function handleCancel() {
+    applyUiStyle(settings.uiStyle);
+    onClose();
+  }
+
+  function pickStyle(uiStyle: UiStyle) {
+    setDraft({ ...draft, uiStyle });
+    applyUiStyle(uiStyle);
+  }
+
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleCancel}
       title="Settings"
       description="Defaults for every new record"
       icon={SettingsIcon}
@@ -49,7 +60,7 @@ export function SettingsModal({ open, settings, onClose, onSave }: SettingsModal
       bodyClassName="space-y-5 p-4 sm:p-5"
       footer={
         <>
-          <button type="button" onClick={onClose} className={modalButton.secondary}>
+          <button type="button" onClick={handleCancel} className={modalButton.secondary}>
             Cancel
           </button>
           <button type="button" onClick={handleSave} className={modalButton.primary}>
@@ -59,6 +70,51 @@ export function SettingsModal({ open, settings, onClose, onSave }: SettingsModal
       }
     >
       <section>
+        <h3 className="mb-3 font-serif text-sm font-bold text-ink">Interface style</h3>
+        <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Interface style">
+          {(
+            [
+              { id: "apple", name: "Apple", note: "Frosted, rounded, soft" },
+              { id: "classic", name: "Classic", note: "Flat, crisp, original" },
+            ] as const
+          ).map((o) => {
+            const active = draft.uiStyle === o.id;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => pickStyle(o.id)}
+                className={`group rounded-2xl border p-3 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                  active ? "border-accent bg-accent-soft/40 ring-2 ring-accent/30" : "border-line bg-white hover:border-accent/40"
+                }`}
+              >
+                {/* mini preview of the style */}
+                <div
+                  aria-hidden
+                  className={`mb-2.5 flex h-16 items-end gap-1.5 overflow-hidden p-2 ${
+                    o.id === "apple"
+                      ? "rounded-[14px] bg-gradient-to-br from-[#fde8d8] via-[#efede7] to-[#dfe9e6]"
+                      : "rounded-lg bg-gray-100"
+                  }`}
+                >
+                  <span className={`h-full w-1/3 bg-white ${o.id === "apple" ? "rounded-xl shadow-[0_4px_12px_-4px_rgba(28,43,51,0.3)]" : "rounded-md border border-line"}`} />
+                  <span className={`flex h-full flex-1 flex-col justify-end gap-1 bg-white p-1.5 ${o.id === "apple" ? "rounded-xl shadow-[0_4px_12px_-4px_rgba(28,43,51,0.3)]" : "rounded-md border border-line"}`}>
+                    <span className={`h-1.5 w-full bg-ink/10 ${o.id === "apple" ? "rounded-full" : "rounded-sm"}`} />
+                    <span className={`h-3 w-1/2 bg-accent ${o.id === "apple" ? "rounded-full" : "rounded-md"}`} />
+                  </span>
+                </div>
+                <p className="text-[13px] font-bold text-ink">{o.name}</p>
+                <p className="text-[11px] text-ink-soft/70">{o.note}</p>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-1.5 text-xs text-ink-soft/70">Shows right away; Save settings keeps it.</p>
+      </section>
+
+      <section className="border-t border-line pt-5">
         <h3 className="mb-3 font-serif text-sm font-bold text-ink">Your RRN</h3>
         <label htmlFor="settingsRrn" className={labelClass}>
           Register number

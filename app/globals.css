@@ -759,3 +759,201 @@ summary,
 @media (prefers-reduced-motion: reduce) {
   .lp-marquee-track, .lp-caret { animation: none; }
 }
+
+/* =====================================================
+   UI STYLE: "apple" (default) and "classic"
+   Components use the semantic .ui-* classes below; the
+   Settings modal flips <html data-ui="classic|apple">.
+===================================================== */
+@layer components {
+  .ui-panel {
+    @apply rounded-[1.75rem] border border-black/[0.06] bg-white/90 shadow-[0_1px_2px_rgba(28,43,51,0.04),0_16px_48px_-20px_rgba(28,43,51,0.22)] backdrop-blur-xl;
+  }
+  .ui-panel-header {
+    @apply border-b border-black/[0.06] bg-white/70 backdrop-blur-xl;
+  }
+  .ui-rail {
+    @apply border-b border-black/[0.06] bg-white/60 backdrop-blur-xl;
+  }
+  .ui-card {
+    @apply rounded-[1.5rem] border border-black/[0.05] bg-white shadow-[0_1px_2px_rgba(28,43,51,0.04),0_10px_28px_-16px_rgba(28,43,51,0.16)];
+  }
+  .ui-input {
+    @apply rounded-[14px] border border-transparent bg-black/[0.04] p-3 text-[16px] text-ink outline-none transition-all duration-200 placeholder:text-ink-soft/50 hover:bg-black/[0.055] focus:border-accent/50 focus:bg-white focus:ring-4 focus:ring-accent/15 md:text-[15px];
+  }
+  .ui-field {
+    @apply rounded-[14px] border border-transparent bg-black/[0.04] p-3.5 text-[16px] transition-all duration-200 hover:bg-black/[0.055] focus:border-accent/50 focus:bg-white focus:ring-4 focus:ring-accent/15 md:text-[15px];
+  }
+  .ui-field--code {
+    @apply text-xs md:text-xs;
+  }
+  .ui-icon-btn {
+    @apply rounded-full bg-black/[0.045] p-2.5 text-ink-soft transition-all duration-200 hover:bg-black/[0.08] hover:text-accent active:scale-90;
+  }
+  .ui-primary {
+    @apply rounded-full bg-gradient-to-b from-[#d4500f] to-accent text-white shadow-[0_8px_20px_-8px_rgba(194,65,12,0.75),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-200 hover:brightness-105 active:scale-[0.985];
+  }
+  .ui-seg {
+    @apply rounded-full border border-black/[0.06] bg-white shadow-[0_2px_10px_-4px_rgba(28,43,51,0.2)];
+  }
+  .ui-chip {
+    @apply rounded-full border border-black/[0.06] bg-white shadow-[0_2px_10px_-4px_rgba(28,43,51,0.2)] transition-all active:scale-[0.98];
+  }
+  .ui-modal {
+    @apply rounded-t-[2rem] border border-black/[0.06] bg-white/95 shadow-[0_30px_80px_-20px_rgba(28,43,51,0.5)] backdrop-blur-2xl sm:rounded-[2rem];
+  }
+  .ui-modal-head {
+    @apply border-b border-black/[0.06];
+  }
+  .ui-modal-backdrop {
+    @apply bg-ink/30 backdrop-blur-md;
+  }
+  .ui-btn {
+    @apply rounded-full px-5 py-2.5 text-[13px] font-semibold transition-all active:scale-[0.97];
+  }
+  .ui-btn-primary {
+    @apply bg-accent text-white shadow-[0_6px_16px_-8px_rgba(194,65,12,0.8)] hover:bg-accent-hover disabled:opacity-60;
+  }
+  .ui-btn-secondary {
+    @apply border border-black/[0.08] bg-white text-ink-soft hover:border-accent/40 hover:text-accent;
+  }
+  .ui-btn-danger {
+    @apply bg-red-600 text-white shadow-sm hover:bg-red-700;
+  }
+  .ui-toast {
+    @apply rounded-full border border-white/10 bg-ink/90 px-5 py-3 text-[13px] font-medium text-paper shadow-[0_18px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl;
+  }
+  .ui-detail {
+    @apply rounded-[14px] bg-black/[0.04] px-3.5 py-2.5 open:bg-black/[0.03];
+  }
+  .ui-tile {
+    @apply rounded-[10px] bg-gradient-to-b from-[#d4500f] to-accent text-white shadow-[0_6px_14px_-6px_rgba(194,65,12,0.7)];
+  }
+}
+
+/* ---- classic: the original flat look ---- */
+[data-ui="classic"] .app-canvas {
+  background: #f3f4f6;
+}
+[data-ui="classic"] .ui-panel {
+  border-radius: 1rem;
+  border: 1px solid #e5decb;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-ui="classic"] .ui-panel-header,
+[data-ui="classic"] .ui-rail {
+  border-bottom: 1px solid #e5decb;
+  background: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-ui="classic"] .ui-rail {
+  background: #faf7f0;
+}
+[data-ui="classic"] .ui-card {
+  border-radius: 1rem;
+  border: 1px solid #e5decb;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+[data-ui="classic"] .ui-input,
+[data-ui="classic"] .ui-field {
+  border-radius: 0.75rem;
+  border: 1px solid #e5decb;
+  background: #fff;
+  font-size: 0.875rem;
+}
+[data-ui="classic"] .ui-field--code {
+  background: #fdfcf8;
+  font-size: 0.75rem;
+}
+[data-ui="classic"] .ui-input:hover,
+[data-ui="classic"] .ui-field:hover {
+  background: #fff;
+}
+[data-ui="classic"] .ui-input:focus,
+[data-ui="classic"] .ui-field:focus {
+  border-color: #c2410c;
+  box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.15);
+}
+[data-ui="classic"] .ui-icon-btn {
+  border-radius: 0.75rem;
+  border: 1px solid #e5decb;
+  background: #fff;
+  padding: 0.5rem;
+}
+[data-ui="classic"] .ui-icon-btn:hover {
+  border-color: rgba(194, 65, 12, 0.4);
+  background: #fff;
+}
+[data-ui="classic"] .ui-primary {
+  border-radius: 0.75rem;
+  background: #c2410c;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+[data-ui="classic"] .ui-primary:hover {
+  background: #9a3412;
+  filter: none;
+}
+[data-ui="classic"] .ui-seg,
+[data-ui="classic"] .ui-chip {
+  border-radius: 0.75rem;
+  border: 1px solid #e5decb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+[data-ui="classic"] .ui-modal {
+  border-radius: 1.5rem 1.5rem 0 0;
+  border: 1px solid #e5decb;
+  background: #fff;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (min-width: 640px) {
+  [data-ui="classic"] .ui-modal {
+    border-radius: 1.5rem;
+  }
+}
+[data-ui="classic"] .ui-modal-head {
+  border-bottom: 1px solid #e5decb;
+}
+[data-ui="classic"] .ui-modal-backdrop {
+  background: rgba(28, 43, 51, 0.4);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+[data-ui="classic"] .ui-btn {
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+[data-ui="classic"] .ui-btn-primary {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+[data-ui="classic"] .ui-btn-secondary {
+  border-color: #e5decb;
+}
+[data-ui="classic"] .ui-toast {
+  border-radius: 0.75rem;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 0.625rem 1rem;
+  font-size: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-ui="classic"] .ui-detail {
+  border-radius: 0.75rem;
+  border: 1px solid #e5decb;
+  background: rgba(250, 247, 240, 0.6);
+}
+[data-ui="classic"] .ui-tile {
+  border-radius: 0.75rem;
+  background: #c2410c;
+  box-shadow: none;
+}
