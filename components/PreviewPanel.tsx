@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { FileDown, Loader2 } from "lucide-react";
+import { ChevronDown, FileDown, Loader2 } from "lucide-react";
 import { A4Page } from "./A4Page";
 import { AccountMenu } from "./AccountMenu";
 import type { DownloadFormat, PageObject, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
@@ -83,13 +83,13 @@ export function PreviewPanel({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="ui-seg flex items-center overflow-hidden">
+          <div className="ui-seg flex items-stretch overflow-hidden">
             <button
               type="button"
               onClick={onSave}
               disabled={isSaving}
               data-onboarding="save-button"
-              className="ui-primary !rounded-none !shadow-none flex items-center justify-center gap-1.5 px-5 py-2.5 text-[13px] max-md:min-h-11 max-md:text-sm font-semibold disabled:opacity-60"
+              className="ui-primary !rounded-none !shadow-none active:!scale-100 flex items-center justify-center gap-2 px-5 py-2.5 text-[13px] max-md:min-h-11 max-md:text-sm font-semibold disabled:opacity-60"
             >
               {isSaving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.5} />
@@ -101,16 +101,23 @@ export function PreviewPanel({
             <label className="sr-only" htmlFor="downloadFormatSelect">
               Download format
             </label>
-            <select
-              id="downloadFormatSelect"
-              value={downloadFormat}
-              onChange={(e) => onDownloadFormatChange(e.target.value as DownloadFormat)}
-              disabled={isSaving}
-              className="h-full border-l border-black/[0.06] bg-white pl-3 pr-2 py-2 text-[13px] max-md:min-h-11 font-semibold text-ink-soft outline-none transition-colors hover:text-accent-ink disabled:opacity-60"
-            >
-              <option value="pdf">PDF</option>
-              <option value="docx">DOCX</option>
-            </select>
+            <div className="relative flex border-l border-black/[0.06] bg-white">
+              <select
+                id="downloadFormatSelect"
+                value={downloadFormat}
+                onChange={(e) => onDownloadFormatChange(e.target.value as DownloadFormat)}
+                disabled={isSaving}
+                className="h-full cursor-pointer appearance-none bg-transparent py-2.5 pl-4 pr-9 text-[13px] max-md:min-h-11 max-md:text-sm font-semibold text-ink-soft outline-none transition-colors hover:text-accent-ink focus-visible:text-accent-ink disabled:cursor-default disabled:opacity-60"
+              >
+                <option value="pdf">PDF</option>
+                <option value="docx">DOCX</option>
+              </select>
+              <ChevronDown
+                aria-hidden
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/70"
+                strokeWidth={2.25}
+              />
+            </div>
           </div>
 
           <AccountMenu onToast={onToast} />
