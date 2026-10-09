@@ -1,6 +1,6 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
 import { CONTENT_WIDTH_MM } from "./types";
-import { headerBorderCssValue } from "./types";
+import { headerBorderVarsCss } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
 
 /**
@@ -62,7 +62,7 @@ function createHeader(record: RecordState): string {
   const minHeightMm = record.headerLayout.height;
 
   return `
-    <table class="record-header" style="width:${widthPct}%;--header-border:${headerBorderCssValue(record.headerLayout)}">
+    <table class="record-header" style="width:${widthPct}%;${headerBorderVarsCss(record.headerLayout)}">
       <tr>
         <td class="record-meta" style="min-height:${minHeightMm}mm">
           <div>

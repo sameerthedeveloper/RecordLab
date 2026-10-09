@@ -20,38 +20,80 @@ export interface HeaderLayout {
   y: number;
   width: number;
   height: number;
-  /** Title-table border; optional so records saved before this existed fall back to the default. */
+  /**
+   * Per-line title-table borders (like Word's table borders). Optional so records
+   * saved earlier fall back to the legacy uniform fields below, then to a 1px solid box.
+   */
+  borders?: Partial<Record<HeaderLineName, Partial<HeaderLine>>>;
+  /** Legacy uniform border (single style for the whole table). Read only as a fallback. */
   borderStyle?: HeaderBorderStyle;
-  /** CSS px (0.5–4). */
   borderWidth?: number;
   borderColor?: string;
 }
 
 export type HeaderBorderStyle = "solid" | "double" | "dashed" | "dotted" | "none";
 
-export interface HeaderBorder {
+/** One border line. `style: "none"` means the line is off. */
+export interface HeaderLine {
   style: HeaderBorderStyle;
+  /** CSS px (0.5-4). */
   width: number;
   color: string;
 }
 
-export const DEFAULT_HEADER_BORDER: HeaderBorder = { style: "solid", width: 1, color: "#111827" };
+/** The six lines of the title table: outer box edges plus the two inner dividers. */
+export type HeaderLineName = "top" | "bottom" | "left" | "right" | "insideH" | "insideV";
+export type HeaderBorders = Record<HeaderLineName, HeaderLine>;
+
+export const HEADER_LINE_NAMES: HeaderLineName[] = ["top", "bottom", "left", "right", "insideH", "insideV"];
+export const DEFAULT_HEADER_LINE: HeaderLine = { style: "solid", width: 1, color: "#111827" };
 export const HEADER_BORDER_MIN_WIDTH = 0.5;
 export const HEADER_BORDER_MAX_WIDTH = 4;
 
-/** Border with defaults filled in. Double lines need room for both strokes, so they never go thinner than 3px. */
-export function resolveHeaderBorder(layout: Partial<HeaderLayout> | undefined): HeaderBorder {
-  const style = layout?.borderStyle ?? DEFAULT_HEADER_BORDER.style;
-  const raw = Number(layout?.borderWidth ?? DEFAULT_HEADER_BORDER.width);
-  const width = Math.min(HEADER_BORDER_MAX_WIDTH, Math.max(HEADER_BORDER_MIN_WIDTH, Number.isFinite(raw) ? raw : 1));
-  const color = /^#[0-9a-fA-F]{6}$/.test(layout?.borderColor ?? "") ? (layout!.borderColor as string) : DEFAULT_HEADER_BORDER.color;
+const HEADER_STYLES: HeaderBorderStyle[] = ["solid", "double", "dashed", "dotted", "none"];
+
+function resolveHeaderLine(line: Partial<HeaderLine> | undefined, base: HeaderLine): HeaderLine {
+  const style = HEADER_STYLES.includes(line?.style as HeaderBorderStyle) ? (line!.style as HeaderBorderStyle) : base.style;
+  const raw = Number(line?.width ?? base.width);
+  const width = Math.min(HEADER_BORDER_MAX_WIDTH, Math.max(HEADER_BORDER_MIN_WIDTH, Number.isFinite(raw) ? raw : base.width));
+  const color = /^#[0-9a-fA-F]{6}$/.test(line?.color ?? "") ? (line!.color as string) : base.color;
+  // Double lines need room for both strokes, so they never go thinner than 3px.
   return { style, width: style === "double" ? Math.max(3, width) : width, color };
 }
 
-/** Value for the `--header-border` custom property that `.record-header` borders read. */
-export function headerBorderCssValue(layout: Partial<HeaderLayout> | undefined): string {
-  const b = resolveHeaderBorder(layout);
-  return b.style === "none" ? "none" : `${b.width}px ${b.style} ${b.color}`;
+/** All six lines with defaults filled in; honours the legacy single-border fields for older records. */
+export function resolveHeaderBorders(layout: Partial<HeaderLayout> | undefined): HeaderBorders {
+  const base = resolveHeaderLine(
+    { style: layout?.borderStyle, width: layout?.borderWidth, color: layout?.borderColor },
+    DEFAULT_HEADER_LINE
+  );
+  const out = {} as HeaderBorders;
+  for (const name of HEADER_LINE_NAMES) out[name] = resolveHeaderLine(layout?.borders?.[name], base);
+  return out;
+}
+
+export function headerLineCss(line: HeaderLine): string {
+  return line.style === "none" ? "none" : `${line.width}px ${line.style} ${line.color}`;
+}
+
+/** CSS custom properties (`--hb-top`, ...) that `.record-header` borders read. */
+export function headerBorderVars(layout: Partial<HeaderLayout> | undefined): Record<string, string> {
+  const b = resolveHeaderBorders(layout);
+  return {
+    "--hb-top": headerLineCss(b.top),
+    "--hb-bottom": headerLineCss(b.bottom),
+    "--hb-left": headerLineCss(b.left),
+    "--hb-right": headerLineCss(b.right),
+    "--hb-ih": headerLineCss(b.insideH),
+    "--hb-iv": headerLineCss(b.insideV),
+  };
+}
+
+/** Same custom properties as an inline `style` string (print / html2pdf HTML). */
+export function headerBorderVarsCss(layout: Partial<HeaderLayout> | undefined): string {
+  return Object.entries(headerBorderVars(layout))
+    .map(([k, v]) => `${k}:${v};`)
+    .join("");
 }
 
 export interface RecordState {

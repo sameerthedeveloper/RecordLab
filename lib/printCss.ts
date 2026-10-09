@@ -74,11 +74,24 @@ export const PRINT_CSS = `
   .record-header {
     width: 100%;
     border-collapse: collapse;
-    border: var(--header-border, 1px solid #111827);
+    border-top: var(--hb-top, 1px solid #111827);
+    border-bottom: var(--hb-bottom, 1px solid #111827);
+    border-left: var(--hb-left, 1px solid #111827);
+    border-right: var(--hb-right, 1px solid #111827);
     font-family: Arial, sans-serif;
   }
   .record-header td {
-    border: var(--header-border, 1px solid #111827);
+    border: none;
+    border-top: var(--hb-top, 1px solid #111827);
+    border-bottom: var(--hb-bottom, 1px solid #111827);
+  }
+  .record-header td:first-child {
+    border-left: var(--hb-left, 1px solid #111827);
+    border-right: var(--hb-iv, 1px solid #111827);
+  }
+  .record-header td:last-child {
+    border-left: var(--hb-iv, 1px solid #111827);
+    border-right: var(--hb-right, 1px solid #111827);
   }
   .record-meta {
     width: 28%;
@@ -95,7 +108,7 @@ export const PRINT_CSS = `
   }
   .record-meta-divider {
     margin: 5px -10px;
-    border-top: var(--header-border, 1px solid #111827);
+    border-top: var(--hb-ih, 1px solid #111827);
   }
   .record-title {
     width: 72%;

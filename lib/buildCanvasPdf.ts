@@ -1,6 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
-import { resolveHeaderBorder } from "./types";
+import { resolveHeaderBorders, type HeaderLine } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -107,6 +107,24 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
       );
       const doc = ctx.doc;
 
+      /** One straight horizontal or vertical rule, honouring dashed / dotted / double. */
+      function ruleLine(x1: number, y1: number, x2: number, y2: number, line: HeaderLine): void {
+        if (line.style === "none") return;
+        const lw = line.width * PX_TO_PT;
+        const horizontal = y1 === y2;
+        doc.save();
+        doc.strokeColor(line.color).lineWidth(line.style === "double" ? lw / 3 : lw);
+        if (line.style === "dashed") doc.dash(lw * 4, { space: lw * 3 });
+        if (line.style === "dotted") doc.lineCap("round").dash(0.01, { space: lw * 2 });
+        // A double rule is two thin strokes straddling the line, with a gap of one stroke.
+        const offsets = line.style === "double" ? [-lw / 3, lw / 3] : [0];
+        for (const o of offsets) {
+          if (horizontal) doc.moveTo(x1, y1 + o).lineTo(x2, y2 + o).stroke();
+          else doc.moveTo(x1 + o, y1).lineTo(x2 + o, y2).stroke();
+        }
+        doc.restore();
+      }
+
       function drawPageChrome(): void {
         doc.save();
         doc.lineWidth(1).strokeColor(INK);
@@ -142,8 +160,6 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
       }
 
       /** Draws the header at its draggable/resizable layout (record.headerLayout, in mm) — see DraggableHeaderTable.tsx. */
-      const double = (style: string) => style === "double";
-
       function drawHeaderTable(): void {
         const layout = record.headerLayout;
         const boxX = MARGIN_LEFT + mm(layout.x);
@@ -153,23 +169,16 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         const leftW = boxW * 0.28;
         const rightW = boxW - leftW;
 
-        const border = resolveHeaderBorder(layout);
+        const lines = resolveHeaderBorders(layout);
         const dividerY = boxY + boxH / 2;
-        if (border.style !== "none") {
-          const lw = border.width * PX_TO_PT;
-          doc.save();
-          doc.strokeColor(border.color).lineWidth(double(border.style) ? lw / 3 : lw);
-          if (border.style === "dashed") doc.dash(lw * 4, { space: lw * 3 });
-          if (border.style === "dotted") doc.lineCap("round").dash(0.01, { space: lw * 2 });
-          // A double rule is two thin strokes straddling the line, with a gap of one stroke.
-          const offsets = double(border.style) ? [-lw / 3, lw / 3] : [0];
-          for (const o of offsets) {
-            doc.rect(boxX - o, boxY - o, boxW + o * 2, boxH + o * 2).stroke();
-            doc.moveTo(boxX + leftW + o, boxY).lineTo(boxX + leftW + o, boxY + boxH).stroke();
-            doc.moveTo(boxX + 8, dividerY + o).lineTo(boxX + leftW - 8, dividerY + o).stroke();
-          }
-          doc.restore();
-        }
+        const x2 = boxX + boxW;
+        const y2 = boxY + boxH;
+        ruleLine(boxX, boxY, x2, boxY, lines.top);
+        ruleLine(boxX, y2, x2, y2, lines.bottom);
+        ruleLine(boxX, boxY, boxX, y2, lines.left);
+        ruleLine(x2, boxY, x2, y2, lines.right);
+        ruleLine(boxX + leftW, boxY, boxX + leftW, y2, lines.insideV);
+        ruleLine(boxX + 8, dividerY, boxX + leftW - 8, dividerY, lines.insideH);
 
         doc.fillColor(INK);
         doc.font(BOLD_FONT).fontSize(10);

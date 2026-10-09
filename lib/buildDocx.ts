@@ -23,7 +23,7 @@ import {
 } from "docx";
 import { toDocxFontName } from "./fonts";
 import { CONTENT_WIDTH_MM } from "./types";
-import { resolveHeaderBorder } from "./types";
+import { resolveHeaderBorders, type HeaderLine } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -44,15 +44,13 @@ const DOCX_BORDER_STYLE = {
   none: BorderStyle.NONE,
 } as const;
 
-function headerCellBorders(layout: RecordState["headerLayout"]) {
-  const b = resolveHeaderBorder(layout);
-  // docx border size is in eighths of a point; CSS px -> pt is x0.75.
-  const side = {
-    style: DOCX_BORDER_STYLE[b.style],
-    size: b.style === "none" ? 0 : Math.max(2, Math.round(b.width * 0.75 * 8)),
-    color: b.color.replace("#", ""),
+/** docx border size is in eighths of a point; CSS px -> pt is x0.75. */
+function docxLine(line: HeaderLine) {
+  return {
+    style: DOCX_BORDER_STYLE[line.style],
+    size: line.style === "none" ? 0 : Math.max(2, Math.round(line.width * 0.75 * 8)),
+    color: line.color.replace("#", ""),
   };
-  return { top: side, bottom: side, left: side, right: side };
 }
 const PAGE_BORDER = { style: BorderStyle.SINGLE, size: 4, color: "111827" } as const;
 // 8mm inset from the page edge, matching `.a4-border`'s `top/right/bottom/left: 8mm`.
@@ -166,7 +164,19 @@ function headerTable(record: RecordState, font: string): Table {
   // drag-resize and the Settings modal's default both read and write.
   const widthPct = Math.min(100, (record.headerLayout.width / CONTENT_WIDTH_MM) * 100);
   const rowHeightTwips = convertMillimetersToTwip(record.headerLayout.height);
-  const cellBorders = headerCellBorders(record.headerLayout);
+  const lines = resolveHeaderBorders(record.headerLayout);
+  const metaBorders = {
+    top: docxLine(lines.top),
+    bottom: docxLine(lines.bottom),
+    left: docxLine(lines.left),
+    right: docxLine(lines.insideV),
+  };
+  const titleBorders = {
+    top: docxLine(lines.top),
+    bottom: docxLine(lines.bottom),
+    left: docxLine(lines.insideV),
+    right: docxLine(lines.right),
+  };
 
   return new Table({
     width: { size: widthPct, type: WidthType.PERCENTAGE },
@@ -176,10 +186,13 @@ function headerTable(record: RecordState, font: string): Table {
         children: [
           new TableCell({
             width: { size: 28, type: WidthType.PERCENTAGE },
-            borders: cellBorders,
+            borders: metaBorders,
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
             children: [
               new Paragraph({
+                // The inside horizontal line: a rule under the EX NO row.
+                border: lines.insideH.style === "none" ? undefined : { bottom: { ...docxLine(lines.insideH), space: 6 } },
+                spacing: { after: 60 },
                 children: [
                   new TextRun({ text: "EX NO : ", bold: true, size: 20, font }),
                   new TextRun({ text: record.exercise_number.trim(), size: 20, font }),
@@ -196,7 +209,7 @@ function headerTable(record: RecordState, font: string): Table {
           }),
           new TableCell({
             width: { size: 72, type: WidthType.PERCENTAGE },
-            borders: cellBorders,
+            borders: titleBorders,
             verticalAlign: "center",
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
             children: [
