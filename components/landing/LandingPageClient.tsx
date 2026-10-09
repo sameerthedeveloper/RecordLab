@@ -397,10 +397,10 @@ export function LandingPageClient() {
 
   return (
     <main ref={rootRef} className="fixed inset-0 overflow-y-auto bg-paper text-ink">
-      <header className="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-[66rem] items-center justify-between gap-4 px-5 py-4">
+      <header className="pointer-events-none sticky top-3 z-30 px-3 sm:px-5">
+        <div className="pointer-events-auto mx-auto flex max-w-[66rem] items-center justify-between gap-4 rounded-full border border-line bg-paper/80 py-2 pl-4 pr-2 shadow-[0_10px_30px_-12px_rgba(28,43,51,0.35)] backdrop-blur-md sm:pl-5">
           <span className="flex items-center gap-2 font-serif text-lg font-bold tracking-tight">
-            <span aria-hidden className="flex h-7 w-7 items-center justify-center rounded-md bg-ink font-serif text-[11px] text-paper">RL</span>
+            <span aria-hidden className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink font-serif text-[11px] text-paper">RL</span>
             Record Lab
           </span>
           <nav aria-label="Sections" className="hidden items-center gap-6 text-xs font-semibold text-ink-soft md:flex">
@@ -411,7 +411,7 @@ export function LandingPageClient() {
           </nav>
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-accent-hover"
+            className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-accent-hover"
           >
             Open the app
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
