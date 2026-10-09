@@ -769,8 +769,10 @@ summary,
   .ui-panel {
     @apply rounded-[1.75rem] border border-black/[0.06] bg-white/90 shadow-[0_1px_2px_rgba(28,43,51,0.04),0_16px_48px_-20px_rgba(28,43,51,0.22)] backdrop-blur-xl;
   }
+  /* backdrop-blur makes each bar its own stacking context, so a later sibling (the section rail,
+     the scroll area) would paint over a menu dropping out of the header. Keep headers on top. */
   .ui-panel-header {
-    @apply border-b border-black/[0.06] bg-white/70 backdrop-blur-xl;
+    @apply relative z-30 border-b border-black/[0.06] bg-white/70 backdrop-blur-xl;
   }
   .ui-rail {
     @apply border-b border-black/[0.06] bg-white/60 backdrop-blur-xl;
