@@ -1,6 +1,7 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getDb } from "./firebaseConfig";
 import { DEFAULT_WATERMARK, type WatermarkOptions } from "./types";
+import type { AppSettings } from "./settings";
 
 const COLLECTION = "users";
 
@@ -37,4 +38,31 @@ export async function getWatermarkSettings(uid: string): Promise<WatermarkOption
   const data = snap.data();
   if (!data.watermark || typeof data.watermark !== "object") return null;
   return { ...DEFAULT_WATERMARK, ...data.watermark };
+}
+
+/**
+ * All app preferences (interface style, document font, default RRN, watermark and
+ * heading-table defaults) in one field of the profile doc, so they follow the user
+ * across browsers and survive clearing site data. localStorage stays as the offline
+ * cache and the source for the very first paint.
+ */
+export async function saveUserSettings(uid: string, settings: AppSettings): Promise<void> {
+  await setDoc(doc(getDb(), COLLECTION, uid), { settings, settingsUpdatedAt: serverTimestamp() }, { merge: true });
+}
+
+export type CloudSettings =
+  /** A complete settings object saved by this feature. */
+  | { kind: "full"; settings: Partial<AppSettings> }
+  /** Only the older top-level watermark field exists: migrate it, keep everything else local. */
+  | { kind: "legacy"; settings: Partial<AppSettings> };
+
+export async function getUserSettings(uid: string): Promise<CloudSettings | null> {
+  const snap = await getDoc(doc(getDb(), COLLECTION, uid));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  if (data.settings && typeof data.settings === "object") return { kind: "full", settings: data.settings };
+  if (data.watermark && typeof data.watermark === "object") {
+    return { kind: "legacy", settings: { watermark: { ...DEFAULT_WATERMARK, ...data.watermark } } };
+  }
+  return null;
 }

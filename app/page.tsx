@@ -18,8 +18,8 @@ import { createFolder, useFolders } from "@/lib/folderService";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
-import { getWatermarkSettings, saveWatermarkSettings } from "@/lib/userProfile";
-import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/lib/settings";
+import { getUserSettings, saveUserSettings } from "@/lib/userProfile";
+import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, normalizeSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
@@ -129,42 +129,16 @@ export default function Home() {
     } catch {}
   }, []);
 
-  // Once signed in, prefer the watermark default saved to this account (see
-  // lib/userProfile.ts) over whatever this browser's localStorage has, so the
-  // default follows the user across devices. Only overrides the watermark that's
-  // currently open if it still matches the pre-cloud default — never clobbers
-  // something the user already customized in this session.
-  useEffect(() => {
-    if (!authUser) return;
-    let cancelled = false;
-    getWatermarkSettings(authUser.uid).then((cloudWatermark) => {
-      if (cancelled || !cloudWatermark) return;
-      setSettings((prevSettings) => {
-        setWatermark((prev) =>
-          JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? cloudWatermark : prev
-        );
-        return { ...prevSettings, watermark: cloudWatermark };
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [authUser]);
+  // Settings as of the latest render, for effects that must not re-run when they change.
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
-  function handleSaveSettings(next: AppSettings) {
-    const prevSettings = settings;
-    setSettings(next);
-    saveSettings(next);
-    if (authUser) {
-      saveWatermarkSettings(authUser.uid, next.watermark).catch(() => {
-        // Best-effort — the local save above already succeeded, so the
-        // setting isn't lost, just not synced to this account yet.
-      });
-    }
-
-    // Only carry a changed default into the record/watermark that's
-    // currently open if it hasn't been customized away from the old
-    // default — never clobber something the user already typed/dragged.
+  /**
+   * Carries changed defaults into the record and watermark that are open right
+   * now, but only where they still equal the old default: never clobbers
+   * something the user already typed or dragged.
+   */
+  const carryDefaults = useCallback((prevSettings: AppSettings, next: AppSettings) => {
     setRecord((prev) => ({
       ...prev,
       rrn: prev.rrn.trim() ? prev.rrn : next.rrn,
@@ -176,8 +150,46 @@ export default function Home() {
     setWatermark((prev) =>
       JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? next.watermark : prev
     );
+  }, []);
 
-    showToast("Settings saved.");
+  // Once signed in, the account's saved preferences (see lib/userProfile.ts) win over
+  // whatever this browser's localStorage has, so they follow the user across devices.
+  // A brand-new account has none yet, so this browser's settings are uploaded instead.
+  useEffect(() => {
+    if (!authUser) return;
+    let cancelled = false;
+    getUserSettings(authUser.uid)
+      .then((cloud) => {
+        if (cancelled) return;
+        const local = settingsRef.current;
+        const next = cloud?.kind === "full" ? normalizeSettings(cloud.settings) : normalizeSettings({ ...local, ...cloud?.settings });
+        if (cloud?.kind !== "full") saveUserSettings(authUser.uid, next).catch(() => {});
+        if (JSON.stringify(next) === JSON.stringify(local)) return;
+        setSettings(next);
+        saveSettings(next);
+        carryDefaults(local, next);
+      })
+      .catch((err) => console.error("Failed to load saved settings:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser, carryDefaults]);
+
+  function handleSaveSettings(next: AppSettings) {
+    const prevSettings = settings;
+    setSettings(next);
+    saveSettings(next);
+    carryDefaults(prevSettings, next);
+
+    if (authUser) {
+      saveUserSettings(authUser.uid, next).catch((err) => {
+        console.error("Saving settings to the cloud failed:", err);
+        showToast("Settings saved on this device, but couldn't sync to your account.");
+      });
+      showToast("Settings saved.");
+    } else {
+      showToast("Settings saved on this device. Sign in to keep them with your account.");
+    }
     track("save_settings");
   }
 

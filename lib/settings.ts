@@ -38,19 +38,25 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 const STORAGE_KEY = "recordlab-settings-v1";
 
+/** Fills every missing or invalid field with its default, so data from localStorage or Firestore (old or partial) is safe to use. */
+export function normalizeSettings(raw: unknown): AppSettings {
+  const parsed = (raw && typeof raw === "object" ? raw : {}) as Partial<AppSettings>;
+  return {
+    ...DEFAULT_SETTINGS,
+    rrn: typeof parsed.rrn === "string" ? parsed.rrn : DEFAULT_SETTINGS.rrn,
+    font: typeof parsed.font === "string" && parsed.font ? parsed.font : DEFAULT_SETTINGS.font,
+    watermark: { ...DEFAULT_WATERMARK, ...(parsed.watermark ?? {}) },
+    headerLayout: { ...DEFAULT_HEADER_LAYOUT, ...(parsed.headerLayout ?? {}) },
+    uiStyle: UI_STYLES.includes(parsed.uiStyle as UiStyle) ? (parsed.uiStyle as UiStyle) : "apple",
+  };
+}
+
 export function loadSettings(): AppSettings {
   if (typeof window === "undefined") return DEFAULT_SETTINGS;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_SETTINGS,
-      ...parsed,
-      watermark: { ...DEFAULT_WATERMARK, ...(parsed?.watermark ?? {}) },
-      headerLayout: { ...DEFAULT_HEADER_LAYOUT, ...(parsed?.headerLayout ?? {}) },
-      uiStyle: UI_STYLES.includes(parsed?.uiStyle) ? parsed.uiStyle : "apple",
-    };
+    return normalizeSettings(JSON.parse(raw));
   } catch {
     return DEFAULT_SETTINGS;
   }
