@@ -206,7 +206,7 @@ export function Onboarding({ activePanel, onRequestPanel }: OnboardingProps) {
       <div
         role="dialog"
         aria-label={`Tour step ${stepIndex + 1} of ${total}: ${step.title}`}
-        className="fixed rounded-2xl border border-line bg-white p-4 shadow-lg"
+        className="ui-menu fixed p-4"
         style={{ ...cardStyle, transition: `top ${transitionDuration} ease-out, left ${transitionDuration} ease-out` }}
       >
         <div className="absolute h-0 w-0" style={arrowStyle} />

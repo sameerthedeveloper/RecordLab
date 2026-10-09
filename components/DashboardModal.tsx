@@ -514,7 +514,7 @@ export function DashboardModal({
             )}
 
             {user && latest && !query && section === "all" && (
-              <div className="mb-5 mt-1 flex items-center gap-4 overflow-hidden rounded-2xl border border-line bg-paper pr-4">
+              <div className="ui-card mb-5 mt-1 flex items-center gap-4 overflow-hidden pr-4">
                 <div className="h-32 w-28 shrink-0 border-r border-line sm:w-36">
                   <FileThumb document={latest} />
                 </div>
@@ -577,7 +577,7 @@ export function DashboardModal({
                         ))}
                       </div>
                     ) : (
-                      <div className="overflow-hidden rounded-2xl border border-line">
+                      <div className="ui-card overflow-hidden">
                         {g.docs.map((d) => (
                           <FileRow key={d.id} document={d} selected={d.id === selectedId} {...actions(d)} />
                         ))}
@@ -823,7 +823,7 @@ export function DashboardModal({
   if (embedded) {
     return (
       <>
-        <div className="relative flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-paper">
+        <div className="ui-panel relative flex h-full w-full min-h-0 flex-col overflow-hidden">
           <header className="flex shrink-0 items-center border-b border-line px-4 py-3 sm:px-5">
             <label className="relative flex w-full max-w-xl items-center">
               <Search

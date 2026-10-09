@@ -211,7 +211,7 @@ export function RecordEditorPanel({
                 <MoreHorizontal className="h-5 w-5" strokeWidth={2} />
               </button>
               {fileMenuOpen && (
-                <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-20 w-52 rounded-xl border border-line bg-white p-1 shadow-lg">
+                <div role="menu" className="ui-menu absolute right-0 top-[calc(100%+6px)] z-20 w-52 p-1">
                   <button
                     role="menuitem"
                     type="button"

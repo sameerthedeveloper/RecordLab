@@ -156,7 +156,7 @@ function RowMenu({ onOpen, onRename, onMove, onDelete }: Pick<ItemActions, "onOp
             style={{ top: pos.top, left: pos.left, width: MENU_W }}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
-            className="fixed z-[70] rounded-xl border border-line bg-white p-1 shadow-xl"
+            className="ui-menu fixed z-[70] p-1"
           >
             <button role="menuitem" type="button" className={item} onClick={run(onOpen)}>
               <FolderOpen className="h-3.5 w-3.5" strokeWidth={2} /> Open in editor

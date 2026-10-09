@@ -801,33 +801,36 @@ summary,
   .ui-chip {
     @apply rounded-full border border-black/[0.06] bg-white shadow-[0_2px_10px_-4px_rgba(28,43,51,0.2)] transition-all active:scale-[0.98];
   }
-  /* Dialogs, buttons inside them, and toasts look the same in every UI style. */
   .ui-modal {
-    @apply rounded-t-3xl border border-line bg-white shadow-2xl sm:rounded-3xl;
+    @apply rounded-t-[2rem] border border-black/[0.06] bg-white/95 shadow-[0_30px_80px_-20px_rgba(28,43,51,0.5)] backdrop-blur-2xl sm:rounded-[2rem];
   }
   .ui-modal-head {
-    @apply border-b border-line;
+    @apply border-b border-black/[0.06];
   }
   .ui-modal-backdrop {
-    @apply bg-ink/40 backdrop-blur-sm;
+    @apply bg-ink/30 backdrop-blur-md;
   }
   .ui-btn {
-    @apply rounded-xl px-4 py-2 text-xs font-semibold transition-colors;
+    @apply rounded-full px-5 py-2.5 text-[13px] font-semibold transition-all active:scale-[0.97];
   }
   .ui-btn-primary {
-    @apply bg-accent text-white shadow-sm hover:bg-accent-hover disabled:opacity-60;
+    @apply bg-accent text-white shadow-[0_6px_16px_-8px_rgba(194,65,12,0.8)] hover:bg-accent-hover disabled:opacity-60;
   }
   .ui-btn-secondary {
-    @apply border border-line bg-white text-ink-soft hover:border-accent/40 hover:text-accent;
+    @apply border border-black/[0.08] bg-white text-ink-soft hover:border-accent/40 hover:text-accent;
   }
   .ui-btn-danger {
     @apply bg-red-600 text-white shadow-sm hover:bg-red-700;
   }
   .ui-toast {
-    @apply rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs text-red-700 shadow-lg;
+    @apply rounded-full border border-white/10 bg-ink/90 px-5 py-3 text-[13px] font-medium text-paper shadow-[0_18px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl;
   }
   .ui-tile {
-    @apply rounded-xl bg-accent text-white;
+    @apply rounded-[10px] bg-gradient-to-b from-[#d4500f] to-accent text-white shadow-[0_6px_14px_-6px_rgba(194,65,12,0.7)];
+  }
+  /* Dropdown menus and popovers. */
+  .ui-menu {
+    @apply rounded-2xl border border-black/[0.06] bg-white/95 shadow-[0_18px_50px_-16px_rgba(28,43,51,0.4)] backdrop-blur-2xl;
   }
   .ui-detail {
     @apply rounded-[14px] bg-black/[0.04] px-3.5 py-2.5 open:bg-black/[0.03];
@@ -911,4 +914,96 @@ summary,
   border-radius: 0.75rem;
   border: 1px solid #e5decb;
   background: rgba(250, 247, 240, 0.6);
+}
+
+/* ---- classic: dialogs, buttons, toasts, menus ---- */
+[data-ui="classic"] .ui-modal {
+  border-radius: 1.5rem 1.5rem 0 0;
+  border: 1px solid #e5decb;
+  background: #fff;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (min-width: 640px) {
+  [data-ui="classic"] .ui-modal {
+    border-radius: 1.5rem;
+  }
+}
+[data-ui="classic"] .ui-modal-head {
+  border-bottom: 1px solid #e5decb;
+}
+[data-ui="classic"] .ui-modal-backdrop {
+  background: rgba(28, 43, 51, 0.4);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+[data-ui="classic"] .ui-btn {
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+[data-ui="classic"] .ui-btn-primary {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+[data-ui="classic"] .ui-btn-secondary {
+  border-color: #e5decb;
+}
+[data-ui="classic"] .ui-toast {
+  border-radius: 0.75rem;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 0.625rem 1rem;
+  font-size: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-ui="classic"] .ui-tile {
+  border-radius: 0.75rem;
+  background: #c2410c;
+  box-shadow: none;
+}
+[data-ui="classic"] .ui-menu {
+  border-radius: 0.75rem;
+  border: 1px solid #e5decb;
+  background: #fff;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* =====================================================
+   MODERN: refinements for controls everywhere (dialogs,
+   dashboard, popovers) without touching each component.
+   Classic is untouched: all of this is scoped away from it.
+===================================================== */
+html:not([data-ui="classic"]) :is(button, a).rounded-xl {
+  border-radius: 9999px;
+}
+html:not([data-ui="classic"]) button.rounded-xl.bg-accent,
+html:not([data-ui="classic"]) a.rounded-xl.bg-accent {
+  background-image: linear-gradient(to bottom, #d4500f, #c2410c);
+  box-shadow: 0 6px 16px -8px rgba(194, 65, 12, 0.8);
+}
+html:not([data-ui="classic"]) button.rounded-xl.bg-accent:hover,
+html:not([data-ui="classic"]) a.rounded-xl.bg-accent:hover {
+  background-image: linear-gradient(to bottom, #b3380a, #9a3412);
+}
+html:not([data-ui="classic"]) :is(input, select, textarea).rounded-xl:not([type="range"]):not([type="color"]):not([type="checkbox"]):not([type="radio"]),
+html:not([data-ui="classic"]) :is(input, select, textarea).rounded-lg:not([type="range"]):not([type="color"]):not([type="checkbox"]):not([type="radio"]) {
+  border-radius: 14px;
+  border-color: transparent;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+html:not([data-ui="classic"]) :is(input, select, textarea).rounded-xl:not([type="range"]):not([type="color"]):not([type="checkbox"]):not([type="radio"]):hover,
+html:not([data-ui="classic"]) :is(input, select, textarea).rounded-lg:not([type="range"]):not([type="color"]):not([type="checkbox"]):not([type="radio"]):hover {
+  background-color: rgba(0, 0, 0, 0.055);
+}
+html:not([data-ui="classic"]) :is(input, select, textarea).rounded-xl:not([type="range"]):not([type="color"]):not([type="checkbox"]):not([type="radio"]):focus,
+html:not([data-ui="classic"]) :is(input, select, textarea).rounded-lg:not([type="range"]):not([type="color"]):not([type="checkbox"]):not([type="radio"]):focus {
+  border-color: rgba(194, 65, 12, 0.5);
+  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.15);
 }

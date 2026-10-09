@@ -74,7 +74,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-60 rounded-xl border border-line bg-white p-2 shadow-lg">
+        <div className="ui-menu absolute right-0 top-[calc(100%+6px)] z-20 w-60 p-2">
           <PuterLinkButton
             user={user}
             onLinked={(username) => onToast(`Linked Puter account @${username}.`)}

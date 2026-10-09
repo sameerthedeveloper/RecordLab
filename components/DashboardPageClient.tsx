@@ -52,8 +52,8 @@ export function DashboardPageClient() {
   const thisWeek = activity[WEEKS - 1];
 
   return (
-    <div className="flex h-full w-full flex-col gap-3.5 bg-gray-100 p-3.5 md:p-4">
-      <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 rounded-2xl border border-line bg-white px-5 py-4">
+    <div className="app-canvas flex h-full w-full flex-col gap-3.5 p-3.5 md:p-4">
+      <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 ui-panel px-5 py-4">
         <div className="min-w-0">
           <Link
             href="/"
