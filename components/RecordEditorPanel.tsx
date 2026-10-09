@@ -5,6 +5,7 @@ import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pe
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
+import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
 import { describeHeaderBorders, HeaderBorderControls } from "./HeaderBorderControls";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
@@ -20,6 +21,13 @@ interface RecordEditorPanelProps {
   /** Adds a generated image (data URL); `clearText` also empties the plain output text. */
   onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => void;
   onUpdateOutputImage: (id: number, src: string, terminal: TerminalImageOptions) => void;
+  /** Cloud subject folders: only shown when signed in. */
+  signedIn: boolean;
+  folders: Folder[];
+  folderId: string | null;
+  onFolderChange: (id: string | null) => void;
+  /** Creates a subject and resolves to its id (null on failure). */
+  onCreateFolder: (name: string) => Promise<string | null>;
   onOpenAiModal: () => void;
   onSaveWork: () => void;
   onLoadWork: (file: File) => void;
@@ -57,6 +65,11 @@ export function RecordEditorPanel({
   onRemoveImage,
   onAddOutputImage,
   onUpdateOutputImage,
+  signedIn,
+  folders,
+  folderId,
+  onFolderChange,
+  onCreateFolder,
   onOpenAiModal,
   onSaveWork,
   onLoadWork,
@@ -73,6 +86,7 @@ export function RecordEditorPanel({
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>("details");
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [newSubject, setNewSubject] = useState<string | null>(null);
   const [editingImage, setEditingImage] = useState<OutputImage | null>(null);
 
   const filled: Record<SectionId, boolean> = {
@@ -342,6 +356,65 @@ export function RecordEditorPanel({
                   onChange={(e) => onFieldChange("title", e.target.value)}
                 />
               </div>
+
+              {signedIn && (
+                <div>
+                  <label htmlFor="subjectSelect" className={labelClass}>
+                    Subject folder <span className="font-normal text-ink-soft/60">(where Save to Cloud files it)</span>
+                  </label>
+                  <select
+                    id="subjectSelect"
+                    className={`${inputClass} bg-white`}
+                    value={newSubject !== null ? "__new" : folderId ?? ""}
+                    onChange={(e) => {
+                      if (e.target.value === "__new") setNewSubject("");
+                      else {
+                        setNewSubject(null);
+                        onFolderChange(e.target.value || null);
+                      }
+                    }}
+                  >
+                    <option value="">No subject</option>
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                    <option value="__new">+ New subject…</option>
+                  </select>
+                  {newSubject !== null && (
+                    <form
+                      className="mt-2 flex gap-2"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!newSubject.trim()) return;
+                        const id = await onCreateFolder(newSubject);
+                        if (id) {
+                          onFolderChange(id);
+                          setNewSubject(null);
+                        }
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        maxLength={60}
+                        aria-label="New subject name"
+                        placeholder="e.g. Data Structures"
+                        className={inputClass}
+                        value={newSubject}
+                        onChange={(e) => setNewSubject(e.target.value)}
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newSubject.trim()}
+                        className="shrink-0 rounded-xl bg-accent px-3 text-xs font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+                      >
+                        Create
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
 
               <details className="group rounded-xl border border-line bg-paper/60 px-3 py-2">
                 <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-soft">

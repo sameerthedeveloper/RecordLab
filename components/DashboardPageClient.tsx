@@ -29,10 +29,12 @@ export function DashboardPageClient() {
   const [documents, setDocuments] = useState<CloudDocument[] | null>(null);
 
   const handleLoad = useCallback(
-    (payload: RlabPayload, docId: string) => {
+    (payload: RlabPayload, docId: string, folderId: string | null) => {
       try {
         sessionStorage.setItem("recordlab.pendingLoad", JSON.stringify(payload));
         sessionStorage.setItem("recordlab.pendingLoadId", docId);
+        if (folderId) sessionStorage.setItem("recordlab.pendingLoadFolder", folderId);
+        else sessionStorage.removeItem("recordlab.pendingLoadFolder");
       } catch {
         showToast("Unable to open this record. Free up browser storage and try again.");
         return;

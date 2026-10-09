@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
+import { FileText, FolderInput, MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CloudDocument } from "@/lib/firestoreService";
@@ -66,22 +66,26 @@ export function FileThumb({ document }: { document: CloudDocument }) {
   );
 }
 
+/** dataTransfer type used when dragging a file onto a subject folder. */
+export const FILE_DRAG_TYPE = "application/x-recordlab-file";
+
 interface ItemActions {
   onSelect: () => void;
   onOpen: () => void;
   onRename: () => void;
+  onMove: () => void;
   onDelete: () => void;
 }
 
 const MENU_W = 160;
-const MENU_H = 124;
+const MENU_H = 164;
 
 /**
  * The menu is portalled to <body> with fixed positioning: file cards and the
  * dialog body clip overflow, and later cards paint over an absolutely
  * positioned menu, so an in-flow menu ended up behind its neighbours.
  */
-function RowMenu({ onOpen, onRename, onDelete }: Pick<ItemActions, "onOpen" | "onRename" | "onDelete">) {
+function RowMenu({ onOpen, onRename, onMove, onDelete }: Pick<ItemActions, "onOpen" | "onRename" | "onMove" | "onDelete">) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -160,6 +164,9 @@ function RowMenu({ onOpen, onRename, onDelete }: Pick<ItemActions, "onOpen" | "o
             <button role="menuitem" type="button" className={item} onClick={run(onRename)}>
               <Pencil className="h-3.5 w-3.5" strokeWidth={2} /> Rename
             </button>
+            <button role="menuitem" type="button" className={item} onClick={run(onMove)}>
+              <FolderInput className="h-3.5 w-3.5" strokeWidth={2} /> Move to subject
+            </button>
             <button
               role="menuitem"
               type="button"
@@ -182,6 +189,11 @@ export function FileCard({
 }: { document: CloudDocument; selected: boolean } & ItemActions) {
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(FILE_DRAG_TYPE, document.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
@@ -207,7 +219,7 @@ export function FileCard({
           <p className="truncate text-[13px] font-semibold text-ink">{document.title}</p>
           <p className="truncate text-[11px] text-ink-soft/70">Edited {relativeTime(document.updatedAt)}</p>
         </div>
-        <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onDelete={actions.onDelete} />
+        <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDelete={actions.onDelete} />
       </div>
     </div>
   );
@@ -221,6 +233,11 @@ export function FileRow({
   const record = document.data?.record;
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(FILE_DRAG_TYPE, document.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
@@ -245,7 +262,7 @@ export function FileRow({
         {record?.exercise_number ? `Ex. ${record.exercise_number}` : "—"}
       </p>
       <p className="hidden text-xs text-ink-soft sm:block">{relativeTime(document.updatedAt)}</p>
-      <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onDelete={actions.onDelete} />
+      <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDelete={actions.onDelete} />
     </div>
   );
 }

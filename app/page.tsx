@@ -14,6 +14,7 @@ import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
+import { createFolder, useFolders } from "@/lib/folderService";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
@@ -68,6 +69,9 @@ export default function Home() {
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   // Firestore id of the cloud file being edited; null = not saved yet, so the next save creates it.
   const [cloudDocId, setCloudDocId] = useState<string | null>(null);
+  // Subject folder the cloud file is saved into (null = none).
+  const [cloudFolderId, setCloudFolderId] = useState<string | null>(null);
+  const folders = useFolders();
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
   const [pdfEngine, setPdfEngine] = useState<PdfEngine>("html2pdf");
 
@@ -76,11 +80,19 @@ export default function Home() {
 
   const pages = usePaginatedPages(record);
 
+  // Drop a folder id that no longer exists (subject deleted from the dashboard).
+  useEffect(() => {
+    if (cloudFolderId && folders && !folders.some((f) => f.id === cloudFolderId)) setCloudFolderId(null);
+  }, [cloudFolderId, folders]);
+
   // A cloud file belongs to one account: forget it if the user signs out or switches accounts.
   const lastUidRef = useRef<string | null>(null);
   useEffect(() => {
     const uid = authUser?.uid ?? null;
-    if (lastUidRef.current && lastUidRef.current !== uid) setCloudDocId(null);
+    if (lastUidRef.current && lastUidRef.current !== uid) {
+      setCloudDocId(null);
+      setCloudFolderId(null);
+    }
     lastUidRef.current = uid;
   }, [authUser]);
 
@@ -102,6 +114,8 @@ export default function Home() {
         sessionStorage.removeItem("recordlab.pendingLoad");
         setCloudDocId(sessionStorage.getItem("recordlab.pendingLoadId"));
         sessionStorage.removeItem("recordlab.pendingLoadId");
+        setCloudFolderId(sessionStorage.getItem("recordlab.pendingLoadFolder"));
+        sessionStorage.removeItem("recordlab.pendingLoadFolder");
         const payload = JSON.parse(pending) as RlabPayload;
         setRecord({ ...DEFAULT_RECORD, ...payload.record });
         if (payload.watermark) setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
@@ -162,8 +176,9 @@ export default function Home() {
     track("save_settings");
   }
 
-  function handleLoadFromDashboard(payload: RlabPayload, docId: string) {
+  function handleLoadFromDashboard(payload: RlabPayload, docId: string, folderId: string | null) {
     setCloudDocId(docId);
+    setCloudFolderId(folderId);
     setRecord({ ...DEFAULT_RECORD, ...payload.record });
     if (payload.watermark) {
       setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
@@ -240,6 +255,7 @@ export default function Home() {
         }
         setRecord({ ...DEFAULT_RECORD, ...loadedRecord });
         setCloudDocId(null);
+        setCloudFolderId(null);
         if (data.watermark && typeof data.watermark === "object") {
           setWatermark({ ...DEFAULT_WATERMARK, ...data.watermark });
         }
@@ -259,7 +275,7 @@ export default function Home() {
       const title = record.title || "Untitled";
       if (cloudDocId) {
         try {
-          await updateDocument(cloudDocId, payload, title);
+          await updateDocument(cloudDocId, payload, title, cloudFolderId);
           showToast("Cloud file updated.");
           track("update_cloud");
           return;
@@ -268,7 +284,7 @@ export default function Home() {
           if ((error as { code?: string })?.code !== "not-found") throw error;
         }
       }
-      setCloudDocId(await saveDocument(payload, title));
+      setCloudDocId(await saveDocument(payload, title, cloudFolderId));
       showToast("Saved to cloud.");
       track("save_cloud");
     } catch (error) {
@@ -428,6 +444,19 @@ export default function Home() {
           onImageUpload={handleImageUpload}
           onRemoveImage={handleRemoveImage}
           onAddOutputImage={handleAddOutputImage}
+          signedIn={Boolean(authUser)}
+          folders={folders ?? []}
+          folderId={cloudFolderId}
+          onFolderChange={setCloudFolderId}
+          onCreateFolder={async (name) => {
+            if (!authUser) return null;
+            try {
+              return (await createFolder(authUser.uid, name)).id;
+            } catch (error) {
+              showToast(error instanceof Error ? error.message : "Unable to create the subject.");
+              return null;
+            }
+          }}
           onUpdateOutputImage={handleUpdateOutputImage}
           onOpenAiModal={() => setAiModalOpen(true)}
           onSaveWork={handleSaveWork}

@@ -31,6 +31,8 @@ export interface CloudDocument {
   puterUserId: string | null;
   puterUsername: string | null;
   title: string;
+  /** Subject folder this file sits in; null = no subject. */
+  folderId: string | null;
   data: RlabPayload;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
@@ -76,6 +78,7 @@ function toCloudDocument(id: string, data: Record<string, unknown>): CloudDocume
     puterUserId: (data.puterUserId as string) ?? null,
     puterUsername: (data.puterUsername as string) ?? null,
     title: (data.title as string) ?? "Untitled",
+    folderId: (data.folderId as string) ?? null,
     data: data.data as RlabPayload,
     createdAt: (data.createdAt as Timestamp) ?? null,
     updatedAt: (data.updatedAt as Timestamp) ?? null,
@@ -83,7 +86,7 @@ function toCloudDocument(id: string, data: Record<string, unknown>): CloudDocume
 }
 
 /** Saves a new document. Puter linking is best-effort and silent (no sign-in popup) — see `getPuterIdentity`. */
-export async function saveDocument(payload: RlabPayload, title: string): Promise<string> {
+export async function saveDocument(payload: RlabPayload, title: string, folderId: string | null = null): Promise<string> {
   const user = await requireUser();
   const puterUser = await getPuterIdentity();
 
@@ -92,6 +95,7 @@ export async function saveDocument(payload: RlabPayload, title: string): Promise
     puterUserId: puterUser?.uuid ?? null,
     puterUsername: puterUser?.username ?? null,
     title: title.trim() || "Untitled",
+    folderId,
     data: payload,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -116,10 +120,16 @@ export async function watchUserDocuments(
   );
 }
 
-export async function updateDocument(docId: string, payload: RlabPayload, title: string): Promise<void> {
+export async function updateDocument(
+  docId: string,
+  payload: RlabPayload,
+  title: string,
+  folderId?: string | null
+): Promise<void> {
   await requireUser();
   await updateDoc(doc(getDb(), COLLECTION, docId), {
     title: title.trim() || "Untitled",
+    ...(folderId !== undefined ? { folderId } : {}),
     data: payload,
     updatedAt: serverTimestamp(),
   });
@@ -136,4 +146,10 @@ export async function renameDocument(docId: string, title: string): Promise<void
     title: title.trim() || "Untitled",
     updatedAt: serverTimestamp(),
   });
+}
+
+/** Moves a file into a subject folder (or out of any folder with null). Doesn't touch its content or edit time. */
+export async function moveDocument(docId: string, folderId: string | null): Promise<void> {
+  await requireUser();
+  await updateDoc(doc(getDb(), COLLECTION, docId), { folderId });
 }
