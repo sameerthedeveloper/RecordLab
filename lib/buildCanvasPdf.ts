@@ -1,6 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
-import { resolveHeaderBorders, type HeaderLine } from "./types";
+import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -179,6 +179,9 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         ruleLine(x2, boxY, x2, y2, lines.right);
         ruleLine(boxX + leftW, boxY, boxX + leftW, y2, lines.insideV);
         ruleLine(boxX + 8, dividerY, boxX + leftW - 8, dividerY, lines.insideH);
+        const underline = resolveHeaderUnderline(layout);
+        const underlineY = y2 + mm(underline.gap);
+        ruleLine(MARGIN_LEFT, underlineY, MARGIN_LEFT + CONTENT_WIDTH, underlineY, underline);
 
         doc.fillColor(INK);
         doc.font(BOLD_FONT).fontSize(10);

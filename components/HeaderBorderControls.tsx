@@ -5,8 +5,10 @@ import {
   HEADER_BORDER_MAX_WIDTH,
   HEADER_BORDER_MIN_WIDTH,
   HEADER_LINE_NAMES,
+  HEADER_UNDERLINE_MAX_GAP_MM,
   headerLineCss,
   resolveHeaderBorders,
+  resolveHeaderUnderline,
   type HeaderBorders,
   type HeaderBorderStyle,
   type HeaderLayout,
@@ -98,6 +100,12 @@ export function HeaderBorderControls({ layout, onChange, idPrefix }: HeaderBorde
       next[n] = on ? penLine : OFF;
     }
     commit(next);
+  }
+
+  const underline = resolveHeaderUnderline(layout);
+  const underlineOn = underline.style !== "none";
+  function setUnderline(patch: Partial<typeof underline>) {
+    onChange({ ...layout, underline: { ...underline, ...patch } });
   }
 
   function restyleAll() {
@@ -235,6 +243,82 @@ export function HeaderBorderControls({ layout, onChange, idPrefix }: HeaderBorde
             title="Pen preview"
           />
         </div>
+      </div>
+
+      {/* rule under the whole heading block */}
+      <div className="rounded-xl border border-line bg-paper/60 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <span className="block font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-accent">Line under heading</span>
+            <span className="text-[11px] text-ink-soft/70">A full-width rule below the table, separate from its borders.</span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={underlineOn}
+            aria-label="Line under heading"
+            onClick={() => setUnderline({ style: underlineOn ? "none" : "solid" })}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${underlineOn ? "bg-accent" : "bg-ink/20"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${underlineOn ? "left-[22px]" : "left-0.5"}`} />
+          </button>
+        </div>
+
+        {underlineOn && (
+          <div className="mt-3 space-y-3">
+            <div className="grid grid-cols-4 gap-1 rounded-xl border border-line bg-white p-1" role="group" aria-label="Underline style">
+              {PEN_STYLES.map((s) => (
+                <button key={s.id} type="button" aria-pressed={underline.style === s.id} onClick={() => setUnderline({ style: s.id })} className={seg(underline.style === s.id)}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+              <div>
+                <label htmlFor={`${idPrefix}-uw`} className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+                  Thickness <span className="font-mono font-medium">{underline.width}px</span>
+                </label>
+                <input
+                  id={`${idPrefix}-uw`}
+                  type="range"
+                  min={HEADER_BORDER_MIN_WIDTH}
+                  max={HEADER_BORDER_MAX_WIDTH}
+                  step={0.5}
+                  value={underline.width}
+                  onChange={(e) => setUnderline({ width: Number(e.target.value) })}
+                  className="w-full accent-[#c2410c]"
+                />
+              </div>
+              <div>
+                <label htmlFor={`${idPrefix}-uc`} className="mb-1 block text-xs font-semibold text-ink-soft">
+                  Colour
+                </label>
+                <input
+                  id={`${idPrefix}-uc`}
+                  type="color"
+                  value={underline.color}
+                  onChange={(e) => setUnderline({ color: e.target.value })}
+                  className="h-9 w-12 cursor-pointer rounded-lg border border-line bg-white p-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor={`${idPrefix}-ug`} className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+                Space below the table <span className="font-mono font-medium">{underline.gap}mm</span>
+              </label>
+              <input
+                id={`${idPrefix}-ug`}
+                type="range"
+                min={0}
+                max={HEADER_UNDERLINE_MAX_GAP_MM}
+                step={0.5}
+                value={underline.gap}
+                onChange={(e) => setUnderline({ gap: Number(e.target.value) })}
+                className="w-full accent-[#c2410c]"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

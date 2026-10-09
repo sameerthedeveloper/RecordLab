@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Move } from "lucide-react";
 import { CONTENT_HEIGHT_MM, CONTENT_WIDTH_MM } from "@/lib/types";
-import { headerBorderVars } from "@/lib/types";
+import { headerBorderVars, headerLineCss, resolveHeaderUnderline } from "@/lib/types";
 import type { HeaderLayout, RecordState } from "@/lib/types";
 
 export const MIN_WIDTH_MM = 40;
@@ -96,6 +96,8 @@ export function DraggableHeaderTable({ record, layout, onFieldChange }: Draggabl
     beginGesture(e, { kind: "resize" }, getPxPerMm(e));
   }
 
+  const underline = resolveHeaderUnderline(layout);
+
   return (
     <div
       className="header-layout-box"
@@ -116,6 +118,19 @@ export function DraggableHeaderTable({ record, layout, onFieldChange }: Draggabl
       >
         <Move className="h-3 w-3" strokeWidth={2.5} />
       </button>
+
+      {underline.style !== "none" && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute"
+          style={{
+            left: `${-current.x}mm`,
+            width: `${CONTENT_WIDTH_MM}mm`,
+            top: `calc(100% + ${underline.gap}mm)`,
+            borderTop: headerLineCss(underline),
+          }}
+        />
+      )}
 
       <table
         className="record-header"

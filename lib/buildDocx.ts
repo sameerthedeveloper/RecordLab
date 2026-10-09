@@ -23,7 +23,7 @@ import {
 } from "docx";
 import { toDocxFontName } from "./fonts";
 import { CONTENT_WIDTH_MM } from "./types";
-import { resolveHeaderBorders, type HeaderLine } from "./types";
+import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -227,7 +227,17 @@ function headerTable(record: RecordState, font: string): Table {
 
 export async function buildRecordDocx(record: RecordState, watermark: WatermarkOptions, docFont: string): Promise<Blob> {
   const font = toDocxFontName(docFont);
-  const children: (Paragraph | Table)[] = [headerTable(record, font), new Paragraph({ children: [] })];
+  const underline = resolveHeaderUnderline(record.headerLayout);
+  // The rule is the bottom border of the paragraph right after the table; `space` (pt) is its gap from the text above.
+  const afterHeader =
+    underline.style === "none"
+      ? new Paragraph({ children: [] })
+      : new Paragraph({
+          children: [],
+          spacing: { before: Math.round(underline.gap * 56.7) },
+          border: { bottom: { ...docxLine(underline), space: 1 } },
+        });
+  const children: (Paragraph | Table)[] = [headerTable(record, font), afterHeader];
 
   if (record.aim.trim()) {
     children.push(headingParagraph("AIM:", font), bodyParagraph(record.aim, font));

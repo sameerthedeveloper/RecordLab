@@ -1,6 +1,6 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
 import { CONTENT_WIDTH_MM } from "./types";
-import { headerBorderVarsCss } from "./types";
+import { headerBorderVarsCss, headerLineCss, resolveHeaderUnderline } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
 
 /**
@@ -61,6 +61,12 @@ function createHeader(record: RecordState): string {
   const widthPct = Math.min(100, (record.headerLayout.width / CONTENT_WIDTH_MM) * 100);
   const minHeightMm = record.headerLayout.height;
 
+  const underline = resolveHeaderUnderline(record.headerLayout);
+  const underlineHTML =
+    underline.style === "none"
+      ? ""
+      : `<div class="record-header-rule" style="margin-top:${underline.gap}mm;border-top:${headerLineCss(underline)}"></div>`;
+
   return `
     <table class="record-header" style="width:${widthPct}%;${headerBorderVarsCss(record.headerLayout)}">
       <tr>
@@ -80,6 +86,7 @@ function createHeader(record: RecordState): string {
         </td>
       </tr>
     </table>
+    ${underlineHTML}
   `;
 }
 

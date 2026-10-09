@@ -25,6 +25,8 @@ export interface HeaderLayout {
    * saved earlier fall back to the legacy uniform fields below, then to a 1px solid box.
    */
   borders?: Partial<Record<HeaderLineName, Partial<HeaderLine>>>;
+  /** Full-width rule drawn under the title table (off by default). */
+  underline?: Partial<HeaderUnderline>;
   /** Legacy uniform border (single style for the whole table). Read only as a fallback. */
   borderStyle?: HeaderBorderStyle;
   borderWidth?: number;
@@ -40,6 +42,14 @@ export interface HeaderLine {
   width: number;
   color: string;
 }
+
+/** A rule under the whole heading block. `gap` is the space between the table and the rule, in mm. */
+export interface HeaderUnderline extends HeaderLine {
+  gap: number;
+}
+
+export const DEFAULT_HEADER_UNDERLINE: HeaderUnderline = { style: "none", width: 1, color: "#6b7280", gap: 4 };
+export const HEADER_UNDERLINE_MAX_GAP_MM = 20;
 
 /** The six lines of the title table: outer box edges plus the two inner dividers. */
 export type HeaderLineName = "top" | "bottom" | "left" | "right" | "insideH" | "insideV";
@@ -70,6 +80,13 @@ export function resolveHeaderBorders(layout: Partial<HeaderLayout> | undefined):
   const out = {} as HeaderBorders;
   for (const name of HEADER_LINE_NAMES) out[name] = resolveHeaderLine(layout?.borders?.[name], base);
   return out;
+}
+
+export function resolveHeaderUnderline(layout: Partial<HeaderLayout> | undefined): HeaderUnderline {
+  const u = layout?.underline;
+  const line = resolveHeaderLine(u, DEFAULT_HEADER_UNDERLINE);
+  const gap = Number(u?.gap ?? DEFAULT_HEADER_UNDERLINE.gap);
+  return { ...line, gap: Math.min(HEADER_UNDERLINE_MAX_GAP_MM, Math.max(0, Number.isFinite(gap) ? gap : DEFAULT_HEADER_UNDERLINE.gap)) };
 }
 
 export function headerLineCss(line: HeaderLine): string {
