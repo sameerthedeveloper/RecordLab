@@ -43,7 +43,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
           type="button"
           data-onboarding="account-menu"
           onClick={() => setAuthOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-accent-hover"
+          className="flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#d4500f] to-accent px-4 py-2.5 text-[13px] max-md:min-h-11 font-semibold text-white shadow-[0_6px_16px_-6px_rgba(194,65,12,0.7)] transition-all hover:brightness-105 active:scale-[0.97]"
         >
           <LogIn className="h-3.5 w-3.5" strokeWidth={2.5} />
           Sign in
@@ -58,7 +58,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
       <button
         type="button"
         onClick={() => setMenuOpen((open) => !open)}
-        className="flex items-center gap-2 rounded-xl border border-line bg-white py-1 pl-1 pr-2 shadow-sm transition-colors hover:border-accent/40"
+        className="flex items-center gap-2 rounded-full border border-black/[0.06] bg-white py-1 pl-1 pr-3 shadow-[0_2px_10px_-4px_rgba(28,43,51,0.2)] transition-all hover:shadow-[0_4px_14px_-4px_rgba(28,43,51,0.28)] active:scale-[0.98]"
       >
         {user.photoURL ? (
           <img src={user.photoURL} alt="" referrerPolicy="no-referrer" className="h-6 w-6 rounded-full" />

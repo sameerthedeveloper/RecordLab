@@ -37,12 +37,12 @@ export function AccordionSection({ title, index, defaultOpen = false, children }
 
   return (
     <details
-      className="record-section rounded-2xl border border-line bg-white shadow-sm transition-all"
+      className="record-section rounded-[1.5rem] border border-black/[0.05] bg-white shadow-[0_1px_2px_rgba(28,43,51,0.04),0_10px_28px_-16px_rgba(28,43,51,0.16)] transition-all"
       open={open}
     >
       <summary
         onClick={handleToggle}
-        className="flex cursor-pointer items-center justify-between gap-3 p-3.5 select-none"
+        className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 select-none"
       >
         <span className="flex items-center gap-2.5">
           {index && (
@@ -57,7 +57,7 @@ export function AccordionSection({ title, index, defaultOpen = false, children }
         className="section-content"
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
-        <div className="section-content-inner px-3.5 pb-3.5">{children}</div>
+        <div className="section-content-inner px-5 pb-5">{children}</div>
       </div>
     </details>
   );

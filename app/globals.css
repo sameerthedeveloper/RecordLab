@@ -30,11 +30,49 @@ body {
   inset: 0;
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #fde8d8;
+  color: #7c2d12;
+}
+
+/* Apple-style canvas behind the editor panels: soft cool-to-warm wash. */
+.app-canvas {
+  background:
+    radial-gradient(60rem 40rem at 8% -10%, rgba(253, 232, 216, 0.75), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 100%, rgba(223, 233, 230, 0.8), transparent 60%),
+    #efede7;
+}
+
+/* Slim, rounded scrollbars that stay out of the way. */
+.editor-surface,
+.preview-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(28, 43, 51, 0.22) transparent;
+}
+.editor-surface::-webkit-scrollbar,
+.preview-area::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.editor-surface::-webkit-scrollbar-thumb,
+.preview-area::-webkit-scrollbar-thumb {
+  background: rgba(28, 43, 51, 0.2);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
 /* Faint graph-paper texture for the editor surface — a nod to the squared
    pages of a physical lab notebook, kept subtle enough not to compete with
    form content. */
 .editor-surface {
-  background-color: #fdfcf8;
+  background-color: #faf8f3;
   background-image:
     linear-gradient(to right, rgba(28, 43, 51, 0.035) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(28, 43, 51, 0.035) 1px, transparent 1px);
@@ -61,7 +99,7 @@ body {
 }
 
 .record-section[open] {
-  border-color: #eabf98;
+  border-color: rgba(234, 191, 152, 0.7);
   box-shadow: 0 1px 2px rgba(28, 43, 51, 0.04);
 }
 
@@ -86,6 +124,7 @@ body {
 .preview-area {
   min-height: 0;
   overflow-y: auto;
+  background: #ecebe6;
 }
 
 .preview-pages {
@@ -121,7 +160,8 @@ body {
   flex-shrink: 0;
   background: white;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(28, 43, 51, 0.08), 0 18px 48px -18px rgba(28, 43, 51, 0.35);
+  border-radius: 2px;
 }
 
 .a4-border {

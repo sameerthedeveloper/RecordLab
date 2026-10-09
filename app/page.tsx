@@ -435,7 +435,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="app-layout flex h-full w-full gap-3.5 md:gap-4 bg-gray-100 p-3.5 md:p-4 overflow-hidden">
+      <div className="app-layout app-canvas flex h-full w-full gap-3.5 md:gap-4 p-3.5 md:p-4 overflow-hidden">
         <RecordEditorPanel
           record={record}
           watermark={watermark}

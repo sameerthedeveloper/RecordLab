@@ -72,9 +72,9 @@ export function PreviewPanel({
   return (
     <div
       id="previewPanel"
-      className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex min-w-0 flex-1 flex-col rounded-2xl border border-line bg-white shadow-sm overflow-hidden`}
+      className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex min-w-0 flex-1 flex-col rounded-[1.75rem] border border-black/[0.06] bg-white/90 shadow-[0_1px_2px_rgba(28,43,51,0.04),0_16px_48px_-20px_rgba(28,43,51,0.22)] backdrop-blur-xl overflow-hidden`}
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line p-4 bg-white">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-black/[0.06] bg-white/70 p-4 backdrop-blur-xl">
         <div data-onboarding="preview-heading">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/60">
             {pages.length > 0 ? `${pages.length} page${pages.length === 1 ? "" : "s"}` : "Live"}
@@ -83,13 +83,13 @@ export function PreviewPanel({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+          <div className="flex items-center overflow-hidden rounded-full border border-black/[0.06] bg-white shadow-[0_2px_10px_-4px_rgba(28,43,51,0.2)]">
             <button
               type="button"
               onClick={onSave}
               disabled={isSaving}
               data-onboarding="save-button"
-              className="flex items-center justify-center gap-1.5 bg-accent px-4 py-2 text-xs max-md:min-h-11 max-md:text-sm font-semibold text-white transition-all hover:bg-accent-hover active:bg-accent-ink disabled:opacity-60"
+              className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#d4500f] to-accent px-5 py-2.5 text-[13px] max-md:min-h-11 max-md:text-sm font-semibold text-white transition-all hover:brightness-105 active:brightness-95 disabled:opacity-60"
             >
               {isSaving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.5} />
@@ -106,7 +106,7 @@ export function PreviewPanel({
               value={downloadFormat}
               onChange={(e) => onDownloadFormatChange(e.target.value as DownloadFormat)}
               disabled={isSaving}
-              className="h-full border-l border-line bg-white px-2 py-2 text-xs max-md:min-h-11 font-semibold text-ink-soft outline-none transition-colors hover:text-accent-ink disabled:opacity-60"
+              className="h-full border-l border-black/[0.06] bg-white pl-3 pr-2 py-2 text-[13px] max-md:min-h-11 font-semibold text-ink-soft outline-none transition-colors hover:text-accent-ink disabled:opacity-60"
             >
               <option value="pdf">PDF</option>
               <option value="docx">DOCX</option>

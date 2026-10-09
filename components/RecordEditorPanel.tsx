@@ -53,7 +53,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-line bg-white p-2.5 max-md:min-h-11 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
+  "w-full rounded-[14px] border border-transparent bg-black/[0.04] p-3 max-md:min-h-12 text-[16px] md:text-[15px] text-ink outline-none transition-all duration-200 placeholder:text-ink-soft/50 hover:bg-black/[0.055] focus:border-accent/50 focus:bg-white focus:ring-4 focus:ring-accent/15";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
 export function RecordEditorPanel({
@@ -149,16 +149,16 @@ export function RecordEditorPanel({
   }
 
   const iconBtn =
-    "flex items-center justify-center rounded-xl border border-line bg-white p-2 text-ink-soft max-md:h-11 max-md:w-11 max-md:p-0 transition-colors hover:border-accent/40 hover:text-accent active:bg-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+    "flex items-center justify-center rounded-full bg-black/[0.045] p-2.5 text-ink-soft max-md:h-11 max-md:w-11 max-md:p-0 transition-all duration-200 hover:bg-black/[0.08] hover:text-accent active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
   const menuItem =
     "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink";
 
   return (
     <div
       id="inputPanel"
-      className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex w-full md:w-[400px] lg:w-[440px] shrink-0 flex-col rounded-2xl border border-line bg-white shadow-sm overflow-hidden`}
+      className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex w-full md:w-[400px] lg:w-[440px] shrink-0 flex-col rounded-[1.75rem] border border-black/[0.06] bg-white/90 shadow-[0_1px_2px_rgba(28,43,51,0.04),0_16px_48px_-20px_rgba(28,43,51,0.22)] backdrop-blur-xl overflow-hidden`}
     >
-      <div className="shrink-0 border-b border-line bg-white p-4 pb-3">
+      <div className="shrink-0 border-b border-black/[0.06] bg-white/70 p-4 pb-3.5 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div data-onboarding="brand" className="min-w-0">
             <h1 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">Record Lab</h1>
@@ -257,7 +257,7 @@ export function RecordEditorPanel({
           data-onboarding="save-cloud"
           onClick={onSaveCloud}
           disabled={isSavingCloud}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs max-md:min-h-11 max-md:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#d4500f] to-accent px-3 py-2.5 text-[13px] max-md:min-h-12 max-md:text-[15px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(194,65,12,0.75),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-200 hover:brightness-105 active:scale-[0.985] disabled:cursor-wait disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Cloud className="h-4 w-4" strokeWidth={2.25} />
           {isSavingCloud ? "Saving…" : "Save to cloud"}
@@ -267,7 +267,7 @@ export function RecordEditorPanel({
       {/* Section rail: sticky, shows what's filled, follows scroll */}
       <nav
         aria-label="Record sections"
-        className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-line bg-paper px-3 py-2"
+        className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-black/[0.06] bg-white/60 px-3 py-2 backdrop-blur-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {SECTIONS.map((s) => {
           const off = s.id === "review" && !record.review_questions_enabled;
@@ -297,7 +297,7 @@ export function RecordEditorPanel({
         </span>
       </nav>
 
-      <div ref={scrollRef} className="editor-surface min-h-0 flex-1 space-y-3.5 overflow-y-auto p-3.5">
+      <div ref={scrollRef} className="editor-surface min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <div data-onboarding="record-details">
           <EditorSection id="details" title="Record details" filled={filled.details}>
             <div className="space-y-3">
@@ -416,7 +416,7 @@ export function RecordEditorPanel({
                 </div>
               )}
 
-              <details className="group rounded-xl border border-line bg-paper/60 px-3 py-2">
+              <details className="group rounded-[14px] bg-black/[0.04] px-3.5 py-2.5 transition-colors open:bg-black/[0.03]">
                 <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-soft">
                   Title table border
                   <span className="text-[11px] font-medium text-ink-soft/60">
