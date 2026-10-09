@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
@@ -318,81 +319,6 @@ function SubjectsDemo() {
 }
 
 
-/** A miniature of the real editor: form panel on the left, the live A4 page on the right. */
-function AppMockup() {
-  const field = (label: string, value: string, wide = false) => (
-    <div className={wide ? "col-span-2" : ""}>
-      <p className="text-[9px] font-semibold text-ink-soft">{label}</p>
-      <div className="mt-0.5 truncate rounded-md border border-line bg-white px-2 py-1.5 text-[10px] text-ink">{value}</div>
-    </div>
-  );
-  return (
-    <div className="grid h-full grid-cols-1 gap-3 bg-paper p-3 md:grid-cols-[0.8fr_1.2fr] md:p-4">
-      <div className="hidden min-h-0 flex-col gap-3 overflow-hidden rounded-xl border border-line bg-white p-3 md:flex">
-        <div className="flex items-center justify-between">
-          <p className="font-serif text-sm font-bold text-ink">Record details</p>
-          <span className="rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[8px] font-semibold text-accent-ink">3 / 7</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {field("RRN", "24CS118")}
-          {field("Exercise", "01")}
-          {field("Date", "24-07-2026", true)}
-          {field("Experiment title", "PASSWORD GENERATOR", true)}
-        </div>
-        <p className="font-serif text-sm font-bold text-ink">Aim</p>
-        <div className="rounded-md border border-line bg-white p-2 text-[10px] leading-relaxed text-ink-soft">
-          To develop a Python program that generates a secure password and checks its strength.
-        </div>
-        <p className="font-serif text-sm font-bold text-ink">Output</p>
-        <div className="rounded-md bg-[#1e1e1e] p-2 font-mono text-[9px] leading-relaxed text-[#ececec]">
-          <span className="text-[#7be0a2]">student@lab-pc</span> % python gen.py
-          <br />
-          Password: Sam@8452kR!
-        </div>
-      </div>
-
-      <div className="relative min-h-0 overflow-hidden rounded-xl border border-line bg-[#e9e5d8] p-3 md:p-4">
-        <div className="mx-auto h-full max-w-[22rem] overflow-hidden rounded-sm border border-line bg-white p-4 shadow-[0_10px_24px_-12px_rgba(28,43,51,0.45)]">
-          <div className="grid grid-cols-[32%_1fr] text-[9px]">
-            <div className="py-1 pr-2 font-semibold text-ink">
-              <div>EX NO : 01</div>
-              <div className="mt-1">DATE : 24.07.26</div>
-            </div>
-            <div className="flex items-center justify-center text-center text-[11px] font-bold text-ink">PASSWORD GENERATOR</div>
-          </div>
-          <div className="mt-2 border-t border-ink-soft/40" />
-          <p className="mt-3 font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">Aim</p>
-          <div className="mt-1 space-y-1">
-            <div className="h-1 rounded bg-ink/15" />
-            <div className="h-1 rounded bg-ink/15" />
-            <div className="h-1 w-3/5 rounded bg-ink/15" />
-          </div>
-          <p className="mt-3 font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">Algorithm</p>
-          <div className="mt-1 space-y-1">
-            {[100, 88, 94, 70, 82].map((w, i) => (
-              <div key={i} className="h-1 rounded bg-ink/15" style={{ width: `${w}%` }} />
-            ))}
-          </div>
-          <p className="mt-3 font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">Output</p>
-          <div className="mt-1 rounded-sm bg-[#1e1e1e] p-2 font-mono text-[8px] leading-relaxed text-[#ececec]">
-            <span className="text-[#7be0a2]">student@lab-pc</span> <span className="text-[#6ea8fe]">record</span> % python gen.py
-            <br />
-            Password: Sam@8452kR!
-            <br />
-            Strength: Strong
-          </div>
-          <p className="mt-3 font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-[#b3261e]">Result</p>
-          <div className="mt-1 space-y-1">
-            <div className="h-1 rounded bg-ink/15" />
-            <div className="h-1 w-2/3 rounded bg-ink/15" />
-          </div>
-        </div>
-        <span className="absolute bottom-3 right-4 font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-ink-soft/60">Page 01 / 03</span>
-      </div>
-    </div>
-  );
-}
-
 const MARQUEE = ["Aim", "Algorithm", "Source code", "Output", "Review questions", "Result", "Heading table", "Watermark", "A4 pagination"];
 
 
@@ -539,7 +465,15 @@ export function LandingPageClient() {
             </div>
           }
         >
-          <AppMockup />
+          <Image
+            src="/landing/app-screenshot.webp"
+            alt="The Record Lab editor: record details on the left, the live A4 preview on the right"
+            width={2000}
+            height={1234}
+            priority
+            draggable={false}
+            className="mx-auto h-full w-full rounded-2xl object-cover object-left-top"
+          />
         </ContainerScroll>
       </section>
 
