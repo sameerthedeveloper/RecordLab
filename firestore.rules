@@ -8,6 +8,36 @@ rules_version = '2';
 // here.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Admins are listed by hand in the Firebase console: create a document at
+    // admins/<their uid> (any fields). Nothing in the app can write here.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // One lightweight, content-free row per signed-in user, for the admin
+    // usage panel (email, name, join date, last seen). Their records and
+    // settings stay private: admins can NOT read `documents` or `users`.
+    match /profiles/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow delete: if false;
+    }
+
+    // Anonymous-ish usage counters: stats/<YYYY-MM-DD> (and stats/_all) hold
+    // per-event counts. Only signed-in users may bump them; only admins read.
+    match /stats/{day} {
+      allow read: if isAdmin();
+      allow create, update: if request.auth != null
+        && (day == '_all' || day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
+      allow delete: if false;
+    }
+
     match /documents/{docId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null

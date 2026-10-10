@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, LogIn, LogOut } from "lucide-react";
 import { signOutUser, useAuthUser } from "@/lib/authService";
+import { touchProfile } from "@/lib/profileService";
 import { AuthModal } from "./AuthModal";
 import { PuterLinkButton } from "./PuterLinkButton";
 
@@ -12,6 +13,11 @@ interface AccountMenuProps {
 
 export function AccountMenu({ onToast }: AccountMenuProps) {
   const user = useAuthUser();
+
+  // Keep this user's admin-panel profile row (email, last seen) fresh: once per session.
+  useEffect(() => {
+    if (user) touchProfile(user);
+  }, [user]);
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
