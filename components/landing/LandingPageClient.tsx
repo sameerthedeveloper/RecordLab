@@ -413,7 +413,7 @@ export function LandingPageClient() {
             <a href="#faq" className="transition-colors hover:text-accent">FAQ</a>
           </nav>
           <Link
-            href="/"
+            href="/editor"
             className="ui-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
           >
             Open the app
@@ -445,7 +445,7 @@ export function LandingPageClient() {
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <Link
-                  href="/"
+                  href="/editor"
                   className="ui-primary flex min-h-12 items-center gap-2 px-7 text-[15px] font-semibold"
                 >
                   Start your fair copy
@@ -653,7 +653,7 @@ export function LandingPageClient() {
           </p>
           <Link
             data-reveal
-            href="/"
+            href="/editor"
             className="ui-primary relative mt-9 inline-flex min-h-12 items-center gap-2 px-8 text-[15px] font-semibold"
           >
             Open Record Lab

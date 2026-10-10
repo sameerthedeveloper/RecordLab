@@ -257,7 +257,7 @@ export function ResetPasswordClient() {
               <h1 className="max-w-[12ch] font-serif text-3xl font-bold leading-tight text-ink">All set.</h1>
               <p className="text-sm text-ink-soft">Your password is updated. Sign in with it anywhere.</p>
               <Link
-                href="/"
+                href="/editor"
                 className="flex w-full items-center justify-center rounded-xl bg-accent py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
               >
                 Continue to Record Lab

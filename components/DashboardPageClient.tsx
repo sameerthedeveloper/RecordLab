@@ -39,12 +39,12 @@ export function DashboardPageClient() {
         showToast("Unable to open this record. Free up browser storage and try again.");
         return;
       }
-      router.push("/");
+      router.push("/editor");
     },
     [router, showToast]
   );
 
-  const goToEditor = useCallback(() => router.push("/"), [router]);
+  const goToEditor = useCallback(() => router.push("/editor"), [router]);
 
   const activity = useMemo(() => weeklyActivity(documents ?? []), [documents]);
   const peak = Math.max(1, ...activity);
@@ -56,7 +56,7 @@ export function DashboardPageClient() {
       <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 ui-panel px-5 py-4">
         <div className="min-w-0">
           <Link
-            href="/"
+            href="/editor"
             className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
           >
             <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2.25} />

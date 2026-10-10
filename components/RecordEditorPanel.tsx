@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
@@ -161,7 +162,11 @@ export function RecordEditorPanel({
       <div className="ui-panel-header shrink-0 p-4 pb-3.5">
         <div className="flex items-center justify-between gap-2">
           <div data-onboarding="brand" className="min-w-0">
-            <h1 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">Record Lab</h1>
+            <h1 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">
+              <Link href="/" title="Back to the home page" className="transition-colors hover:text-accent">
+                Record Lab
+              </Link>
+            </h1>
             <p className="truncate text-xs text-ink-soft/70">
               {record.title.trim() || "Untitled record"}
               {pageCount ? ` · ${pageCount} ${pageCount === 1 ? "page" : "pages"}` : ""}
