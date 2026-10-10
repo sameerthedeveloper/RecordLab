@@ -167,7 +167,16 @@ export function RecordEditorPanel({
                 Record Lab
               </Link>
             </h1>
-            <p className="truncate text-xs text-ink-soft/70">
+            <a
+              href="https://cogniheim.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Cogniheim"
+              className="mt-0.5 block w-fit font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft/55 transition-colors hover:text-accent"
+            >
+              A product by <span className="text-ink-soft/80">Cogniheim</span>
+            </a>
+            <p className="mt-1 truncate text-xs text-ink-soft/70">
               {record.title.trim() || "Untitled record"}
               {pageCount ? ` · ${pageCount} ${pageCount === 1 ? "page" : "pages"}` : ""}
             </p>
