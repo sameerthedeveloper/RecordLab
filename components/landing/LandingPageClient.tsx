@@ -174,14 +174,14 @@ function TerminalDemo() {
   const t = TERMS[id];
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-1 rounded-xl border border-line bg-paper p-1" role="tablist" aria-label="Terminal style">
+      <div className="mb-3 flex flex-wrap gap-1 rounded-full bg-black/[0.05] p-1" role="tablist" aria-label="Terminal style">
         {(Object.keys(TERMS) as TermId[]).map((k) => (
           <button
             key={k}
             role="tab"
             aria-selected={id === k}
             onClick={() => setId(k)}
-            className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+            className={`flex-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-colors ${
               id === k ? "bg-accent text-white shadow-sm" : "text-ink-soft hover:bg-ink/5"
             }`}
           >
@@ -230,7 +230,7 @@ function HeaderDemo() {
   const edge = line(mode);
   return (
     <div>
-      <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl border border-line bg-paper p-1" role="tablist" aria-label="Heading style">
+      <div className="mb-3 grid grid-cols-3 gap-1 rounded-full bg-black/[0.05] p-1" role="tablist" aria-label="Heading style">
         {([
           ["open", "Open + rule"],
           ["box", "Box"],
@@ -241,7 +241,7 @@ function HeaderDemo() {
             role="tab"
             aria-selected={mode === k}
             onClick={() => setMode(k)}
-            className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+            className={`rounded-full px-2 py-1.5 text-[11px] font-semibold transition-colors ${
               mode === k ? "bg-accent text-white shadow-sm" : "text-ink-soft hover:bg-ink/5"
             }`}
           >
@@ -291,7 +291,7 @@ function SubjectsDemo() {
             key={f.name}
             onClick={() => setActive(i)}
             aria-pressed={active === i}
-            className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+            className={`flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-left transition-colors ${
               active === i ? "border-accent bg-accent-soft/50" : "border-line bg-paper hover:border-accent/40"
             }`}
           >
@@ -396,9 +396,9 @@ export function LandingPageClient() {
   }, []);
 
   return (
-    <main ref={rootRef} className="fixed inset-0 scroll-pt-24 overflow-y-auto overflow-x-hidden bg-paper text-ink">
+    <main ref={rootRef} className="fixed inset-0 scroll-pt-24 overflow-y-auto overflow-x-hidden app-canvas text-ink">
       <header className="pointer-events-none sticky top-3 z-30 px-3 sm:px-5">
-        <div className="pointer-events-auto mx-auto flex max-w-[66rem] items-center justify-between gap-4 rounded-full border border-line bg-paper/80 py-2 pl-4 pr-2 shadow-[0_10px_30px_-12px_rgba(28,43,51,0.35)] backdrop-blur-md sm:pl-5">
+        <div className="pointer-events-auto ui-panel !rounded-full mx-auto flex max-w-[66rem] items-center justify-between gap-4 py-2 pl-4 pr-2 sm:pl-5">
           <span className="flex items-center gap-2 font-serif text-lg font-bold tracking-tight">
             <span aria-hidden className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink font-serif text-[11px] text-paper">RL</span>
             Record Lab
@@ -411,7 +411,7 @@ export function LandingPageClient() {
           </nav>
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-accent-hover"
+            className="ui-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
           >
             Open the app
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -420,7 +420,7 @@ export function LandingPageClient() {
       </header>
 
       {/* ============ HERO ============ */}
-      <section aria-label="Record Lab" className="relative overflow-hidden bg-paper">
+      <section aria-label="Record Lab" className="relative overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-[26rem] w-[44rem] max-w-[140vw] -translate-x-1/2 rounded-full bg-accent/[0.09] blur-3xl" />
         <div aria-hidden className="lp-grain pointer-events-none absolute inset-x-0 top-0 h-[34rem] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
         <ContainerScroll
@@ -433,7 +433,7 @@ export function LandingPageClient() {
               <h1 className="mt-4 text-balance font-serif text-[2.6rem] font-bold leading-[1.03] tracking-[-0.02em] text-ink sm:text-7xl">
                 Straight to the fair copy.
               </h1>
-              <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-soft">
+              <p className="mt-4 ui-chip inline-flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-soft">
                 Curated for Crescent CSE students
               </p>
               <p className="mx-auto mt-6 max-w-xl text-pretty text-[1.05rem] leading-relaxed text-ink-soft sm:text-xl">
@@ -443,7 +443,7 @@ export function LandingPageClient() {
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <Link
                   href="/"
-                  className="flex min-h-12 items-center gap-2 rounded-full bg-accent px-7 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(194,65,12,0.7)] transition-all hover:bg-accent-hover active:scale-[0.98]"
+                  className="ui-primary flex min-h-12 items-center gap-2 px-7 text-[15px] font-semibold"
                 >
                   Start your fair copy
                   <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
@@ -479,7 +479,7 @@ export function LandingPageClient() {
       </section>
 
       {/* ============ MARQUEE ============ */}
-      <div aria-hidden className="lp-marquee overflow-hidden border-y border-line bg-ink py-3 text-paper">
+      <div aria-hidden className="lp-marquee mx-3 overflow-hidden rounded-full bg-ink/95 py-3 text-paper shadow-[0_14px_34px_-16px_rgba(28,43,51,0.55)] sm:mx-6">
         <div className="lp-marquee-track flex w-max gap-10 whitespace-nowrap font-mono text-[11px] font-semibold uppercase tracking-[0.2em]">
           {[...MARQUEE, ...MARQUEE].map((w, i) => (
             <span key={i} className="flex items-center gap-10">
@@ -528,7 +528,7 @@ export function LandingPageClient() {
               <article
                 key={title}
                 data-reveal
-                className="flex w-[84vw] max-w-sm shrink-0 snap-center flex-col rounded-[2rem] border border-black/5 bg-white p-6 shadow-[0_2px_24px_-10px_rgba(28,43,51,0.2)] transition-shadow hover:shadow-[0_24px_50px_-24px_rgba(28,43,51,0.45)] md:w-auto md:max-w-none"
+                className="flex w-[84vw] max-w-sm shrink-0 snap-center flex-col ui-card p-6 transition-shadow hover:shadow-[0_24px_50px_-24px_rgba(28,43,51,0.45)] md:w-auto md:max-w-none"
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink">
                   <Icon className="h-4 w-4" strokeWidth={2.25} />
@@ -546,7 +546,7 @@ export function LandingPageClient() {
       <section
         id="index"
         data-reveal-group
-        className="bg-white px-5 py-20 sm:py-28"
+        className="px-5 py-20 sm:py-28"
       >
         <div className="mx-auto w-full max-w-4xl">
           <div data-reveal className="text-center">
@@ -554,8 +554,8 @@ export function LandingPageClient() {
             <h2 className="mt-3 font-serif text-4xl font-bold tracking-[-0.02em] sm:text-6xl">Everything in the index.</h2>
           </div>
 
-          <div data-reveal className="mt-12 overflow-hidden rounded-[2rem] border border-black/5 bg-paper shadow-[0_2px_24px_-10px_rgba(28,43,51,0.18)]">
-            <div className="hidden grid-cols-[44px_1fr_28px] border-b border-line bg-[#f4efe2] px-6 py-3 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft/70 sm:grid sm:grid-cols-[56px_1fr_36px]">
+          <div data-reveal className="mt-12 ui-card overflow-hidden">
+            <div className="hidden grid-cols-[44px_1fr_28px] border-b border-line bg-black/[0.03] px-6 py-3 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft/70 sm:grid sm:grid-cols-[56px_1fr_36px]">
               <span>S.No</span>
               <span>Particulars</span>
               <span className="text-right">✓</span>
@@ -563,7 +563,7 @@ export function LandingPageClient() {
             {index.map(({ icon: Icon, title, body }, i) => (
               <div
                 key={title}
-                className="grid grid-cols-[1fr_24px] items-start gap-3 border-b border-line/70 px-5 py-4 last:border-b-0 transition-colors hover:bg-white sm:grid-cols-[56px_1fr_36px] sm:items-center sm:gap-4 sm:px-6"
+                className="grid grid-cols-[1fr_24px] items-start gap-3 border-b border-line/70 px-5 py-4 last:border-b-0 transition-colors hover:bg-white/70 sm:grid-cols-[56px_1fr_36px] sm:items-center sm:gap-4 sm:px-6"
               >
                 <span className="hidden font-mono text-sm font-semibold text-[#b3261e]/80 sm:block">
                   {String(i + 1).padStart(2, "0")}
@@ -601,7 +601,7 @@ export function LandingPageClient() {
           </div>
           <ol className="mt-12 grid gap-4 sm:grid-cols-3 sm:gap-5">
             {steps.map(({ n, t, d }) => (
-              <li key={n} data-reveal className="rounded-[2rem] border border-black/5 bg-white p-6 shadow-[0_2px_24px_-10px_rgba(28,43,51,0.16)] sm:p-7">
+              <li key={n} data-reveal className="ui-card p-6 sm:p-7">
                 <span className="font-serif text-5xl font-bold leading-none tracking-tight text-accent/30">{n}</span>
                 <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-ink">{t}</h3>
                 <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{d}</p>
@@ -612,13 +612,13 @@ export function LandingPageClient() {
       </section>
 
       {/* ============ FAQ ============ */}
-      <section id="faq" data-reveal-group className="bg-white px-5 py-20 sm:py-28">
+      <section id="faq" data-reveal-group className="px-5 py-20 sm:py-28">
         <div className="mx-auto w-full max-w-3xl">
           <div data-reveal className="text-center">
             <PageLabel n={5}>Questions</PageLabel>
             <h2 className="mt-3 font-serif text-4xl font-bold tracking-[-0.02em] sm:text-6xl">Before you start.</h2>
           </div>
-          <div className="mt-12 divide-y divide-line border-y border-line">
+          <div className="mt-12 ui-card divide-y divide-line/70 px-5 sm:px-7">
             {faqs.map(({ q, a }) => (
               <details key={q} data-reveal className="group py-5">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-ink [&::-webkit-details-marker]:hidden">
@@ -651,7 +651,7 @@ export function LandingPageClient() {
           <Link
             data-reveal
             href="/"
-            className="relative mt-9 inline-flex min-h-12 items-center gap-2 rounded-full bg-accent px-8 text-[15px] font-semibold text-white shadow-[0_10px_30px_-8px_rgba(194,65,12,0.8)] transition-all hover:bg-accent-hover active:scale-[0.98]"
+            className="ui-primary relative mt-9 inline-flex min-h-12 items-center gap-2 px-8 text-[15px] font-semibold"
           >
             Open Record Lab
             <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
@@ -662,7 +662,6 @@ export function LandingPageClient() {
       {/* ============ CONTRIBUTORS ============ */}
       <section
         data-reveal-group
-        className="bg-white"
       >
         <div className="mx-auto w-full max-w-4xl px-5 py-20 sm:py-28">
           <div data-reveal className="text-center">
@@ -672,7 +671,7 @@ export function LandingPageClient() {
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 sm:gap-5">
             {contributors.map((person) => (
-              <div key={person.name} data-reveal className="rounded-[2rem] border border-black/5 bg-paper p-6 shadow-[0_2px_24px_-10px_rgba(28,43,51,0.14)]">
+              <div key={person.name} data-reveal className="ui-card p-6">
                 <h3 className="font-serif text-xl font-bold tracking-tight text-ink">{person.name}</h3>
                 <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
                   {person.role}
@@ -685,7 +684,7 @@ export function LandingPageClient() {
                       href={href}
                       target={href.startsWith("mailto:") ? undefined : "_blank"}
                       rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
-                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-white px-3.5 text-xs font-semibold text-ink-soft shadow-sm transition-colors hover:border-accent/40 hover:text-accent-ink"
+                      className="ui-chip flex min-h-9 items-center gap-1.5 px-3.5 text-xs font-semibold text-ink-soft hover:text-accent-ink"
                     >
                       <Icon className="h-3.5 w-3.5" strokeWidth={2} />
                       {label}
@@ -698,7 +697,7 @@ export function LandingPageClient() {
         </div>
       </section>
 
-      <footer className="border-t border-line bg-white">
+      <footer className="border-t border-black/[0.06]">
         <div className="mx-auto max-w-4xl px-5 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-xs text-ink-soft/70">
           Record Lab · specially curated for Crescent CSE students, built for lab-record season.
         </div>
