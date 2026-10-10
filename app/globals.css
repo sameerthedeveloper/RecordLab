@@ -31,6 +31,9 @@ body {
 }
 
 html {
+  /* No pinch or double-tap zoom; panning still works. */
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

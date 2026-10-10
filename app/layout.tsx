@@ -29,6 +29,9 @@ const monoFont = JetBrains_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Fixed scale: the app is a self-contained, app-like surface (no pinch / double-tap zoom).
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   themeColor: "#faf7f0",
 };
