@@ -700,17 +700,27 @@ export function LandingPageClient() {
         </div>
       </section>
 
-      <footer className="border-t border-black/[0.06]">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-2 px-5 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-xs text-ink-soft/70 sm:flex-row sm:justify-between sm:text-left">
-          <p>Record Lab · specially curated for Crescent CSE students, built for lab-record season.</p>
+      <footer className="px-3 pb-3 sm:px-5 sm:pb-5">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-5 rounded-[2rem] bg-ink px-6 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-paper shadow-[0_24px_60px_-28px_rgba(28,43,51,0.7)] sm:flex-row sm:justify-between sm:px-9 sm:text-left">
           <a
             href={BRAND.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="ui-chip inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold text-ink-soft transition-colors hover:text-accent-ink"
+            aria-label={`${BRAND.name} (opens ${BRAND.url})`}
+            className="shrink-0 transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           >
-            A <span className="font-bold text-ink">{BRAND.name}</span> product
+            <Image
+              src="/brand/cogniheim-logo.webp"
+              alt={BRAND.name}
+              width={1500}
+              height={440}
+              className="h-12 w-auto sm:h-14"
+            />
           </a>
+          <div className="max-w-md text-xs leading-relaxed text-paper/60">
+            <p className="font-semibold text-paper/85">Record Lab is a {BRAND.name} product.</p>
+            <p className="mt-1">Specially curated for Crescent CSE students, built for lab-record season.</p>
+          </div>
         </div>
       </footer>
     </main>
