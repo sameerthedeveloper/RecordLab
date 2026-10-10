@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Palette, Rows3, Settings as SettingsIcon, Stamp } from "lucide-react";
+import { FileText, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM, MIN_WIDTH_MM } from "./DraggableHeaderTable";
+import { AccountSettings } from "./AccountSettings";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { CONTENT_WIDTH_MM } from "@/lib/types";
@@ -14,22 +15,24 @@ interface SettingsModalProps {
   settings: AppSettings;
   onClose: () => void;
   onSave: (next: AppSettings) => void;
+  onToast: (message: string) => void;
 }
 
 const inputClass =
   "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
-type Tab = "appearance" | "record" | "heading" | "watermark";
+type Tab = "account" | "appearance" | "record" | "heading" | "watermark";
 
 const TABS: { id: Tab; label: string; icon: typeof Palette }[] = [
+  { id: "account", label: "Account", icon: UserIcon },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "record", label: "Record", icon: FileText },
   { id: "heading", label: "Heading table", icon: Rows3 },
   { id: "watermark", label: "Watermark", icon: Stamp },
 ];
 
-export function SettingsModal({ open, settings, onClose, onSave }: SettingsModalProps) {
+export function SettingsModal({ open, settings, onClose, onSave, onToast }: SettingsModalProps) {
   const [draft, setDraft] = useState<AppSettings>(settings);
   const [tab, setTab] = useState<Tab>("appearance");
 
@@ -102,6 +105,7 @@ export function SettingsModal({ open, settings, onClose, onSave }: SettingsModal
         </nav>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          {tab === "account" && <AccountSettings onToast={onToast} />}
           {tab === "appearance" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
       <section>

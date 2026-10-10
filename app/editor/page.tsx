@@ -546,6 +546,7 @@ export default function Home() {
         settings={settings}
         onClose={() => setSettingsOpen(false)}
         onSave={handleSaveSettings}
+        onToast={showToast}
       />
 
       <Onboarding activePanel={mobilePanel} onRequestPanel={setMobilePanel} />

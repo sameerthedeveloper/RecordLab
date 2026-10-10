@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { useInstallPrompt } from "@/lib/useInstallPrompt";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
@@ -11,6 +12,7 @@ import {
   Check,
   ChevronDown,
   Cloud,
+  Download,
   ExternalLink,
   FileDown,
   Folder,
@@ -339,6 +341,7 @@ function PageLabel({ n, children }: { n: number; children?: React.ReactNode }) {
 
 export function LandingPageClient() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const { canInstall, install } = useInstallPrompt();
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -403,7 +406,7 @@ export function LandingPageClient() {
       <header className="pointer-events-none sticky top-3 z-30 px-3 sm:px-5">
         <div className="pointer-events-auto ui-panel !rounded-full mx-auto flex max-w-[66rem] items-center justify-between gap-4 py-2 pl-4 pr-2 sm:pl-5">
           <span className="flex items-center gap-2 font-serif text-lg font-bold tracking-tight">
-            <span aria-hidden className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink font-serif text-[11px] text-paper">RL</span>
+            <Image src="/icons/record-lab.svg" alt="" width={28} height={28} className="h-7 w-7 rounded-[9px]" unoptimized />
             Record Lab
           </span>
           <nav aria-label="Sections" className="hidden items-center gap-6 text-xs font-semibold text-ink-soft md:flex">
@@ -412,13 +415,25 @@ export function LandingPageClient() {
             <a href="#how" className="transition-colors hover:text-accent">How it works</a>
             <a href="#faq" className="transition-colors hover:text-accent">FAQ</a>
           </nav>
-          <Link
-            href="/editor"
-            className="ui-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
-          >
-            Open the app
-            <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            {canInstall && (
+              <button
+                type="button"
+                onClick={install}
+                className="ui-chip hidden items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-ink-soft hover:text-accent-ink sm:flex"
+              >
+                <Download className="h-3.5 w-3.5" strokeWidth={2.25} />
+                Install
+              </button>
+            )}
+            <Link
+              href="/editor"
+              className="ui-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
+            >
+              Open the app
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </Link>
+          </div>
         </div>
       </header>
 

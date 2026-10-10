@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import {
   confirmPasswordReset,
+  EmailAuthProvider,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updatePassword,
   updateProfile,
   verifyPasswordResetCode,
   type User,
@@ -54,6 +57,25 @@ export async function confirmReset(oobCode: string, newPassword: string): Promis
   await confirmPasswordReset(getFirebaseAuth(), oobCode, newPassword);
 }
 
+/** True when the account can sign in with an email + password (not only Google). */
+export function hasPasswordSignIn(user: User): boolean {
+  return user.providerData.some((p) => p.providerId === "password");
+}
+
+export async function updateDisplayName(name: string): Promise<void> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) throw new Error("Sign in first.");
+  await updateProfile(user, { displayName: name.trim() });
+}
+
+/** Re-checks the current password first (Firebase requires a recent sign-in for this), then sets the new one. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user?.email) throw new Error("Sign in first.");
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
+  await updatePassword(user, newPassword);
+}
+
 /** Firebase error code -> message a human can act on. */
 export function authErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
@@ -69,6 +91,8 @@ export function authErrorMessage(err: unknown): string {
     case "auth/expired-action-code":
     case "auth/invalid-action-code":
       return "This reset link is invalid or already used.";
+    case "auth/requires-recent-login":
+      return "For security, sign out and back in, then try again.";
     case "auth/weak-password":
       return "Password too weak. Use at least 6 characters.";
     case "auth/too-many-requests":

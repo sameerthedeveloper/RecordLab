@@ -555,11 +555,11 @@ html {
   /* Content scrolls underneath the floating glass tab bar, so leave room to
      scroll the last field / page clear of it. */
   .editor-surface {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .preview-pages {
-    padding: 14px 14px calc(96px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 14px calc(86px + env(safe-area-inset-bottom, 0px));
     gap: 20px;
     align-items: center;
   }
@@ -602,7 +602,8 @@ summary,
 
 /* iOS 26 Liquid Glass tab bar: floats 8px above the home indicator. */
 .ios-tabbar {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  /* Sits low, close to the screen edge: tuck into the home-indicator zone but leave a small gap. */
+  padding-bottom: max(6px, calc(env(safe-area-inset-bottom, 0px) - 14px));
 }
 
 .liquid-glass {

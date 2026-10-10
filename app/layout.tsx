@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { PwaRegister } from "@/components/PwaRegister";
 
 const displayFont = Source_Serif_4({
   subsets: ["latin"],
@@ -29,10 +30,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#faf7f0",
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://record-lab.vercel.app"),
+  applicationName: "Record Lab",
+  appleWebApp: { capable: true, title: "Record Lab", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   creator: "Cogniheim",
   publisher: "Cogniheim",
   title: "Record Lab",
@@ -68,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <PwaRegister />
         <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
