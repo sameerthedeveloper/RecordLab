@@ -33,6 +33,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://record-lab.vercel.app"),
+  creator: "Cogniheim",
+  publisher: "Cogniheim",
   title: "Record Lab",
   description: "Type your lab record once — Record Lab paginates it to true A4 pages and exports a print-ready fair copy.",
   openGraph: {

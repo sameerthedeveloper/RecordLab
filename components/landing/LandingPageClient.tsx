@@ -135,6 +135,9 @@ const steps = [
   { n: "03", t: "Export the fair copy", d: "Save a PDF, print directly, or save your work to finish later." },
 ];
 
+/** Parent brand shown in the footer. Swap the name/URL here when the branding is final. */
+const BRAND = { name: "Cogniheim", url: "https://cogniheim.com" };
+
 const TOTAL_PAGES = 7;
 
 /* ------------------------------------------------------------------ */
@@ -698,8 +701,16 @@ export function LandingPageClient() {
       </section>
 
       <footer className="border-t border-black/[0.06]">
-        <div className="mx-auto max-w-4xl px-5 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-xs text-ink-soft/70">
-          Record Lab · specially curated for Crescent CSE students, built for lab-record season.
+        <div className="mx-auto flex max-w-4xl flex-col items-center gap-2 px-5 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-xs text-ink-soft/70 sm:flex-row sm:justify-between sm:text-left">
+          <p>Record Lab · specially curated for Crescent CSE students, built for lab-record season.</p>
+          <a
+            href={BRAND.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ui-chip inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold text-ink-soft transition-colors hover:text-accent-ink"
+          >
+            A <span className="font-bold text-ink">{BRAND.name}</span> product
+          </a>
         </div>
       </footer>
     </main>
