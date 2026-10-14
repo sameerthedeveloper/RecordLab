@@ -1,9 +1,9 @@
 import { escapeHTML } from "./escapeHtml";
 import { PRINT_CSS } from "./printCss";
-import type { PageObject, RecordFormat, WatermarkOptions } from "./types";
+import { pageBorderCss, type PageBorder, type PageObject, type RecordFormat, type WatermarkOptions } from "./types";
 
 /** Builds one <div class="a4-page">…</div> string — used by both the live preview and the print/PDF output. */
-export function createA4PageHTML(page: PageObject, rrn: string, watermark: WatermarkOptions, format?: RecordFormat): string {
+export function createA4PageHTML(page: PageObject, rrn: string, watermark: WatermarkOptions, format?: RecordFormat, pageBorder?: PageBorder): string {
   const rrnEscaped = escapeHTML(rrn.trim());
   const style = `font-family: ${watermark.font}; font-size: ${watermark.size}px; transform: translate(-50%, -50%) rotate(${watermark.rotation}deg); opacity: ${
     watermark.opacity / 100
@@ -12,7 +12,7 @@ export function createA4PageHTML(page: PageObject, rrn: string, watermark: Water
   return `
     <div class="a4-page${format === "college" ? " fmt-college" : ""}">
       <div class="watermark" style="${style}">${rrnEscaped}</div>
-      <div class="a4-border"></div>
+      <div class="a4-border" style="${pageBorderCss(pageBorder)}"></div>
       <div class="a4-content">
         <div class="a4-main-flow">
           ${page.main}
@@ -28,9 +28,10 @@ export function buildPrintDocumentHTML(
   rrn: string,
   watermark: WatermarkOptions,
   font: string,
-  format?: RecordFormat
+  format?: RecordFormat,
+  pageBorder?: PageBorder,
 ): string {
-  const pagesHTML = pages.map((p) => createA4PageHTML(p, rrn, watermark, format)).join("");
+  const pagesHTML = pages.map((p) => createA4PageHTML(p, rrn, watermark, format, pageBorder)).join("");
   return `
     <!DOCTYPE html>
     <html>

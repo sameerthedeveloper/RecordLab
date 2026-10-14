@@ -19,11 +19,11 @@ import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
 import { getUserSettings, saveUserSettings } from "@/lib/userProfile";
-import { formatPatch } from "@/lib/recordFormat";
+import { collegeGeometry, formatPatch } from "@/lib/recordFormat";
 import { shareOrDownload } from "@/lib/shareRecord";
 import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, normalizeSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
-import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
+import { DEFAULT_PAGE_BORDER, DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
 import type { ParsedLabRecord } from "@/lib/aiAssistant";
 
@@ -115,7 +115,8 @@ export default function Home() {
       ...prev,
       rrn: s.rrn,
       headerLayout: s.headerLayout,
-      ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout) : {}),
+      pageBorder: s.pageBorder,
+      ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout, s.pageBorder) : {}),
     }));
     setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
 
@@ -154,14 +155,26 @@ export default function Home() {
         JSON.stringify(prev.headerLayout) === JSON.stringify(prevSettings.headerLayout)
           ? next.headerLayout
           : prev.headerLayout,
+      pageBorder:
+        JSON.stringify(prev.pageBorder ?? DEFAULT_PAGE_BORDER) === JSON.stringify(prevSettings.pageBorder)
+          ? next.pageBorder
+          : prev.pageBorder,
     }));
+    // The college heading block hugs the page border, so a new default border moves it too.
+    if (JSON.stringify(next.pageBorder) !== JSON.stringify(prevSettings.pageBorder)) {
+      setRecord((prev) =>
+        prev.format === "college" && JSON.stringify(prev.pageBorder ?? DEFAULT_PAGE_BORDER) === JSON.stringify(next.pageBorder)
+          ? { ...prev, headerLayout: { ...prev.headerLayout, ...collegeGeometry(next.pageBorder) } }
+          : prev
+      );
+    }
     setWatermark((prev) =>
       JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? next.watermark : prev
     );
     // A changed default format reaches the open record only if it is still on the old default.
     if (next.recordFormat !== prevSettings.recordFormat) {
       setRecord((prev) =>
-        (prev.format ?? "standard") === prevSettings.recordFormat ? { ...prev, ...formatPatch(next.recordFormat, prev.headerLayout) } : prev
+        (prev.format ?? "standard") === prevSettings.recordFormat ? { ...prev, ...formatPatch(next.recordFormat, prev.headerLayout, prev.pageBorder) } : prev
       );
     }
   }, []);
@@ -360,7 +373,7 @@ export default function Home() {
     if (!iframeDocument) return null;
 
     iframeDocument.open();
-    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font, record.format));
+    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font, record.format, record.pageBorder));
     iframeDocument.close();
     return iframeDocument;
   }
@@ -527,7 +540,7 @@ export default function Home() {
           }}
           onUpdateOutputImage={handleUpdateOutputImage}
           onShare={handleShare}
-          onFormatChange={(format) => setRecord((prev) => ({ ...prev, ...formatPatch(format, prev.headerLayout) }))}
+          onFormatChange={(format) => setRecord((prev) => ({ ...prev, ...formatPatch(format, prev.headerLayout, prev.pageBorder) }))}
           onOpenAiModal={() => setAiModalOpen(true)}
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}

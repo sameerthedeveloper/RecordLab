@@ -8,6 +8,8 @@ import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
 import { AccordionSection } from "./AccordionSection";
 import { RecordFormatPicker } from "./RecordFormatPicker";
+import { PageBorderControls } from "./PageBorderControls";
+import { collegeGeometry } from "@/lib/recordFormat";
 import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
 import { describeHeaderBorders, HeaderBorderControls } from "./HeaderBorderControls";
@@ -471,6 +473,18 @@ export function RecordEditorPanel({
           <p className="mt-2 text-xs text-ink-soft/70">
             College sheet puts EX / DATE and the title in a block that runs edge to edge across the top of page 1, like a printed lab sheet.
           </p>
+        </AccordionSection>
+
+        <AccordionSection title="PAGE BORDER">
+          <PageBorderControls
+            idPrefix="record-page-border"
+            value={record.pageBorder}
+            onChange={(next) => {
+              onFieldChange("pageBorder", next);
+              // College heading block hugs the border: move it with it.
+              if (record.format === "college") onFieldChange("headerLayout", { ...record.headerLayout, ...collegeGeometry(next) });
+            }}
+          />
         </AccordionSection>
 
         <WatermarkOptionsSection watermark={watermark} onChange={onWatermarkChange} />

@@ -1,9 +1,12 @@
 import { DEFAULT_DOC_FONT } from "./fonts";
 import {
   DEFAULT_HEADER_LAYOUT,
+  DEFAULT_PAGE_BORDER,
   DEFAULT_WATERMARK,
   RECORD_FORMATS,
+  resolvePageBorder,
   type HeaderLayout,
+  type PageBorder,
   type RecordFormat,
   type WatermarkOptions,
 } from "./types";
@@ -35,6 +38,8 @@ export interface AppSettings {
   uiStyle: UiStyle;
   /** Format new records start in. */
   recordFormat: RecordFormat;
+  /** Page rule new records start with. */
+  pageBorder: PageBorder;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -44,6 +49,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   headerLayout: DEFAULT_HEADER_LAYOUT,
   uiStyle: "apple",
   recordFormat: "standard",
+  pageBorder: DEFAULT_PAGE_BORDER,
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -59,6 +65,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     headerLayout: { ...DEFAULT_HEADER_LAYOUT, ...(parsed.headerLayout ?? {}) },
     uiStyle: UI_STYLES.includes(parsed.uiStyle as UiStyle) ? (parsed.uiStyle as UiStyle) : "apple",
     recordFormat: RECORD_FORMATS.includes(parsed.recordFormat as RecordFormat) ? (parsed.recordFormat as RecordFormat) : "standard",
+    pageBorder: resolvePageBorder(parsed.pageBorder),
   };
 }
 

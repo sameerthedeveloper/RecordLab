@@ -1,6 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
-import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
+import { resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -41,6 +41,7 @@ interface PdfKitDoc {
   lineCap(cap: "butt" | "round" | "square"): PdfKitDoc;
   dash(length: number, options?: { space?: number; phase?: number }): PdfKitDoc;
   rect(x: number, y: number, w: number, h: number): PdfKitDoc;
+  roundedRect(x: number, y: number, w: number, h: number, r: number): PdfKitDoc;
   moveTo(x: number, y: number): PdfKitDoc;
   lineTo(x: number, y: number): PdfKitDoc;
   stroke(): PdfKitDoc;
@@ -75,7 +76,6 @@ const MARGIN_TOP = mm(18);
 const MARGIN_BOTTOM = mm(18);
 const MARGIN_LEFT = mm(17);
 const MARGIN_RIGHT = mm(17);
-const BORDER_INSET = mm(8);
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 const INK = "#111827";
 
@@ -126,10 +126,28 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
       }
 
       function drawPageChrome(): void {
-        doc.save();
-        doc.lineWidth(1).strokeColor(INK);
-        doc.rect(BORDER_INSET, BORDER_INSET, PAGE_WIDTH - BORDER_INSET * 2, PAGE_HEIGHT - BORDER_INSET * 2).stroke();
-        doc.restore();
+        const pb = resolvePageBorder(record.pageBorder);
+        const l = mm(pb.inset.left);
+        const r = PAGE_WIDTH - mm(pb.inset.right);
+        const t = mm(pb.inset.top);
+        const b = PAGE_HEIGHT - mm(pb.inset.bottom);
+        if (pb.radius > 0 && pb.top.style !== "none") {
+          // Rounded corners: one closed path in the top side's line style.
+          const lw = pb.top.width * PX_TO_PT;
+          doc.save();
+          doc.strokeColor(pb.top.color).lineWidth(pb.top.style === "double" ? lw / 3 : lw);
+          if (pb.top.style === "dashed") doc.dash(lw * 4, { space: lw * 3 });
+          if (pb.top.style === "dotted") doc.lineCap("round").dash(0.01, { space: lw * 2 });
+          const rad = Math.min(mm(pb.radius), (r - l) / 2, (b - t) / 2);
+          doc.roundedRect(l, t, r - l, b - t, rad).stroke();
+          if (pb.top.style === "double") doc.roundedRect(l + lw, t + lw, r - l - lw * 2, b - t - lw * 2, Math.max(0, rad - lw)).stroke();
+          doc.restore();
+        } else {
+          ruleLine(l, t, r, t, pb.top);
+          ruleLine(l, b, r, b, pb.bottom);
+          ruleLine(l, t, l, b, pb.left);
+          ruleLine(r, t, r, b, pb.right);
+        }
 
         const rrn = record.rrn.trim();
         if (rrn) {

@@ -1,5 +1,5 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
-import { CONTENT_WIDTH_MM } from "./types";
+import { CONTENT_WIDTH_MM, resolvePageBorder } from "./types";
 import { headerBorderVarsCss, headerLineCss, resolveHeaderUnderline } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
 
@@ -56,8 +56,12 @@ function createCollegeHeader(record: RecordState): string {
   const h = record.headerLayout.height;
   const vars = headerBorderVarsCss(record.headerLayout);
   // The negative margins pull the table out over the 17mm/18mm content padding to the page border.
+  const { inset } = resolvePageBorder(record.pageBorder);
+  const dl = 17 - inset.left;
+  const dr = 17 - inset.right;
+  const dt = 18 - inset.top;
   return `
-    <table class="record-header record-header--college" style="width:calc(100% + 18mm);margin:-10mm -9mm 0 -9mm;${vars}">
+    <table class="record-header record-header--college" style="width:calc(100% + ${dl + dr}mm);margin:-${dt}mm -${dr}mm 0 -${dl}mm;${vars}">
       <tr>
         <td class="record-meta" style="height:${h}mm">
           <div class="rh-line">EX : ${exNo}</div>

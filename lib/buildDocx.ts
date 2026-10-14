@@ -24,7 +24,8 @@ import {
   WidthType,
 } from "docx";
 import { toDocxFontName } from "./fonts";
-import { CONTENT_WIDTH_MM } from "./types";
+import { CONTENT_WIDTH_MM, resolvePageBorder, PAGE_BORDER_SIDES } from "./types";
+import { collegeGeometry } from "./recordFormat";
 import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 
@@ -54,9 +55,18 @@ function docxLine(line: HeaderLine) {
     color: line.color.replace("#", ""),
   };
 }
-const PAGE_BORDER = { style: BorderStyle.SINGLE, size: 4, color: "111827" } as const;
-// 8mm inset from the page edge, matching `.a4-border`'s `top/right/bottom/left: 8mm`.
-const PAGE_BORDER_SPACE_PT = Math.round(8 * (72 / 25.4));
+
+/** Word page borders: per-side line, spaced from the page edge (Word caps the space at 31pt; it can't round corners). */
+function docxPageBorders(record: RecordState) {
+  const pb = resolvePageBorder(record.pageBorder);
+  const out: Record<string, { style: (typeof BorderStyle)[keyof typeof BorderStyle]; size: number; color: string; space: number }> = {};
+  for (const side of PAGE_BORDER_SIDES) {
+    const line = docxLine({ style: pb[side].style, width: pb[side].width, color: pb[side].color });
+    const key = `pageBorder${side[0].toUpperCase()}${side.slice(1)}`;
+    out[key] = { ...line, size: Math.min(96, line.size), space: Math.min(31, Math.round(pb.inset[side] * (72 / 25.4))) };
+  }
+  return out;
+}
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -181,7 +191,8 @@ async function outputImageParagraph(image: OutputImage): Promise<Paragraph> {
 function collegeHeaderTable(record: RecordState, font: string): Table {
   const lines = resolveHeaderBorders(record.headerLayout);
   const none = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } as const;
-  const totalW = convertMillimetersToTwip(194);
+  const geo = collegeGeometry(record.pageBorder);
+  const totalW = convertMillimetersToTwip(geo.width);
   const leftW = Math.round(totalW * 0.28);
   const rowH = convertMillimetersToTwip(record.headerLayout.height);
   const exNo = record.exercise_number.trim();
@@ -193,8 +204,8 @@ function collegeHeaderTable(record: RecordState, font: string): Table {
     float: {
       horizontalAnchor: TableAnchorType.PAGE,
       verticalAnchor: TableAnchorType.PAGE,
-      absoluteHorizontalPosition: convertMillimetersToTwip(8),
-      absoluteVerticalPosition: convertMillimetersToTwip(8),
+      absoluteHorizontalPosition: convertMillimetersToTwip(geo.x + 17),
+      absoluteVerticalPosition: convertMillimetersToTwip(geo.y + 18),
       overlap: OverlapType.NEVER,
     },
     rows: [
@@ -379,10 +390,7 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
                 display: PageBorderDisplay.ALL_PAGES,
                 offsetFrom: PageBorderOffsetFrom.PAGE,
               },
-              pageBorderTop: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
-              pageBorderBottom: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
-              pageBorderLeft: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
-              pageBorderRight: { ...PAGE_BORDER, space: PAGE_BORDER_SPACE_PT },
+              ...docxPageBorders(record),
             },
           },
         },

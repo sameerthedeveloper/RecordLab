@@ -2,7 +2,7 @@
 
 import { TiptapField } from "./TiptapField";
 import { DraggableHeaderTable } from "./DraggableHeaderTable";
-import type { RecordState, WatermarkOptions } from "@/lib/types";
+import { pageBorderStyle, type RecordState, type WatermarkOptions } from "@/lib/types";
 
 interface CanvasEditPreviewProps {
   record: RecordState;
@@ -45,7 +45,7 @@ export function CanvasEditPreview({ record, watermark, onFieldChange }: CanvasEd
       <div className="watermark" style={watermarkStyle}>
         {record.rrn.trim()}
       </div>
-      <div className="a4-border" />
+      <div className="a4-border" style={pageBorderStyle(record.pageBorder)} />
       <div className="a4-content" style={{ height: "auto" }}>
         <div className="a4-editable-surface">
           <DraggableHeaderTable record={record} layout={record.headerLayout} onFieldChange={onFieldChange} />
