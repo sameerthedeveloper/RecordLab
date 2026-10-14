@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, where } from "firebase/firestore";
 import { getDb, getFirebaseAuth } from "./firebaseConfig";
 import type { RlabPayload } from "./firestoreService";
 
@@ -26,4 +26,31 @@ export async function loadSharedRecord(id: string): Promise<RlabPayload | null> 
   const snap = await getDoc(doc(getDb(), COLLECTION, id));
   const data = snap.exists() ? (snap.data().data as RlabPayload | undefined) : undefined;
   return data?.record ? data : null;
+}
+
+export interface ShareLinkInfo {
+  id: string;
+  title: string;
+  url: string;
+  createdAt: Date | null;
+}
+
+/** The signed-in user's own share links, newest first. */
+export async function listMyShareLinks(): Promise<ShareLinkInfo[]> {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) return [];
+  const snap = await getDocs(query(collection(getDb(), COLLECTION), where("userId", "==", user.uid)));
+  return snap.docs
+    .map((d) => ({
+      id: d.id,
+      title: (d.data().title as string) ?? "Untitled",
+      url: `${window.location.origin}/editor?share=${d.id}`,
+      createdAt: (d.data().createdAt as { toDate(): Date } | null)?.toDate() ?? null,
+    }))
+    .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+}
+
+/** Kills the link: anyone opening it afterwards sees "invalid or removed". */
+export async function revokeShareLink(id: string): Promise<void> {
+  await deleteDoc(doc(getDb(), COLLECTION, id));
 }

@@ -13,6 +13,7 @@ import {
 } from "@/lib/authService";
 import { AuthModal } from "./AuthModal";
 import { PuterLinkButton } from "./PuterLinkButton";
+import { SharedLinks } from "./SharedLinks";
 
 interface AccountSettingsProps {
   onToast: (message: string) => void;
@@ -217,6 +218,8 @@ export function AccountSettings({ onToast }: AccountSettingsProps) {
         <p className="mb-2.5 text-sm text-ink-soft">Used for the Direct LLM option in the AI assistant.</p>
         <PuterLinkButton user={user} onLinked={(username) => onToast(`Linked Puter account @${username}.`)} onError={onToast} />
       </section>
+
+      <SharedLinks onToast={onToast} />
 
       <section>
         <button type="button" onClick={handleSignOut} className={`${secondary} flex items-center gap-1.5 hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600`}>

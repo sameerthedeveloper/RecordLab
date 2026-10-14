@@ -38,11 +38,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Share links: anyone holding the link can read that one snapshot (get by id,
-    // never list); only the signed-in owner can create or delete it.
+    // Share links: anyone holding the link can read that one snapshot (get by id);
+    // listing is limited to the owner's own shares; only the signed-in owner can create or delete it.
     match /shares/{shareId} {
       allow get: if true;
-      allow list: if false;
+      allow list: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.data is map;
