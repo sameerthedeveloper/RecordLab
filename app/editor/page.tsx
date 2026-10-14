@@ -19,6 +19,8 @@ import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
 import { getUserSettings, saveUserSettings } from "@/lib/userProfile";
+import { formatPatch } from "@/lib/recordFormat";
+import { shareOrDownload } from "@/lib/shareRecord";
 import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, normalizeSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
@@ -67,6 +69,7 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   // Firestore id of the cloud file being edited; null = not saved yet, so the next save creates it.
   const [cloudDocId, setCloudDocId] = useState<string | null>(null);
   // Subject folder the cloud file is saved into (null = none).
@@ -108,7 +111,12 @@ export default function Home() {
   useEffect(() => {
     const s = loadSettings();
     setSettings(s);
-    setRecord((prev) => ({ ...prev, rrn: s.rrn, headerLayout: s.headerLayout }));
+    setRecord((prev) => ({
+      ...prev,
+      rrn: s.rrn,
+      headerLayout: s.headerLayout,
+      ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout) : {}),
+    }));
     setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
 
     // A file opened from /dashboard is handed over through sessionStorage,
@@ -150,6 +158,12 @@ export default function Home() {
     setWatermark((prev) =>
       JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? next.watermark : prev
     );
+    // A changed default format reaches the open record only if it is still on the old default.
+    if (next.recordFormat !== prevSettings.recordFormat) {
+      setRecord((prev) =>
+        (prev.format ?? "standard") === prevSettings.recordFormat ? { ...prev, ...formatPatch(next.recordFormat, prev.headerLayout) } : prev
+      );
+    }
   }, []);
 
   // Once signed in, the account's saved preferences (see lib/userProfile.ts) win over
@@ -285,6 +299,32 @@ export default function Home() {
     reader.readAsText(file);
   }
 
+  /** Native share sheet with the record attached: the editable .docx (no JSON) or a PDF. */
+  async function handleShare(kind: "docx" | "pdf") {
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+      let blob: Blob;
+      if (kind === "docx") {
+        blob = await buildRecordDocx(record, watermark, settings.font);
+      } else {
+        const { buildCanvasPdf } = await import("@/lib/buildCanvasPdf");
+        blob = await buildCanvasPdf(record, watermark, settings.font);
+      }
+      const title = record.title.trim() || "Lab record";
+      const result = await shareOrDownload(blob, buildFilename(record, kind), title);
+      track("share_record", { kind, via: result });
+      if (result === "downloaded") {
+        showToast("Sharing isn't available on this device, so the file was downloaded.");
+      }
+    } catch (error) {
+      console.error("Share failed:", error);
+      showToast("Unable to prepare the file to share.");
+    } finally {
+      setIsSharing(false);
+    }
+  }
+
   async function handleSaveCloud() {
     setIsSavingCloud(true);
     try {
@@ -320,7 +360,7 @@ export default function Home() {
     if (!iframeDocument) return null;
 
     iframeDocument.open();
-    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font));
+    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font, record.format));
     iframeDocument.close();
     return iframeDocument;
   }
@@ -486,6 +526,8 @@ export default function Home() {
             }
           }}
           onUpdateOutputImage={handleUpdateOutputImage}
+          onShare={handleShare}
+          onFormatChange={(format) => setRecord((prev) => ({ ...prev, ...formatPatch(format, prev.headerLayout) }))}
           onOpenAiModal={() => setAiModalOpen(true)}
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}
@@ -498,6 +540,8 @@ export default function Home() {
         />
 
         <PreviewPanel
+          onShare={handleShare}
+          isSharing={isSharing}
           record={record}
           pages={pages}
           rrn={record.rrn}

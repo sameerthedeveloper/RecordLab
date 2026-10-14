@@ -184,6 +184,16 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         ruleLine(MARGIN_LEFT, underlineY, MARGIN_LEFT + CONTENT_WIDTH, underlineY, underline);
 
         doc.fillColor(INK);
+        if (record.format === "college") {
+          // College sheet: bold 14pt EX / DATE stacked on the left, title left-aligned on the right.
+          doc.font(BOLD_FONT).fontSize(14);
+          doc.text(`EX : ${record.exercise_number.trim()}`, boxX + 14, boxY + boxH * 0.28, { width: leftW - 20 });
+          doc.text(`DATE : ${formatDate(record.date).replace(/-/g, "/")}`, boxX + 14, boxY + boxH * 0.62, { width: leftW - 20 });
+          const collegeTitle = record.title.trim();
+          const th = doc.heightOfString(collegeTitle, { width: rightW - 36 });
+          doc.text(collegeTitle, boxX + leftW + 18, boxY + Math.max(8, (boxH - th) / 2), { width: rightW - 36, align: "left" });
+          return;
+        }
         doc.font(BOLD_FONT).fontSize(10);
         doc.text("EX NO : ", boxX + 10, boxY + 12, { continued: true });
         doc.font(BODY_FONT).text(record.exercise_number.trim());
@@ -261,9 +271,9 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         if (record.source_code.trim()) drawTextSection("SOURCE CODE:", record.source_code);
         await drawOutputSection();
         if (record.review_questions_enabled && record.review_questions.trim()) {
-          drawTextSection("REVIEW QUESTIONS:", record.review_questions);
+          drawTextSection(record.format === "college" ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", record.review_questions);
         }
-        if (record.result.trim()) drawTextSection("RESULT:", record.result);
+        if (record.result.trim()) drawTextSection(record.format === "college" ? "RESULT :" : "RESULT:", record.result);
 
         ctx.stream.on("finish", () => resolve(ctx.stream.toBlob("application/pdf")));
         doc.end();

@@ -113,6 +113,10 @@ export function headerBorderVarsCss(layout: Partial<HeaderLayout> | undefined): 
     .join("");
 }
 
+/** "standard": the boxed heading table inside the margins. "college": a lab-sheet look, with the heading block flush to the page border. */
+export type RecordFormat = "standard" | "college";
+export const RECORD_FORMATS: RecordFormat[] = ["standard", "college"];
+
 export interface RecordState {
   rrn: string;
   exercise_number: string;
@@ -127,6 +131,8 @@ export interface RecordState {
   review_questions_enabled: boolean;
   result: string;
   headerLayout: HeaderLayout;
+  /** Optional so older records open as "standard". */
+  format?: RecordFormat;
 }
 
 export interface WatermarkOptions {
@@ -176,6 +182,7 @@ export const DEFAULT_RECORD: RecordState = {
   review_questions_enabled: true,
   result: "",
   headerLayout: DEFAULT_HEADER_LAYOUT,
+  format: "standard",
 };
 
 export const DEFAULT_WATERMARK: WatermarkOptions = {

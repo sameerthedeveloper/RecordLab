@@ -5,6 +5,7 @@ import { FileText, Palette, Rows3, Settings as SettingsIcon, Stamp, User as User
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM, MIN_WIDTH_MM } from "./DraggableHeaderTable";
 import { AccountSettings } from "./AccountSettings";
+import { RecordFormatPicker } from "./RecordFormatPicker";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { CONTENT_WIDTH_MM } from "@/lib/types";
@@ -156,6 +157,11 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
           )}
           {tab === "record" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
+      <section>
+        <h3 className="mb-3 font-serif text-sm font-bold text-ink">Record format</h3>
+        <RecordFormatPicker value={draft.recordFormat} onChange={(recordFormat) => setDraft({ ...draft, recordFormat })} />
+        <p className="mt-1.5 text-xs text-ink-soft/70">What new records start in. You can change it per record in the editor.</p>
+      </section>
       <section>
             <h3 className="mb-3 font-serif text-sm font-bold text-ink">Your RRN</h3>
             <label htmlFor="settingsRrn" className={labelClass}>

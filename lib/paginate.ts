@@ -48,7 +48,30 @@ interface Section {
   images?: OutputImage[];
 }
 
+/** College sheet: heading block flush to the page border, title left-aligned beside EX / DATE. */
+function createCollegeHeader(record: RecordState): string {
+  const exNo = escapeHTML(record.exercise_number.trim());
+  const date = escapeHTML(formatDate(record.date).replace(/-/g, "/"));
+  const title = escapeHTML(record.title.trim());
+  const h = record.headerLayout.height;
+  const vars = headerBorderVarsCss(record.headerLayout);
+  // The negative margins pull the table out over the 17mm/18mm content padding to the page border.
+  return `
+    <table class="record-header record-header--college" style="width:calc(100% + 18mm);margin:-10mm -9mm 0 -9mm;${vars}">
+      <tr>
+        <td class="record-meta" style="height:${h}mm">
+          <div class="rh-line">EX : ${exNo}</div>
+          <div class="rh-line">DATE : ${date}</div>
+        </td>
+        <td class="record-title" style="height:${h}mm">${title}</td>
+      </tr>
+    </table>
+    <div style="height:7mm"></div>
+  `;
+}
+
 function createHeader(record: RecordState): string {
+  if (record.format === "college") return createCollegeHeader(record);
   const exNo = escapeHTML(record.exercise_number.trim());
   const formattedDate = escapeHTML(formatDate(record.date));
   const title = escapeHTML(record.title.trim());
@@ -90,9 +113,9 @@ function createHeader(record: RecordState): string {
   `;
 }
 
-function createMeasurePage(): HTMLDivElement {
+function createMeasurePage(format?: string): HTMLDivElement {
   const page = document.createElement("div");
-  page.className = "a4-page";
+  page.className = format === "college" ? "a4-page fmt-college" : "a4-page";
   page.style.position = "absolute";
   page.style.left = "-10000px";
   page.style.top = "0";
@@ -151,7 +174,14 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
     { id: "source_code", heading: "SOURCE CODE:", type: "code", val: record.source_code },
     { id: "output", heading: "OUTPUT:", type: "output", textVal: record.output, images: record.output_images },
     ...(record.review_questions_enabled
-      ? [{ id: "review_questions", heading: "REVIEW QUESTIONS:", type: "text" as const, val: record.review_questions }]
+      ? [
+          {
+            id: "review_questions",
+            heading: record.format === "college" ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:",
+            type: "text" as const,
+            val: record.review_questions,
+          },
+        ]
       : []),
   ];
 
@@ -165,6 +195,14 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
         .join("\n");
       const tag = sec.type === "code" ? "pre" : "div";
       const cls = sec.type === "code" ? "source-code" : "record-body";
+      if (record.format === "college" && sec.id === "aim") {
+        // College sheet: "AIM: text…" runs on from the heading.
+        return `
+        <section class="record-block">
+          <div class="record-body"><strong class="record-inline-heading">AIM:</strong> ${contentEscaped}</div>
+        </section>
+      `;
+      }
       return `
         <section class="record-block">
           <h2 class="record-heading">${sec.heading}</h2>
@@ -440,14 +478,15 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
 }
 
 export function paginateRecord(record: RecordState): PageObject[] {
-  const measurePage = createMeasurePage();
+  const measurePage = createMeasurePage(record.format);
   const measureContent = measurePage.querySelector(".a4-content") as HTMLElement;
 
+  const resultHeading = record.format === "college" ? "RESULT :" : "RESULT:";
   const resultVal = record.result;
   const resultIsEmpty = resultVal.trim() === "";
   const resultBlockContent = `
     <section class="record-block record-block-result">
-      <h2 class="record-heading">RESULT:</h2>
+      <h2 class="record-heading">${resultHeading}</h2>
       <div class="record-body"${resultIsEmpty ? emptyBlockStyleAttr("result") : ""}>${escapeHTML(resultVal)}</div>
     </section>
   `;
@@ -457,7 +496,7 @@ export function paginateRecord(record: RecordState): PageObject[] {
   // how empty AIM/ALGORITHM sections already degrade in paginateMainFlow.
   const compactResultBlockContent = `
     <section class="record-block record-block-result">
-      <h2 class="record-heading">RESULT:</h2>
+      <h2 class="record-heading">${resultHeading}</h2>
       <div class="record-body">${escapeHTML(resultVal)}</div>
     </section>
   `;

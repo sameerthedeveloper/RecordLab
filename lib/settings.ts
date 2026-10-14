@@ -1,5 +1,12 @@
 import { DEFAULT_DOC_FONT } from "./fonts";
-import { DEFAULT_HEADER_LAYOUT, DEFAULT_WATERMARK, type HeaderLayout, type WatermarkOptions } from "./types";
+import {
+  DEFAULT_HEADER_LAYOUT,
+  DEFAULT_WATERMARK,
+  RECORD_FORMATS,
+  type HeaderLayout,
+  type RecordFormat,
+  type WatermarkOptions,
+} from "./types";
 
 /**
  * App-wide preferences, separate from any one record's .rlab.json payload —
@@ -26,6 +33,8 @@ export interface AppSettings {
   font: string;
   headerLayout: HeaderLayout;
   uiStyle: UiStyle;
+  /** Format new records start in. */
+  recordFormat: RecordFormat;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -34,6 +43,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   font: DEFAULT_DOC_FONT,
   headerLayout: DEFAULT_HEADER_LAYOUT,
   uiStyle: "apple",
+  recordFormat: "standard",
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -48,6 +58,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     watermark: { ...DEFAULT_WATERMARK, ...(parsed.watermark ?? {}) },
     headerLayout: { ...DEFAULT_HEADER_LAYOUT, ...(parsed.headerLayout ?? {}) },
     uiStyle: UI_STYLES.includes(parsed.uiStyle as UiStyle) ? (parsed.uiStyle as UiStyle) : "apple",
+    recordFormat: RECORD_FORMATS.includes(parsed.recordFormat as RecordFormat) ? (parsed.recordFormat as RecordFormat) : "standard",
   };
 }
 

@@ -5,6 +5,7 @@ import {
   Document,
   Header,
   HeightRule,
+  OverlapType,
   HorizontalPositionAlign,
   HorizontalPositionRelativeFrom,
   ImageRun,
@@ -13,6 +14,7 @@ import {
   PageBorderOffsetFrom,
   Paragraph,
   Table,
+  TableAnchorType,
   TableCell,
   TableRow,
   TextRun,
@@ -122,18 +124,33 @@ function linesToRuns(text: string, font: string, runOptions: { size?: number } =
   return lines.map((line, i) => new TextRun({ text: line, break: i > 0 ? 1 : undefined, font, ...runOptions }));
 }
 
-function headingParagraph(text: string, font: string): Paragraph {
+/** Run sizes in half-points: standard 14pt headings / 12pt body, college sheet 12pt headings / 11pt body. */
+function headingParagraph(text: string, font: string, college = false, size?: number): Paragraph {
   return new Paragraph({
-    spacing: { before: 240, after: 80 },
-    children: [new TextRun({ text, bold: true, size: 28, font })],
+    spacing: { before: college ? 200 : 240, after: 80 },
+    children: [new TextRun({ text, bold: true, size: size ?? (college ? 24 : 28), font })],
   });
 }
 
-function bodyParagraph(text: string, font: string): Paragraph {
+function bodyParagraph(text: string, font: string, college = false): Paragraph {
   if (!text.trim()) return new Paragraph({ children: [] });
   return new Paragraph({
-    spacing: { after: 120 },
-    children: linesToRuns(text, font, { size: 24 }),
+    spacing: { after: 120, ...(college ? { line: 380 } : {}) },
+    children: linesToRuns(text, font, { size: college ? 22 : 24 }),
+  });
+}
+
+/** College sheet: "AIM: text…" with the heading running on in bold. */
+function inlineAimParagraph(text: string, font: string): Paragraph {
+  return new Paragraph({
+    spacing: { before: 200, after: 120, line: 380 },
+    children: [
+      new TextRun({ text: "AIM: ", bold: true, size: 22, font }),
+      ...text
+        .trim()
+        .split("\n")
+        .map((line, i) => new TextRun({ text: line, break: i > 0 ? 1 : undefined, size: 22, font })),
+    ],
   });
 }
 
@@ -152,6 +169,56 @@ async function outputImageParagraph(image: OutputImage): Promise<Paragraph> {
         type,
         data,
         transformation: { width, height },
+      }),
+    ],
+  });
+}
+
+/**
+ * College sheet heading block: a floating table anchored to the page (8mm from the top-left, 194mm wide),
+ * so it sits on the page border exactly as in the preview. Only the bottom rule and centre divider are drawn.
+ */
+function collegeHeaderTable(record: RecordState, font: string): Table {
+  const lines = resolveHeaderBorders(record.headerLayout);
+  const none = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } as const;
+  const totalW = convertMillimetersToTwip(194);
+  const leftW = Math.round(totalW * 0.28);
+  const rowH = convertMillimetersToTwip(record.headerLayout.height);
+  const exNo = record.exercise_number.trim();
+  const date = formatDate(record.date).replace(/-/g, "/");
+
+  return new Table({
+    width: { size: totalW, type: WidthType.DXA },
+    columnWidths: [leftW, totalW - leftW],
+    float: {
+      horizontalAnchor: TableAnchorType.PAGE,
+      verticalAnchor: TableAnchorType.PAGE,
+      absoluteHorizontalPosition: convertMillimetersToTwip(8),
+      absoluteVerticalPosition: convertMillimetersToTwip(8),
+      overlap: OverlapType.NEVER,
+    },
+    rows: [
+      new TableRow({
+        height: { value: rowH, rule: HeightRule.EXACT },
+        children: [
+          new TableCell({
+            width: { size: leftW, type: WidthType.DXA },
+            verticalAlign: "center",
+            borders: { top: none, left: none, bottom: docxLine(lines.bottom), right: docxLine(lines.insideV) },
+            margins: { top: 100, bottom: 100, left: 280, right: 140 },
+            children: [
+              new Paragraph({ children: [new TextRun({ text: `EX : ${exNo}`, bold: true, size: 28, font })] }),
+              new Paragraph({ spacing: { before: 360 }, children: [new TextRun({ text: `DATE : ${date}`, bold: true, size: 28, font })] }),
+            ],
+          }),
+          new TableCell({
+            width: { size: totalW - leftW, type: WidthType.DXA },
+            verticalAlign: "center",
+            borders: { top: none, right: none, bottom: docxLine(lines.bottom), left: docxLine(lines.insideV) },
+            margins: { top: 100, bottom: 100, left: 280, right: 140 },
+            children: [new Paragraph({ children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })] })],
+          }),
+        ],
       }),
     ],
   });
@@ -237,29 +304,33 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
           spacing: { before: Math.round(underline.gap * 56.7) },
           border: { bottom: { ...docxLine(underline), space: 1 } },
         });
-  const children: (Paragraph | Table)[] = [headerTable(record, font), afterHeader];
+  const college = record.format === "college";
+  // A floating table does not push text down, so the college sheet adds a spacer that clears the 28mm block.
+  const collegeSpacer = new Paragraph({ spacing: { before: convertMillimetersToTwip(Math.max(0, record.headerLayout.height - 10 + 4)) }, children: [] });
+  const children: (Paragraph | Table)[] = college ? [collegeHeaderTable(record, font), collegeSpacer] : [headerTable(record, font), afterHeader];
 
   if (record.aim.trim()) {
-    children.push(headingParagraph("AIM:", font), bodyParagraph(record.aim, font));
+    if (college) children.push(inlineAimParagraph(record.aim, font));
+    else children.push(headingParagraph("AIM:", font), bodyParagraph(record.aim, font));
   }
   if (record.algorithm.trim()) {
-    children.push(headingParagraph("ALGORITHM:", font), bodyParagraph(record.algorithm, font));
+    children.push(headingParagraph("ALGORITHM:", font, college), bodyParagraph(record.algorithm, font, college));
   }
   if (record.source_code.trim()) {
-    children.push(headingParagraph("SOURCE CODE:", font), bodyParagraph(record.source_code, font));
+    children.push(headingParagraph("SOURCE CODE:", font, college), bodyParagraph(record.source_code, font, college));
   }
   if (record.output.trim() || record.output_images.length > 0) {
-    children.push(headingParagraph("OUTPUT:", font));
-    if (record.output.trim()) children.push(bodyParagraph(record.output, font));
+    children.push(headingParagraph("OUTPUT:", font, college));
+    if (record.output.trim()) children.push(bodyParagraph(record.output, font, college));
     for (const image of record.output_images) {
       children.push(await outputImageParagraph(image));
     }
   }
   if (record.review_questions_enabled && record.review_questions.trim()) {
-    children.push(headingParagraph("REVIEW QUESTIONS:", font), bodyParagraph(record.review_questions, font));
+    children.push(headingParagraph(college ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", font, college), bodyParagraph(record.review_questions, font, college));
   }
   if (record.result.trim()) {
-    children.push(headingParagraph("RESULT:", font), bodyParagraph(record.result, font));
+    children.push(headingParagraph(college ? "RESULT :" : "RESULT:", font, college, college ? 28 : undefined), bodyParagraph(record.result, font, college));
   }
 
   const watermarkBytes = await buildWatermarkImage(record.rrn, watermark);

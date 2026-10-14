@@ -173,4 +173,50 @@ export const PRINT_CSS = `
     border: 1px solid #d1d5db;
     background: white;
   }
+
+  .fmt-college .a4-main-flow {
+    overflow: visible;
+  }
+  .fmt-college .record-header--college {
+    table-layout: fixed;
+  }
+  .fmt-college .record-header--college .record-meta {
+    width: 28%;
+    padding: 3mm 5mm;
+    vertical-align: middle;
+    font-size: 14pt;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .fmt-college .record-header--college .rh-line {
+    font-weight: 700;
+  }
+  .fmt-college .record-header--college .rh-line + .rh-line {
+    margin-top: 8mm;
+  }
+  .fmt-college .record-header--college .record-title {
+    width: 72%;
+    padding: 3mm 6mm;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 14pt;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+  .fmt-college .record-heading {
+    font-size: 12pt;
+    margin-bottom: 4px;
+  }
+  .fmt-college .record-inline-heading {
+    font-weight: 700;
+  }
+  .fmt-college .record-body,
+  .fmt-college .source-code,
+  .fmt-college .output-text {
+    font-size: 14.67px;
+    line-height: 1.6;
+  }
+  .fmt-college .record-block-result .record-heading {
+    font-size: 14pt;
+  }
 `;

@@ -1,9 +1,10 @@
-import type { PageObject, WatermarkOptions } from "@/lib/types";
+import type { PageObject, RecordFormat, WatermarkOptions } from "@/lib/types";
 
 interface A4PageProps {
   page: PageObject;
   rrn: string;
   watermark: WatermarkOptions;
+  format?: RecordFormat;
 }
 
 /**
@@ -14,7 +15,7 @@ interface A4PageProps {
  * rather than JSX. All user text within those fragments is escaped via
  * escapeHTML before this point.
  */
-export function A4Page({ page, rrn, watermark }: A4PageProps) {
+export function A4Page({ page, rrn, watermark, format }: A4PageProps) {
   const watermarkStyle: React.CSSProperties = {
     fontFamily: watermark.font,
     fontSize: `${watermark.size}px`,
@@ -24,7 +25,7 @@ export function A4Page({ page, rrn, watermark }: A4PageProps) {
   };
 
   return (
-    <div className="a4-page">
+    <div className={format === "college" ? "a4-page fmt-college" : "a4-page"}>
       <div className="watermark" style={watermarkStyle}>
         {rrn.trim()}
       </div>

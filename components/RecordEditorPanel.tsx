@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Cloud, Files, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
+import { Cloud, Files, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
+import { AccordionSection } from "./AccordionSection";
+import { RecordFormatPicker } from "./RecordFormatPicker";
 import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
 import { describeHeaderBorders, HeaderBorderControls } from "./HeaderBorderControls";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
-import type { OutputImage, RecordState, WatermarkOptions } from "@/lib/types";
+import type { OutputImage, RecordFormat, RecordState, WatermarkOptions } from "@/lib/types";
 
 interface RecordEditorPanelProps {
   record: RecordState;
@@ -22,6 +24,8 @@ interface RecordEditorPanelProps {
   /** Adds a generated image (data URL); `clearText` also empties the plain output text. */
   onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => void;
   onUpdateOutputImage: (id: number, src: string, terminal: TerminalImageOptions) => void;
+  onFormatChange: (format: RecordFormat) => void;
+  onShare: (kind: "docx" | "pdf") => void;
   /** Cloud subject folders: only shown when signed in. */
   signedIn: boolean;
   folders: Folder[];
@@ -66,6 +70,8 @@ export function RecordEditorPanel({
   onRemoveImage,
   onAddOutputImage,
   onUpdateOutputImage,
+  onFormatChange,
+  onShare,
   signedIn,
   folders,
   folderId,
@@ -247,6 +253,17 @@ export function RecordEditorPanel({
                     }}
                   >
                     <Save className="h-3.5 w-3.5" strokeWidth={2} /> Download as .rlab
+                  </button>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    className={menuItem}
+                    onClick={() => {
+                      setFileMenuOpen(false);
+                      onShare("docx");
+                    }}
+                  >
+                    <Share2 className="h-3.5 w-3.5" strokeWidth={2} /> Share editable Word file
                   </button>
                 </div>
               )}
@@ -448,6 +465,13 @@ export function RecordEditorPanel({
             </div>
           </EditorSection>
         </div>
+
+        <AccordionSection title="RECORD FORMAT">
+          <RecordFormatPicker value={record.format ?? "standard"} onChange={onFormatChange} />
+          <p className="mt-2 text-xs text-ink-soft/70">
+            College sheet puts EX / DATE and the title in a block that runs edge to edge across the top of page 1, like a printed lab sheet.
+          </p>
+        </AccordionSection>
 
         <WatermarkOptionsSection watermark={watermark} onChange={onWatermarkChange} />
 
