@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { ChevronDown, FileDown, FileText, Loader2, Share2 } from "lucide-react";
+import { ChevronDown, FileDown, Loader2, Share2 } from "lucide-react";
 import { A4Page } from "./A4Page";
 import { AccountMenu } from "./AccountMenu";
 import type { DownloadFormat, PageObject, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
@@ -28,7 +28,7 @@ interface PreviewPanelProps {
   pdfEngine: PdfEngine;
   onPdfEngineChange: (engine: PdfEngine) => void;
   visible: boolean;
-  onShare: (kind: "docx" | "pdf") => void;
+  onShare: () => void;
   isSharing: boolean;
 }
 
@@ -55,16 +55,6 @@ export function PreviewPanel({
   onShare,
   isSharing,
 }: PreviewPanelProps) {
-  const [shareOpen, setShareOpen] = useState(false);
-  const shareRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!shareOpen) return;
-    const away = (e: MouseEvent) => {
-      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareOpen(false);
-    };
-    document.addEventListener("mousedown", away);
-    return () => document.removeEventListener("mousedown", away);
-  }, [shareOpen]);
   const isCanvasEditMode = downloadFormat === "pdf" && pdfEngine === "canvas2pdf";
   const areaRef = useRef<HTMLDivElement>(null);
 
@@ -134,54 +124,16 @@ export function PreviewPanel({
             </div>
           </div>
 
-          <div ref={shareRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setShareOpen((v) => !v)}
-              disabled={isSharing}
-              aria-haspopup="menu"
-              aria-expanded={shareOpen}
-              aria-label="Share"
-              title="Share"
-              className="ui-icon-btn flex items-center justify-center max-md:h-11 max-md:w-11 max-md:p-0 disabled:opacity-60"
-            >
-              {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" strokeWidth={2.25} />}
-            </button>
-            {shareOpen && (
-              <div role="menu" className="ui-menu absolute right-0 top-[calc(100%+6px)] z-20 w-64 p-1.5">
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    setShareOpen(false);
-                    onShare("docx");
-                  }}
-                  className="flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-accent-soft/50"
-                >
-                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
-                  <span>
-                    <span className="block text-xs font-semibold text-ink">Editable Word file</span>
-                    <span className="block text-[11px] leading-snug text-ink-soft/70">.docx, opens in Word or Google Docs. No JSON file.</span>
-                  </span>
-                </button>
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    setShareOpen(false);
-                    onShare("pdf");
-                  }}
-                  className="flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-accent-soft/50"
-                >
-                  <FileDown className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
-                  <span>
-                    <span className="block text-xs font-semibold text-ink">PDF</span>
-                    <span className="block text-[11px] leading-snug text-ink-soft/70">Read-only copy to send or print.</span>
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => onShare()}
+            disabled={isSharing}
+            aria-label="Share link"
+            title="Share link"
+            className="ui-icon-btn flex items-center justify-center max-md:h-11 max-md:w-11 max-md:p-0 disabled:opacity-60"
+          >
+            {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" strokeWidth={2.25} />}
+          </button>
 
           <AccountMenu onToast={onToast} />
         </div>

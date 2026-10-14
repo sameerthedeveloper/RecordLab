@@ -27,7 +27,7 @@ interface RecordEditorPanelProps {
   onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => void;
   onUpdateOutputImage: (id: number, src: string, terminal: TerminalImageOptions) => void;
   onFormatChange: (format: RecordFormat) => void;
-  onShare: (kind: "docx" | "pdf") => void;
+  onShare: () => void;
   /** Cloud subject folders: only shown when signed in. */
   signedIn: boolean;
   folders: Folder[];
@@ -262,10 +262,10 @@ export function RecordEditorPanel({
                     className={menuItem}
                     onClick={() => {
                       setFileMenuOpen(false);
-                      onShare("docx");
+                      onShare();
                     }}
                   >
-                    <Share2 className="h-3.5 w-3.5" strokeWidth={2} /> Share editable Word file
+                    <Share2 className="h-3.5 w-3.5" strokeWidth={2} /> Share link
                   </button>
                 </div>
               )}

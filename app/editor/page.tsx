@@ -20,7 +20,7 @@ import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
 import { getUserSettings, saveUserSettings } from "@/lib/userProfile";
 import { collegeGeometry, formatPatch } from "@/lib/recordFormat";
-import { shareOrDownload } from "@/lib/shareRecord";
+import { createShareLink, loadSharedRecord } from "@/lib/shareLink";
 import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, normalizeSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_PAGE_BORDER, DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
@@ -119,6 +119,20 @@ export default function Home() {
       ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout, s.pageBorder) : {}),
     }));
     setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
+
+    // Opened from a share link: load the shared snapshot as a fresh, unsaved copy.
+    const shareId = new URLSearchParams(window.location.search).get("share");
+    if (shareId) {
+      window.history.replaceState(null, "", window.location.pathname);
+      loadSharedRecord(shareId)
+        .then((payload) => {
+          if (!payload) return showToast("This share link is invalid or was removed.");
+          setRecord({ ...DEFAULT_RECORD, ...payload.record });
+          if (payload.watermark) setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
+          showToast("Opened a shared record. Edit freely, your changes stay with you.");
+        })
+        .catch(() => showToast("Unable to open the share link."));
+    }
 
     // A file opened from /dashboard is handed over through sessionStorage,
     // since the editor's state lives in this page's memory only.
@@ -312,27 +326,31 @@ export default function Home() {
     reader.readAsText(file);
   }
 
-  /** Native share sheet with the record attached: the editable .docx (no JSON) or a PDF. */
-  async function handleShare(kind: "docx" | "pdf") {
+  /** Publishes a snapshot and hands the person a link: native share sheet when there is one, else clipboard. */
+  async function handleShare() {
     if (isSharing) return;
     setIsSharing(true);
     try {
-      let blob: Blob;
-      if (kind === "docx") {
-        blob = await buildRecordDocx(record, watermark, settings.font);
-      } else {
-        const { buildCanvasPdf } = await import("@/lib/buildCanvasPdf");
-        blob = await buildCanvasPdf(record, watermark, settings.font);
-      }
       const title = record.title.trim() || "Lab record";
-      const result = await shareOrDownload(blob, buildFilename(record, kind), title);
-      track("share_record", { kind, via: result });
-      if (result === "downloaded") {
-        showToast("Sharing isn't available on this device, so the file was downloaded.");
+      const url = await createShareLink({ version: 1, record, watermark }, title);
+      let via = "copied";
+      if (typeof navigator.share === "function") {
+        try {
+          await navigator.share({ title, url });
+          via = "shared";
+        } catch (err) {
+          if ((err as { name?: string })?.name === "AbortError") return;
+        }
       }
+      if (via === "copied") {
+        await navigator.clipboard.writeText(url);
+        showToast("Link copied. Anyone with it can open an editable copy.");
+      }
+      track("share_record", { kind: "link", via });
     } catch (error) {
       console.error("Share failed:", error);
-      showToast("Unable to prepare the file to share.");
+      const msg = error instanceof Error ? error.message : "";
+      showToast(msg.startsWith("Sign in") ? msg : "Unable to create the share link.");
     } finally {
       setIsSharing(false);
     }
