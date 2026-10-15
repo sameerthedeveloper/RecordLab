@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Modal, modalButton } from "./Modal";
+import { downloadCloudDocumentPdf } from "@/lib/downloadCloudPdf";
 import { FILE_DRAG_TYPE, FileCard, FileRow, FileThumb, relativeTime } from "./CloudFileViews";
 import { MoveToSubjectModal } from "./MoveToSubjectModal";
 import { DriveDetails } from "./DriveDetails";
@@ -296,11 +297,23 @@ export function DashboardModal({
     </button>
   );
 
+  async function handleDownloadPdf(doc: CloudDocument) {
+    onToast(`Preparing PDF for "${doc.title}"…`);
+    try {
+      await downloadCloudDocumentPdf(doc);
+      onToast("PDF downloaded.");
+    } catch (err) {
+      console.error("Cloud PDF download failed:", err);
+      onToast("Unable to create the PDF.");
+    }
+  }
+
   const actions = (doc: CloudDocument) => ({
     onSelect: () => setSelectedId(doc.id),
     onOpen: () => handleLoad(doc),
     onRename: () => startRename(doc),
     onMove: () => setMoving(doc),
+    onDownload: () => handleDownloadPdf(doc),
     onDelete: () => setDeleting(doc),
   });
 

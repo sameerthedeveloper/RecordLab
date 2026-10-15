@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, FolderInput, MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
+import { FileDown, FileText, FolderInput, MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CloudDocument } from "@/lib/firestoreService";
@@ -74,18 +74,19 @@ interface ItemActions {
   onOpen: () => void;
   onRename: () => void;
   onMove: () => void;
+  onDownload: () => void;
   onDelete: () => void;
 }
 
 const MENU_W = 160;
-const MENU_H = 164;
+const MENU_H = 200;
 
 /**
  * The menu is portalled to <body> with fixed positioning: file cards and the
  * dialog body clip overflow, and later cards paint over an absolutely
  * positioned menu, so an in-flow menu ended up behind its neighbours.
  */
-function RowMenu({ onOpen, onRename, onMove, onDelete }: Pick<ItemActions, "onOpen" | "onRename" | "onMove" | "onDelete">) {
+function RowMenu({ onOpen, onRename, onMove, onDownload, onDelete }: Pick<ItemActions, "onOpen" | "onRename" | "onMove" | "onDownload" | "onDelete">) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -167,6 +168,9 @@ function RowMenu({ onOpen, onRename, onMove, onDelete }: Pick<ItemActions, "onOp
             <button role="menuitem" type="button" className={item} onClick={run(onMove)}>
               <FolderInput className="h-3.5 w-3.5" strokeWidth={2} /> Move to subject
             </button>
+            <button role="menuitem" type="button" className={item} onClick={run(onDownload)}>
+              <FileDown className="h-3.5 w-3.5" strokeWidth={2} /> Download PDF
+            </button>
             <button
               role="menuitem"
               type="button"
@@ -219,7 +223,7 @@ export function FileCard({
           <p className="truncate text-[13px] font-semibold text-ink">{document.title}</p>
           <p className="truncate text-[11px] text-ink-soft/70">Edited {relativeTime(document.updatedAt)}</p>
         </div>
-        <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDelete={actions.onDelete} />
+        <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDownload={actions.onDownload} onDelete={actions.onDelete} />
       </div>
     </div>
   );
@@ -262,7 +266,7 @@ export function FileRow({
         {record?.exercise_number ? `Ex. ${record.exercise_number}` : "—"}
       </p>
       <p className="hidden text-xs text-ink-soft sm:block">{relativeTime(document.updatedAt)}</p>
-      <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDelete={actions.onDelete} />
+      <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDownload={actions.onDownload} onDelete={actions.onDelete} />
     </div>
   );
 }
