@@ -7,19 +7,31 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+export type InstallState = "installed" | "promptable" | "ios" | "unavailable";
+
 /**
- * Captures the browser's install prompt so the UI can offer its own "Install" button.
- * `canInstall` is false once installed, on browsers without the prompt (iOS Safari), or before it fires.
+ * Install-as-app state. Chromium fires `beforeinstallprompt` (promptable); iOS Safari has no
+ * prompt API, so it gets manual "Add to Home Screen" steps; an already-installed app reports "installed".
  */
-export function useInstallPrompt() {
+export function useInstallPrompt(): { state: InstallState; canInstall: boolean; install: () => Promise<void> } {
   const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
+  const [ios, setIos] = useState(false);
 
   useEffect(() => {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setInstalled(standalone);
+    setIos(/iphone|ipad|ipod/i.test(navigator.userAgent));
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setEvent(e as BeforeInstallPromptEvent);
     };
-    const onInstalled = () => setEvent(null);
+    const onInstalled = () => {
+      setInstalled(true);
+      setEvent(null);
+    };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
@@ -35,5 +47,6 @@ export function useInstallPrompt() {
     setEvent(null);
   }, [event]);
 
-  return { canInstall: event !== null, install };
+  const state: InstallState = installed ? "installed" : event ? "promptable" : ios ? "ios" : "unavailable";
+  return { state, canInstall: event !== null, install };
 }

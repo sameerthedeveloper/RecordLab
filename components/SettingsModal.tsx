@@ -7,6 +7,7 @@ import { MAX_HEIGHT_MM, MIN_HEIGHT_MM, MIN_WIDTH_MM } from "./DraggableHeaderTab
 import { AccountSettings } from "./AccountSettings";
 import { RecordFormatPicker } from "./RecordFormatPicker";
 import { PageBorderControls } from "./PageBorderControls";
+import { InstallAppSection } from "./InstallAppSection";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { CONTENT_WIDTH_MM } from "@/lib/types";
@@ -110,6 +111,7 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
           {tab === "account" && <AccountSettings onToast={onToast} />}
           {tab === "appearance" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
+      <InstallAppSection />
       <section>
             <h3 className="mb-3 font-serif text-sm font-bold text-ink">Interface style</h3>
             <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Interface style">

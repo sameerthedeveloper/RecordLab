@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, Files, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, Files, House, Pencil } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface MobileNavProps {
@@ -16,12 +17,14 @@ interface MobileNavProps {
  * glass lens that slides behind the selected tab.
  */
 export function MobileNav({ activePanel, onSelect, onOpenFiles }: MobileNavProps) {
+  const router = useRouter();
   const tabs: { id: string; label: string; Icon: LucideIcon; onPress: () => void }[] = [
+    { id: "home", label: "Home", Icon: House, onPress: () => router.push("/dashboard") },
     { id: "inputs", label: "Editor", Icon: Pencil, onPress: () => onSelect("inputs") },
     { id: "preview", label: "Preview", Icon: Eye, onPress: () => onSelect("preview") },
     { id: "files", label: "Files", Icon: Files, onPress: onOpenFiles },
   ];
-  const activeIndex = activePanel === "inputs" ? 0 : 1;
+  const activeIndex = activePanel === "inputs" ? 1 : 2;
   const [typing, setTyping] = useState(false);
 
   // Slide the bar away while a field is focused, so it never sits between the
@@ -50,14 +53,14 @@ export function MobileNav({ activePanel, onSelect, onOpenFiles }: MobileNavProps
         typing ? "pointer-events-none translate-y-full opacity-0" : ""
       }`}
     >
-      <div className="liquid-glass relative mx-auto flex h-[62px] max-w-sm items-stretch rounded-full p-1">
+      <div className="liquid-glass relative mx-auto flex h-[62px] max-w-md items-stretch rounded-full p-1">
         <span
           aria-hidden
           className="liquid-lens pointer-events-none absolute bottom-1 left-1 top-1 rounded-full"
-          style={{ width: "calc((100% - 8px) / 3)", transform: `translateX(${activeIndex * 100}%)` }}
+          style={{ width: "calc((100% - 8px) / 4)", transform: `translateX(${activeIndex * 100}%)` }}
         />
         {tabs.map(({ id, label, Icon, onPress }) => {
-          const active = (id === "inputs" && activeIndex === 0) || (id === "preview" && activeIndex === 1);
+          const active = (id === "inputs" && activeIndex === 1) || (id === "preview" && activeIndex === 2);
           return (
             <button
               key={id}

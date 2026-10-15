@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { AccountMenu } from "./AccountMenu";
 import { DashboardModal } from "./DashboardModal";
+import { MobileHome } from "./MobileHome";
 import { ToastViewport, useToast } from "./Toast";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
 
@@ -44,12 +45,32 @@ export function DashboardPageClient() {
     [router, showToast]
   );
 
+  // Phones get their own home screen (see MobileHome); tablets and desktops keep the full page below.
+  const [phone, setPhone] = useState<boolean | null>(null);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setPhone(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   const goToEditor = useCallback(() => router.push("/editor"), [router]);
 
   const activity = useMemo(() => weeklyActivity(documents ?? []), [documents]);
   const peak = Math.max(1, ...activity);
   const total = documents?.length ?? 0;
   const thisWeek = activity[WEEKS - 1];
+
+  if (phone === null) return <div className="app-canvas h-full w-full" />;
+  if (phone) {
+    return (
+      <>
+        <MobileHome onLoad={handleLoad} onToast={showToast} />
+        <ToastViewport toast={toast} />
+      </>
+    );
+  }
 
   return (
     <div className="app-canvas flex h-full w-full flex-col gap-3.5 p-3.5 md:p-4">
