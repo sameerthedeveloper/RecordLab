@@ -53,7 +53,7 @@ export function DashboardPageClient() {
 
   return (
     <div className="app-canvas flex h-full w-full flex-col gap-3.5 p-3.5 md:p-4">
-      <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 ui-panel px-5 py-4">
+      <header className="relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 ui-panel px-5 py-4">
         <div className="min-w-0">
           <Link
             href="/editor"
@@ -91,7 +91,7 @@ export function DashboardPageClient() {
               <figcaption className="mt-1 text-[11px] text-ink-soft/70">Records edited, last {WEEKS} weeks</figcaption>
             </figure>
           )}
-          <AccountMenu onToast={showToast} />
+          <AccountMenu onToast={showToast} menuAlign="start" />
         </div>
       </header>
 

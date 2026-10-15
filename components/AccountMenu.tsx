@@ -9,9 +9,11 @@ import { PuterLinkButton } from "./PuterLinkButton";
 
 interface AccountMenuProps {
   onToast: (message: string) => void;
+  /** "start": on phones the menu opens from the chip's left edge (use when the chip sits at the left of the screen). */
+  menuAlign?: "end" | "start";
 }
 
-export function AccountMenu({ onToast }: AccountMenuProps) {
+export function AccountMenu({ onToast, menuAlign = "end" }: AccountMenuProps) {
   const user = useAuthUser();
 
   // Keep this user's admin-panel profile row (email, last seen) fresh: once per session.
@@ -80,7 +82,7 @@ export function AccountMenu({ onToast }: AccountMenuProps) {
       </button>
 
       {menuOpen && (
-        <div className="ui-menu absolute right-0 top-[calc(100%+6px)] z-20 w-60 p-2">
+        <div className={`ui-menu absolute top-[calc(100%+6px)] z-20 w-60 p-2 ${menuAlign === "start" ? "left-0 sm:left-auto sm:right-0" : "right-0"}`}>
           <PuterLinkButton
             user={user}
             onLinked={(username) => onToast(`Linked Puter account @${username}.`)}
