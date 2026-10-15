@@ -79,21 +79,26 @@ export function PreviewPanel({
       className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex min-w-0 flex-1 flex-col ui-panel overflow-hidden`}
     >
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 ui-panel-header p-4">
-        <div data-onboarding="preview-heading">
+        <div data-onboarding="preview-heading" className="order-1">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/60">
             {pages.length > 0 ? `${pages.length} page${pages.length === 1 ? "" : "s"}` : "Live"}
           </p>
           <h2 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">Preview</h2>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="ui-seg flex items-stretch overflow-hidden">
+        {/* Phones: account sits beside the title, the actions get their own full-width row. */}
+        <div className="order-2 min-w-0 md:order-3">
+          <AccountMenu onToast={onToast} />
+        </div>
+
+        <div className="order-3 flex w-full items-center gap-2 md:order-2 md:w-auto">
+          <div className="ui-seg flex min-w-0 flex-1 items-stretch overflow-hidden md:flex-none">
             <button
               type="button"
               onClick={onSave}
               disabled={isSaving}
               data-onboarding="save-button"
-              className="ui-primary !rounded-none !shadow-none active:!scale-100 flex items-center justify-center gap-2 px-5 py-2.5 text-[13px] max-md:min-h-11 max-md:text-sm font-semibold disabled:opacity-60"
+              className="ui-primary !rounded-none !shadow-none active:!scale-100 flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-5 py-2.5 text-[13px] max-md:min-h-11 max-md:text-sm font-semibold disabled:opacity-60"
             >
               {isSaving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.5} />
@@ -130,12 +135,10 @@ export function PreviewPanel({
             disabled={isSharing}
             aria-label="Share link"
             title="Share link"
-            className="ui-icon-btn flex items-center justify-center max-md:h-11 max-md:w-11 max-md:p-0 disabled:opacity-60"
+            className="ui-icon-btn flex shrink-0 items-center justify-center max-md:h-11 max-md:w-11 max-md:p-0 disabled:opacity-60"
           >
             {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" strokeWidth={2.25} />}
           </button>
-
-          <AccountMenu onToast={onToast} />
         </div>
       </div>
 
