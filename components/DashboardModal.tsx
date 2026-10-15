@@ -610,6 +610,7 @@ export function DashboardModal({
               onClose={() => setSelectedId(null)}
               onOpen={() => handleLoad(selected)}
               onRename={() => startRename(selected)}
+              onDownload={() => handleDownloadPdf(selected)}
               onDelete={() => setDeleting(selected)}
             />
           </div>
@@ -626,6 +627,13 @@ export function DashboardModal({
             className="rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white"
           >
             Open
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDownloadPdf(selected)}
+            className="rounded-xl border border-line bg-white px-3 py-2 text-xs font-semibold text-ink-soft"
+          >
+            PDF
           </button>
           <button
             type="button"

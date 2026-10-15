@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderOpen, Pencil, Trash2, X } from "lucide-react";
+import { FileDown, FolderOpen, Pencil, Trash2, X } from "lucide-react";
 import type { CloudDocument } from "@/lib/firestoreService";
 import { FileThumb, stripHtml } from "./CloudFileViews";
 
@@ -14,10 +14,11 @@ interface DriveDetailsProps {
   onClose: () => void;
   onOpen: () => void;
   onRename: () => void;
+  onDownload: () => void;
   onDelete: () => void;
 }
 
-export function DriveDetails({ document, onClose, onOpen, onRename, onDelete }: DriveDetailsProps) {
+export function DriveDetails({ document, onClose, onOpen, onRename, onDownload, onDelete }: DriveDetailsProps) {
   const record = document.data?.record;
   const rows: [string, string][] = [
     ["Exercise", record?.exercise_number || "—"],
@@ -57,6 +58,15 @@ export function DriveDetails({ document, onClose, onOpen, onRename, onDelete }: 
         >
           <FolderOpen className="h-3.5 w-3.5" strokeWidth={2.25} />
           Open in editor
+        </button>
+        <button
+          type="button"
+          onClick={onDownload}
+          aria-label="Download PDF"
+          title="Download PDF"
+          className="rounded-xl border border-line p-2 text-ink-soft transition-colors hover:border-accent/40 hover:text-accent"
+        >
+          <FileDown className="h-3.5 w-3.5" strokeWidth={2} />
         </button>
         <button
           type="button"
