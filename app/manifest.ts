@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Record Lab",
     short_name: "Record Lab",
     description: "Type your lab record once and export a print-ready fair copy.",
-    start_url: "/?source=pwa",
+    start_url: "/editor?source=pwa",
     scope: "/",
     display: "standalone",
     orientation: "any",

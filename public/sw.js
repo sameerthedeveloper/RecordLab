@@ -1,10 +1,13 @@
 /* Record Lab service worker: offline shell + fast repeat loads.
    - Static assets (/_next/static, icons, fonts, images): cache-first.
    - Pages: network-first, falling back to the last cached copy, then /offline.html.
-   - Anything cross-origin (Firebase, Puter, CDNs) and non-GET requests go straight to the network. */
-const VERSION = "v1";
+   - html2pdf.js (cdnjs) and Google Fonts are cross-origin but needed to export / render offline: stale-while-revalidate.
+   - Everything else cross-origin (Firebase, Puter) and non-GET requests go straight to the network. */
+const VERSION = "v2";
 const STATIC = `recordlab-static-${VERSION}`;
 const PAGES = `recordlab-pages-${VERSION}`;
+const CDN_HOSTS = ["cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+const HTML2PDF = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
 const SHELL = ["/", "/editor", "/dashboard", "/offline.html", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -12,6 +15,8 @@ self.addEventListener("install", (event) => {
     caches
       .open(PAGES)
       .then((cache) => Promise.allSettled(SHELL.map((url) => cache.add(url))))
+      .then(() => caches.open(STATIC))
+      .then((cache) => fetch(new Request(HTML2PDF, { mode: "no-cors" })).then((res) => cache.put(HTML2PDF, res)).catch(() => {}))
       .then(() => self.skipWaiting())
   );
 });
@@ -29,7 +34,26 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) {
+    if (!CDN_HOSTS.includes(url.hostname)) return;
+    event.respondWith(
+      caches.open(STATIC).then(async (cache) => {
+        const hit = await cache.match(req);
+        const refresh = fetch(req)
+          .then((res) => {
+            if (res.ok || res.type === "opaque") cache.put(req, res.clone());
+            return res;
+          })
+          .catch(() => null);
+        if (hit) {
+          refresh.catch(() => {});
+          return hit;
+        }
+        return (await refresh) || Response.error();
+      })
+    );
+    return;
+  }
 
   const isStatic =
     url.pathname.startsWith("/_next/static/") ||

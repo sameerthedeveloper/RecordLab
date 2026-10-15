@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { PwaRegister } from "@/components/PwaRegister";
+import { OfflineBadge } from "@/components/OfflineBadge";
 
 const displayFont = Source_Serif_4({
   subsets: ["latin"],
@@ -77,6 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <PwaRegister />
+        <OfflineBadge />
         <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
