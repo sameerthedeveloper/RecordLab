@@ -75,7 +75,7 @@ export function AccountMenu({ onToast, menuAlign = "end" }: AccountMenuProps) {
             {(user.displayName || user.email || "?").charAt(0).toUpperCase()}
           </div>
         )}
-        <span className="max-w-[120px] truncate text-xs font-semibold text-ink">
+        <span className="max-w-[120px] truncate text-xs font-semibold text-ink max-[420px]:hidden">
           {user.displayName || user.email}
         </span>
         <ChevronDown className="h-3.5 w-3.5 text-ink-soft/60" strokeWidth={2} />

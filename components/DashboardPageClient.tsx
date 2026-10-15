@@ -53,17 +53,17 @@ export function DashboardPageClient() {
 
   return (
     <div className="app-canvas flex h-full w-full flex-col gap-3.5 p-3.5 md:p-4">
-      <header className="relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 ui-panel px-5 py-4">
+      <header className="relative z-30 flex shrink-0 items-center justify-between gap-x-3 sm:gap-x-6 sm:items-end ui-panel px-4 py-3 sm:px-5 sm:py-4">
         <div className="min-w-0">
           <Link
             href="/editor"
-            className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            className="mb-1 inline-flex items-center gap-1.5 sm:mb-2 text-xs font-semibold text-ink-soft transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
           >
             <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2.25} />
             Back to editor
           </Link>
-          <h1 className="font-serif text-2xl font-bold leading-tight tracking-tight text-ink">My records</h1>
-          <p className="mt-0.5 text-sm text-ink-soft">
+          <h1 className="font-serif text-xl font-bold sm:text-2xl leading-tight tracking-tight text-ink">My records</h1>
+          <p className="mt-0.5 truncate text-xs text-ink-soft sm:text-sm">
             {documents === null
               ? "Loading your records…"
               : total === 0
@@ -72,7 +72,7 @@ export function DashboardPageClient() {
           </p>
         </div>
 
-        <div className="flex items-end gap-5">
+        <div className="flex shrink-0 items-end gap-5">
           {total > 0 && (
             <figure
               className="hidden sm:block"
