@@ -1,6 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
-import { MANUAL_CALCULATION_LINES, resolveHeaderAlign, resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
+import { MANUAL_CALCULATION_LINES, resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -209,7 +209,7 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
           doc.text(`DATE : ${formatDate(record.date).replace(/-/g, "/")}`, boxX + 14, boxY + boxH * 0.62, { width: leftW - 20 });
           const collegeTitle = record.title.trim();
           const th = doc.heightOfString(collegeTitle, { width: rightW - 36 });
-          doc.text(collegeTitle, boxX + leftW + 18, boxY + Math.max(8, (boxH - th) / 2), { width: rightW - 36, align: resolveHeaderAlign(layout, "college") });
+          doc.text(collegeTitle, boxX + leftW + 18, boxY + Math.max(8, (boxH - th) / 2), { width: rightW - 36, align: "left" });
           return;
         }
         doc.font(BOLD_FONT).fontSize(10);
@@ -222,11 +222,10 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
 
         const title = record.title.trim();
         doc.font(BOLD_FONT).fontSize(14);
-        const titleAlign = resolveHeaderAlign(layout);
-        const titleHeight = doc.heightOfString(title, { width: rightW - 20, align: titleAlign });
+        const titleHeight = doc.heightOfString(title, { width: rightW - 20, align: "center" });
         doc.text(title, boxX + leftW + 10, boxY + Math.max(10, (boxH - titleHeight) / 2), {
           width: rightW - 20,
-          align: titleAlign,
+          align: "center",
         });
       }
 

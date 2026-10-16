@@ -5,13 +5,10 @@ import {
   HEADER_BORDER_MAX_WIDTH,
   HEADER_BORDER_MIN_WIDTH,
   HEADER_LINE_NAMES,
-  HEADER_ALIGNS,
   HEADER_UNDERLINE_MAX_GAP_MM,
   headerLineCss,
-  resolveHeaderAlign,
   resolveHeaderBorders,
   resolveHeaderUnderline,
-  type HeaderAlign,
   type HeaderBorders,
   type HeaderBorderStyle,
   type HeaderLayout,
@@ -23,8 +20,6 @@ interface HeaderBorderControlsProps {
   layout: HeaderLayout;
   onChange: (next: HeaderLayout) => void;
   idPrefix: string;
-  /** Alignment shown when the record has none set (centre on the standard sheet, left on the college sheet). */
-  format?: string;
 }
 
 const OUTER: HeaderLineName[] = ["top", "bottom", "left", "right"];
@@ -75,7 +70,7 @@ const seg = (active: boolean) =>
  * Word-style table borders for the title table. Set the "pen" (style, thickness,
  * colour), then click an edge on the diagram, or a preset, to draw or erase it with that pen.
  */
-export function HeaderBorderControls({ layout, onChange, idPrefix, format }: HeaderBorderControlsProps) {
+export function HeaderBorderControls({ layout, onChange, idPrefix }: HeaderBorderControlsProps) {
   const borders = resolveHeaderBorders(layout);
   const firstOn = HEADER_LINE_NAMES.map((n) => borders[n]).find(isOn);
   const [pen, setPen] = useState<{ style: Exclude<HeaderBorderStyle, "none">; width: number; color: string }>({
@@ -129,32 +124,8 @@ export function HeaderBorderControls({ layout, onChange, idPrefix, format }: Hea
   const hit =
     "absolute z-10 cursor-pointer rounded-sm outline-none transition-colors hover:bg-accent/15 focus-visible:bg-accent/25 focus-visible:ring-2 focus-visible:ring-accent";
 
-  const align = resolveHeaderAlign(layout, format);
-
   return (
     <div className="space-y-3.5">
-      <div>
-        <p id={`${idPrefix}-align-label`} className="mb-1 text-xs font-semibold text-ink-soft">
-          Heading alignment
-        </p>
-        <div role="radiogroup" aria-labelledby={`${idPrefix}-align-label`} className="ui-seg inline-flex items-stretch overflow-hidden">
-          {HEADER_ALIGNS.map((a: HeaderAlign) => (
-            <button
-              key={a}
-              type="button"
-              role="radio"
-              aria-checked={align === a}
-              onClick={() => onChange({ ...layout, align: a })}
-              className={`min-w-[4.5rem] px-3.5 py-1.5 text-xs font-semibold capitalize transition-colors max-md:min-h-10 ${
-                align === a ? "bg-accent text-white" : "text-ink-soft hover:text-accent-ink"
-              }`}
-            >
-              {a}
-            </button>
-          ))}
-        </div>
-        <p className="mt-1 text-[11px] text-ink-soft/70">Aligns the title; a narrower table moves with it. Works with no borders too.</p>
-      </div>
       <div className="flex flex-wrap items-start gap-4">
         {/* diagram */}
         <div className="shrink-0">
