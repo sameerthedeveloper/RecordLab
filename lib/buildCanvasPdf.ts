@@ -292,12 +292,24 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
           drawTextSection(record.format === "college" ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", record.review_questions);
         }
         if (record.manual_calculation_enabled) {
-          const blank = MANUAL_CALCULATION_LINES * BODY_FONT_SIZE * 1.5;
-          // One unbreakable block: heading plus the blank lines go on a fresh page if they don't fit.
-          ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + blank + SECTION_GAP);
+          // Starts right under the previous section; the lines that don't fit continue on the next page.
+          const lineH = BODY_FONT_SIZE * 1.5;
+          ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + lineH * 3);
           doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
           doc.text("MANUAL CALCULATION:", MARGIN_LEFT, y, { width: CONTENT_WIDTH });
-          y = doc.y + HEADING_GAP + blank + SECTION_GAP;
+          y = doc.y + HEADING_GAP;
+          let left = MANUAL_CALCULATION_LINES;
+          while (left > 0) {
+            const room = Math.max(1, Math.floor((PAGE_HEIGHT - MARGIN_BOTTOM - y) / lineH));
+            const take = Math.min(left, room);
+            y += take * lineH;
+            left -= take;
+            if (left > 0) {
+              doc.addPage();
+              y = MARGIN_TOP;
+            }
+          }
+          y += SECTION_GAP;
         }
         if (record.result.trim()) drawTextSection(record.format === "college" ? "RESULT :" : "RESULT:", record.result);
 

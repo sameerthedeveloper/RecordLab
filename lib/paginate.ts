@@ -41,6 +41,18 @@ type SectionType = "text" | "code" | "output" | "blank";
 
 /** One line of record body text: 16px * 1.5 line-height. */
 const BODY_LINE_PX = 24;
+/** Fewest manual-calculation lines worth leaving at the bottom of a page before moving the rest on. */
+const MANUAL_MIN_LINES_ON_PAGE = 3;
+
+/** Blank hand-writing space; `cont` is the carry-over onto the next page (no second heading). */
+function manualBlockHTML(heading: string, lines: number, cont: boolean): string {
+  return `
+        <section class="record-block record-block-manual${cont ? " record-block-cont" : ""}">
+          ${cont ? "" : `<h2 class="record-heading">${heading}</h2>`}
+          <div class="manual-calculation" style="height:${lines * BODY_LINE_PX}px"></div>
+        </section>
+      `;
+}
 
 interface Section {
   id: string;
@@ -196,14 +208,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
   ];
 
   function buildFullSectionHTML(sec: Section): string {
-    if (sec.type === "blank") {
-      return `
-        <section class="record-block record-block-manual">
-          <h2 class="record-heading">${sec.heading}</h2>
-          <div class="manual-calculation" style="height:${MANUAL_CALCULATION_LINES * BODY_LINE_PX}px"></div>
-        </section>
-      `;
-    }
+    if (sec.type === "blank") return manualBlockHTML(sec.heading, MANUAL_CALCULATION_LINES, false);
     if (sec.type === "text" || sec.type === "code") {
       const rawText = (sec.val || "").trim();
       if (!rawText) return "";
@@ -254,11 +259,29 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
   sections.forEach((sec) => {
     const fullSectionHTML = buildFullSectionHTML(sec);
 
-    // The manual-calculation space is one unbreakable block: if it doesn't fit under the content
-    // already on the page, it starts a fresh page (never split across two).
+    // Manual calculation: starts right under the previous section. If all its lines fit on this page
+    // it stays; otherwise it fills what room is left (at least MIN lines) and the remaining lines
+    // continue at the top of the next page. With less room than that, it all moves to the next page.
     if (sec.type === "blank") {
-      if (!tryAddFragment(fullSectionHTML) && currentMainFlowHTML.trim() !== headerHTML.trim()) commitCurrentPage();
-      currentMainFlowHTML += fullSectionHTML;
+      if (tryAddFragment(fullSectionHTML)) {
+        currentMainFlowHTML += fullSectionHTML;
+        return;
+      }
+      let fit = 0;
+      for (let k = MANUAL_CALCULATION_LINES - 1; k >= MANUAL_MIN_LINES_ON_PAGE; k--) {
+        if (tryAddFragment(manualBlockHTML(sec.heading, k, false))) {
+          fit = k;
+          break;
+        }
+      }
+      if (fit > 0) {
+        currentMainFlowHTML += manualBlockHTML(sec.heading, fit, false);
+        commitCurrentPage();
+        currentMainFlowHTML += manualBlockHTML(sec.heading, MANUAL_CALCULATION_LINES - fit, true);
+      } else {
+        if (currentMainFlowHTML.trim() !== headerHTML.trim()) commitCurrentPage();
+        currentMainFlowHTML += fullSectionHTML;
+      }
       return;
     }
 

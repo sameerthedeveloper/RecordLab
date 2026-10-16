@@ -341,10 +341,11 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
     children.push(headingParagraph(college ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", font, college), bodyParagraph(record.review_questions, font, college));
   }
   if (record.manual_calculation_enabled) {
-    children.push(headingParagraph("MANUAL CALCULATION:", font, college));
-    // Keep the heading with its blank lines, and the lines together on one page where they fit.
+    // Starts right under the previous section and flows on to the next page if it runs out of room;
+    // the heading stays with its first lines.
+    children.push(new Paragraph({ keepNext: true, spacing: { before: college ? 200 : 240, after: 80 }, children: [new TextRun({ text: "MANUAL CALCULATION:", bold: true, size: college ? 24 : 28, font })] }));
     for (let i = 0; i < MANUAL_CALCULATION_LINES; i++) {
-      children.push(new Paragraph({ keepNext: i < MANUAL_CALCULATION_LINES - 1, spacing: { after: 0, line: 360, lineRule: "exact" }, children: [] }));
+      children.push(new Paragraph({ keepNext: i < 2, spacing: { after: 0, line: 360, lineRule: "exact" }, children: [] }));
     }
   }
   if (record.result.trim()) {
