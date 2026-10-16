@@ -256,8 +256,10 @@ function headerTable(record: RecordState, font: string): Table {
     right: docxLine(lines.right),
   };
 
+  const offsetMm = Math.min(Math.max(0, record.headerLayout.x || 0), Math.max(0, CONTENT_WIDTH_MM - record.headerLayout.width));
   return new Table({
     width: { size: widthPct, type: WidthType.PERCENTAGE },
+    indent: offsetMm > 0 ? { size: convertMillimetersToTwip(offsetMm), type: WidthType.DXA } : undefined,
     rows: [
       new TableRow({
         height: { value: rowHeightTwips, rule: HeightRule.ATLEAST },

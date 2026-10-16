@@ -103,6 +103,8 @@ function createHeader(record: RecordState): string {
   const widthPct = Math.min(100, (record.headerLayout.width / CONTENT_WIDTH_MM) * 100);
   const minHeightMm = record.headerLayout.height;
 
+  // Moves the whole table sideways (x, mm from the left of the content area), never past the right edge.
+  const offsetMm = Math.min(Math.max(0, record.headerLayout.x || 0), Math.max(0, CONTENT_WIDTH_MM - record.headerLayout.width));
   const underline = resolveHeaderUnderline(record.headerLayout);
   const underlineHTML =
     underline.style === "none"
@@ -110,7 +112,7 @@ function createHeader(record: RecordState): string {
       : `<div class="record-header-rule" style="margin-top:${underline.gap}mm;border-top:${headerLineCss(underline)}"></div>`;
 
   return `
-    <table class="record-header" style="width:${widthPct}%;${headerBorderVarsCss(record.headerLayout)}">
+    <table class="record-header" style="width:${widthPct}%;margin-left:${offsetMm}mm;${headerBorderVarsCss(record.headerLayout)}">
       <tr>
         <td class="record-meta" style="min-height:${minHeightMm}mm">
           <div>

@@ -5,6 +5,7 @@ import {
   HEADER_BORDER_MAX_WIDTH,
   HEADER_BORDER_MIN_WIDTH,
   HEADER_LINE_NAMES,
+  CONTENT_WIDTH_MM,
   HEADER_UNDERLINE_MAX_GAP_MM,
   headerLineCss,
   resolveHeaderBorders,
@@ -15,6 +16,8 @@ import {
   type HeaderLine,
   type HeaderLineName,
 } from "@/lib/types";
+
+const MIN_WIDTH_MM = 40;
 
 interface HeaderBorderControlsProps {
   layout: HeaderLayout;
@@ -124,8 +127,73 @@ export function HeaderBorderControls({ layout, onChange, idPrefix }: HeaderBorde
   const hit =
     "absolute z-10 cursor-pointer rounded-sm outline-none transition-colors hover:bg-accent/15 focus-visible:bg-accent/25 focus-visible:ring-2 focus-visible:ring-accent";
 
+  const width = Math.min(CONTENT_WIDTH_MM, Math.max(MIN_WIDTH_MM, layout.width || CONTENT_WIDTH_MM));
+  const maxX = Math.max(0, CONTENT_WIDTH_MM - width);
+  const x = Math.min(maxX, Math.max(0, layout.x || 0));
+  const place = (next: Partial<HeaderLayout>) => onChange({ ...layout, ...next });
+  const SLOTS = [
+    { id: "Left", x: 0 },
+    { id: "Center", x: maxX / 2 },
+    { id: "Right", x: maxX },
+  ];
+
   return (
     <div className="space-y-3.5">
+      <div>
+        <p className="mb-1 text-xs font-semibold text-ink-soft">Move heading</p>
+        <div className="ui-seg inline-flex items-stretch overflow-hidden">
+          {SLOTS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => place({ x: s.x })}
+              disabled={maxX === 0}
+              className={`min-w-[4.5rem] px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 max-md:min-h-10 ${
+                Math.abs(x - s.x) < 0.5 && maxX > 0 ? "bg-accent text-white" : "text-ink-soft hover:text-accent-ink"
+              }`}
+            >
+              {s.id}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2.5 grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor={`${idPrefix}-hw`} className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+              Width <span className="font-mono font-medium">{Math.round(width)}mm</span>
+            </label>
+            <input
+              id={`${idPrefix}-hw`}
+              type="range"
+              min={MIN_WIDTH_MM}
+              max={CONTENT_WIDTH_MM}
+              step={1}
+              value={width}
+              onChange={(e) => {
+                const w = Number(e.target.value);
+                place({ width: w, x: Math.min(x, Math.max(0, CONTENT_WIDTH_MM - w)) });
+              }}
+              className="w-full accent-[#c2410c]"
+            />
+          </div>
+          <div>
+            <label htmlFor={`${idPrefix}-hx`} className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+              Position <span className="font-mono font-medium">{Math.round(x)}mm</span>
+            </label>
+            <input
+              id={`${idPrefix}-hx`}
+              type="range"
+              min={0}
+              max={maxX}
+              step={1}
+              value={x}
+              disabled={maxX === 0}
+              onChange={(e) => place({ x: Number(e.target.value) })}
+              className="w-full accent-[#c2410c] disabled:opacity-40"
+            />
+          </div>
+        </div>
+        <p className="mt-1 text-[11px] text-ink-soft/70">Narrow the table to slide it left or right. Works with no borders too.</p>
+      </div>
       <div className="flex flex-wrap items-start gap-4">
         {/* diagram */}
         <div className="shrink-0">
