@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Move } from "lucide-react";
 import { CONTENT_HEIGHT_MM, CONTENT_WIDTH_MM } from "@/lib/types";
-import { headerBorderVars, headerLineCss, resolveHeaderUnderline } from "@/lib/types";
+import { headerBorderVars, headerLineCss, resolveHeaderAlign, resolveHeaderUnderline } from "@/lib/types";
 import type { HeaderLayout, RecordState } from "@/lib/types";
 
 export const MIN_WIDTH_MM = 40;
@@ -165,6 +165,7 @@ export function DraggableHeaderTable({ record, layout, onFieldChange }: Draggabl
               <input
                 type="text"
                 className="record-header-input record-header-input--title"
+                style={{ textAlign: resolveHeaderAlign(current, record.format) }}
                 value={record.title}
                 onChange={(e) => onFieldChange("title", e.target.value)}
                 aria-label="Experiment title"

@@ -24,7 +24,7 @@ import {
   WidthType,
 } from "docx";
 import { toDocxFontName } from "./fonts";
-import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, PAGE_BORDER_SIDES } from "./types";
+import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolveHeaderAlign, resolvePageBorder, PAGE_BORDER_SIDES } from "./types";
 import { collegeGeometry } from "./recordFormat";
 import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
@@ -227,13 +227,15 @@ function collegeHeaderTable(record: RecordState, font: string): Table {
             verticalAlign: "center",
             borders: { top: none, right: none, bottom: docxLine(lines.bottom), left: docxLine(lines.insideV) },
             margins: { top: 100, bottom: 100, left: 280, right: 140 },
-            children: [new Paragraph({ children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })] })],
+            children: [new Paragraph({ alignment: DOCX_ALIGN[resolveHeaderAlign(record.headerLayout, "college")], children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })] })],
           }),
         ],
       }),
     ],
   });
 }
+
+const DOCX_ALIGN = { left: AlignmentType.LEFT, center: AlignmentType.CENTER, right: AlignmentType.RIGHT } as const;
 
 function headerTable(record: RecordState, font: string): Table {
   // Mirrors createHeader() in lib/paginate.ts: table width scales with
@@ -258,6 +260,7 @@ function headerTable(record: RecordState, font: string): Table {
 
   return new Table({
     width: { size: widthPct, type: WidthType.PERCENTAGE },
+    alignment: DOCX_ALIGN[resolveHeaderAlign(record.headerLayout)],
     rows: [
       new TableRow({
         height: { value: rowHeightTwips, rule: HeightRule.ATLEAST },
@@ -292,7 +295,7 @@ function headerTable(record: RecordState, font: string): Table {
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
             children: [
               new Paragraph({
-                alignment: AlignmentType.CENTER,
+                alignment: DOCX_ALIGN[resolveHeaderAlign(record.headerLayout)],
                 children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })],
               }),
             ],

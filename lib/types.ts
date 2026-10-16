@@ -27,10 +27,20 @@ export interface HeaderLayout {
   borders?: Partial<Record<HeaderLineName, Partial<HeaderLine>>>;
   /** Full-width rule drawn under the title table (off by default). */
   underline?: Partial<HeaderUnderline>;
+  /** Where the title sits and, when the table is narrower than the page, where the table sits. Unset = the format's own default. */
+  align?: HeaderAlign;
   /** Legacy uniform border (single style for the whole table). Read only as a fallback. */
   borderStyle?: HeaderBorderStyle;
   borderWidth?: number;
   borderColor?: string;
+}
+
+export type HeaderAlign = "left" | "center" | "right";
+export const HEADER_ALIGNS: HeaderAlign[] = ["left", "center", "right"];
+
+/** Chosen alignment, or the format's default: centred title on the standard sheet, left on the college sheet. */
+export function resolveHeaderAlign(layout: Partial<HeaderLayout> | undefined, format?: string): HeaderAlign {
+  return HEADER_ALIGNS.includes(layout?.align as HeaderAlign) ? (layout!.align as HeaderAlign) : format === "college" ? "left" : "center";
 }
 
 export type HeaderBorderStyle = "solid" | "double" | "dashed" | "dotted" | "none";

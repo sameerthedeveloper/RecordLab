@@ -1,5 +1,5 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
-import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder } from "./types";
+import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolveHeaderAlign, resolvePageBorder } from "./types";
 import { headerBorderVarsCss, headerLineCss, resolveHeaderUnderline } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
 
@@ -82,7 +82,7 @@ function createCollegeHeader(record: RecordState): string {
           <div class="rh-line">EX : ${exNo}</div>
           <div class="rh-line">DATE : ${date}</div>
         </td>
-        <td class="record-title" style="height:${h}mm">${title}</td>
+        <td class="record-title" style="height:${h}mm;text-align:${resolveHeaderAlign(record.headerLayout, "college")}">${title}</td>
       </tr>
     </table>
     <div style="height:7mm"></div>
@@ -103,6 +103,7 @@ function createHeader(record: RecordState): string {
   const widthPct = Math.min(100, (record.headerLayout.width / CONTENT_WIDTH_MM) * 100);
   const minHeightMm = record.headerLayout.height;
 
+  const align = resolveHeaderAlign(record.headerLayout);
   const underline = resolveHeaderUnderline(record.headerLayout);
   const underlineHTML =
     underline.style === "none"
@@ -110,7 +111,7 @@ function createHeader(record: RecordState): string {
       : `<div class="record-header-rule" style="margin-top:${underline.gap}mm;border-top:${headerLineCss(underline)}"></div>`;
 
   return `
-    <table class="record-header" style="width:${widthPct}%;${headerBorderVarsCss(record.headerLayout)}">
+    <table class="record-header" style="width:${widthPct}%;margin:0 ${align === "left" ? "auto 0 0" : align === "right" ? "0 0 auto" : "auto"};${headerBorderVarsCss(record.headerLayout)}">
       <tr>
         <td class="record-meta" style="min-height:${minHeightMm}mm">
           <div>
@@ -123,7 +124,7 @@ function createHeader(record: RecordState): string {
             <span class="value">${formattedDate}</span>
           </div>
         </td>
-        <td class="record-title" style="min-height:${minHeightMm}mm">
+        <td class="record-title" style="min-height:${minHeightMm}mm;text-align:${align}">
           ${title}
         </td>
       </tr>

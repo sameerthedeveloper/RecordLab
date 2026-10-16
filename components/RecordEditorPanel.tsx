@@ -461,6 +461,7 @@ export function RecordEditorPanel({
                 <div className="pt-3">
                   <HeaderBorderControls
                     idPrefix="record"
+                    format={record.format}
                     layout={record.headerLayout}
                     onChange={(next) => onFieldChange("headerLayout", next)}
                   />
