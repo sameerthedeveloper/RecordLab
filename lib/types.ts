@@ -129,6 +129,8 @@ export interface RecordState {
   output_images: OutputImage[];
   review_questions: string;
   review_questions_enabled: boolean;
+  /** Blank hand-written working space (MANUAL_CALCULATION_LINES lines) before RESULT. Off unless set, so older records are unchanged. */
+  manual_calculation_enabled?: boolean;
   result: string;
   headerLayout: HeaderLayout;
   /** Optional so older records open as "standard". */
@@ -225,6 +227,9 @@ export function pageBorderCss(pb: Partial<PageBorder> | undefined): string {
     .join("");
 }
 
+/** Lines of blank space the MANUAL CALCULATION section reserves on the sheet. */
+export const MANUAL_CALCULATION_LINES = 35;
+
 export interface WatermarkOptions {
   font: string;
   size: number;
@@ -270,6 +275,7 @@ export const DEFAULT_RECORD: RecordState = {
   output_images: [],
   review_questions: "",
   review_questions_enabled: true,
+  manual_calculation_enabled: false,
   result: "",
   headerLayout: DEFAULT_HEADER_LAYOUT,
   format: "standard",

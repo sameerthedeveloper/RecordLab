@@ -14,7 +14,7 @@ import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
 import { describeHeaderBorders, HeaderBorderControls } from "./HeaderBorderControls";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
-import type { OutputImage, RecordFormat, RecordState, WatermarkOptions } from "@/lib/types";
+import { MANUAL_CALCULATION_LINES, type OutputImage, type RecordFormat, RecordState, WatermarkOptions } from "@/lib/types";
 
 interface RecordEditorPanelProps {
   record: RecordState;
@@ -47,7 +47,7 @@ interface RecordEditorPanelProps {
   visible: boolean;
 }
 
-type SectionId = "details" | "aim" | "algorithm" | "code" | "output" | "review" | "result";
+type SectionId = "details" | "aim" | "algorithm" | "code" | "output" | "review" | "manual" | "result";
 
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "details", label: "Details" },
@@ -56,6 +56,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "code", label: "Code" },
   { id: "output", label: "Output" },
   { id: "review", label: "Review" },
+  { id: "manual", label: "Manual calc" },
   { id: "result", label: "Result" },
 ];
 
@@ -105,9 +106,10 @@ export function RecordEditorPanel({
     code: Boolean(record.source_code.trim()),
     output: Boolean(record.output.trim() || record.output_images.length),
     review: record.review_questions_enabled && Boolean(record.review_questions.trim()),
+    manual: Boolean(record.manual_calculation_enabled),
     result: Boolean(record.result.trim()),
   };
-  const trackedIds = SECTIONS.filter((s) => s.id !== "review" || record.review_questions_enabled);
+  const trackedIds = SECTIONS.filter((s) => s.id !== "manual" && (s.id !== "review" || record.review_questions_enabled));
   const doneCount = trackedIds.filter((s) => filled[s.id]).length;
 
   useEffect(() => {
@@ -652,7 +654,36 @@ export function RecordEditorPanel({
             />
           </EditorSection>
 
-          <EditorSection id="result" title="Result" index="06" filled={filled.result}>
+          <EditorSection
+            id="manual"
+            title="Manual calculation"
+            index="06"
+            filled={filled.manual}
+            aside={
+              <label htmlFor="manualEnabledToggle" className="flex cursor-pointer items-center gap-2">
+                <span className="text-xs font-medium text-ink-soft/80">{record.manual_calculation_enabled ? "In record" : "Off"}</span>
+                <span className="relative inline-flex">
+                  <input
+                    id="manualEnabledToggle"
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={Boolean(record.manual_calculation_enabled)}
+                    onChange={(e) => onFieldChange("manual_calculation_enabled", e.target.checked)}
+                  />
+                  <span className="h-5 w-9 rounded-full bg-gray-200 transition-colors peer-checked:bg-accent peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent" />
+                  <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
+                </span>
+              </label>
+            }
+          >
+            <p className="text-xs text-ink-soft/80">
+              {record.manual_calculation_enabled
+                ? `Leaves ${MANUAL_CALCULATION_LINES} blank lines before Result on the printed sheet, for working you write by hand.`
+                : `Turn on to leave ${MANUAL_CALCULATION_LINES} blank lines before Result for hand-written working.`}
+            </p>
+          </EditorSection>
+
+          <EditorSection id="result" title="Result" index="07" filled={filled.result}>
             <label htmlFor="resultInput" className="sr-only">
               Result
             </label>

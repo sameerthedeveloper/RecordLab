@@ -1,5 +1,5 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
-import { CONTENT_WIDTH_MM, resolvePageBorder } from "./types";
+import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder } from "./types";
 import { headerBorderVarsCss, headerLineCss, resolveHeaderUnderline } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
 
@@ -37,7 +37,10 @@ function emptyBlockStyleAttr(sectionId: string): string {
   return minHeight ? ` style="min-height:${minHeight}px"` : "";
 }
 
-type SectionType = "text" | "code" | "output";
+type SectionType = "text" | "code" | "output" | "blank";
+
+/** One line of record body text: 16px * 1.5 line-height. */
+const BODY_LINE_PX = 24;
 
 interface Section {
   id: string;
@@ -187,9 +190,20 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
           },
         ]
       : []),
+    ...(record.manual_calculation_enabled
+      ? [{ id: "manual_calculation", heading: "MANUAL CALCULATION:", type: "blank" as const }]
+      : []),
   ];
 
   function buildFullSectionHTML(sec: Section): string {
+    if (sec.type === "blank") {
+      return `
+        <section class="record-block record-block-manual">
+          <h2 class="record-heading">${sec.heading}</h2>
+          <div class="manual-calculation" style="height:${MANUAL_CALCULATION_LINES * BODY_LINE_PX}px"></div>
+        </section>
+      `;
+    }
     if (sec.type === "text" || sec.type === "code") {
       const rawText = (sec.val || "").trim();
       if (!rawText) return "";
@@ -239,6 +253,14 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
 
   sections.forEach((sec) => {
     const fullSectionHTML = buildFullSectionHTML(sec);
+
+    // The manual-calculation space is one unbreakable block: if it doesn't fit under the content
+    // already on the page, it starts a fresh page (never split across two).
+    if (sec.type === "blank") {
+      if (!tryAddFragment(fullSectionHTML) && currentMainFlowHTML.trim() !== headerHTML.trim()) commitCurrentPage();
+      currentMainFlowHTML += fullSectionHTML;
+      return;
+    }
 
     // 1. If full section fits on current page, add it in one piece!
     if (fullSectionHTML && tryAddFragment(fullSectionHTML)) {

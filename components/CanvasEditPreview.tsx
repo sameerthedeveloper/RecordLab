@@ -2,7 +2,7 @@
 
 import { TiptapField } from "./TiptapField";
 import { DraggableHeaderTable } from "./DraggableHeaderTable";
-import { pageBorderStyle, type RecordState, type WatermarkOptions } from "@/lib/types";
+import { MANUAL_CALCULATION_LINES, pageBorderStyle, type RecordState, type WatermarkOptions } from "@/lib/types";
 
 interface CanvasEditPreviewProps {
   record: RecordState;
@@ -95,6 +95,13 @@ export function CanvasEditPreview({ record, watermark, onFieldChange }: CanvasEd
                   value={record.review_questions}
                   onChange={(v) => onFieldChange("review_questions", v)}
                 />
+              </section>
+            )}
+
+            {record.manual_calculation_enabled && (
+              <section className="record-block record-block-manual">
+                <h2 className="record-heading">MANUAL CALCULATION:</h2>
+                <div className="manual-calculation" style={{ height: MANUAL_CALCULATION_LINES * 24 }} />
               </section>
             )}
 

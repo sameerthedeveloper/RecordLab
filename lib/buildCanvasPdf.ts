@@ -1,6 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
-import { resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
+import { MANUAL_CALCULATION_LINES, resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -290,6 +290,14 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         await drawOutputSection();
         if (record.review_questions_enabled && record.review_questions.trim()) {
           drawTextSection(record.format === "college" ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", record.review_questions);
+        }
+        if (record.manual_calculation_enabled) {
+          const blank = MANUAL_CALCULATION_LINES * BODY_FONT_SIZE * 1.5;
+          // One unbreakable block: heading plus the blank lines go on a fresh page if they don't fit.
+          ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + blank + SECTION_GAP);
+          doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
+          doc.text("MANUAL CALCULATION:", MARGIN_LEFT, y, { width: CONTENT_WIDTH });
+          y = doc.y + HEADING_GAP + blank + SECTION_GAP;
         }
         if (record.result.trim()) drawTextSection(record.format === "college" ? "RESULT :" : "RESULT:", record.result);
 

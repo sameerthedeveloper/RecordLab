@@ -129,6 +129,12 @@ const contributors = [
       },
     ],
   },
+  {
+    name: "Mohammed Ridhwan S Y",
+    role: "Idea contributor",
+    bio: "Suggested the Manual Calculation section: 35 blank, hand-written lines before the result, switched on per record.",
+    links: [] as { label: string; href: string; icon: typeof Globe }[],
+  },
 ];
 
 const steps = [
@@ -689,13 +695,13 @@ export function LandingPageClient() {
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 sm:gap-5">
             {contributors.map((person) => (
-              <div key={person.name} data-reveal className="ui-card p-6">
+              <div key={person.name} data-reveal className={`ui-card p-6${person.links.length === 0 ? " sm:col-span-2" : ""}`}>
                 <h3 className="font-serif text-xl font-bold tracking-tight text-ink">{person.name}</h3>
                 <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
                   {person.role}
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-ink-soft">{person.bio}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className={`flex flex-wrap gap-2 ${person.links.length ? "mt-4" : ""}`}>
                   {person.links.map(({ label, href, icon: Icon }) => (
                     <a
                       key={label}

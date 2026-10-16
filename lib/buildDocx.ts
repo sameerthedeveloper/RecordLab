@@ -24,7 +24,7 @@ import {
   WidthType,
 } from "docx";
 import { toDocxFontName } from "./fonts";
-import { CONTENT_WIDTH_MM, resolvePageBorder, PAGE_BORDER_SIDES } from "./types";
+import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, PAGE_BORDER_SIDES } from "./types";
 import { collegeGeometry } from "./recordFormat";
 import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
@@ -339,6 +339,13 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
   }
   if (record.review_questions_enabled && record.review_questions.trim()) {
     children.push(headingParagraph(college ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", font, college), bodyParagraph(record.review_questions, font, college));
+  }
+  if (record.manual_calculation_enabled) {
+    children.push(headingParagraph("MANUAL CALCULATION:", font, college));
+    // Keep the heading with its blank lines, and the lines together on one page where they fit.
+    for (let i = 0; i < MANUAL_CALCULATION_LINES; i++) {
+      children.push(new Paragraph({ keepNext: i < MANUAL_CALCULATION_LINES - 1, spacing: { after: 0, line: 360, lineRule: "exact" }, children: [] }));
+    }
   }
   if (record.result.trim()) {
     children.push(headingParagraph(college ? "RESULT :" : "RESULT:", font, college, college ? 28 : undefined), bodyParagraph(record.result, font, college));
