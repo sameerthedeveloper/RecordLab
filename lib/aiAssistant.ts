@@ -37,12 +37,10 @@ EXPERIMENT DETAILS
 
 The generated response will be parsed automatically by the application.
 
-Return ONLY valid HTML.
-Do not return Markdown.
-Do not return JSON.
-Do not return XML.
-Do not use Markdown code fences.
-Do not add explanations outside the HTML.
+Return the whole record as ONE single HTML code block: one \`\`\`html fenced block that contains the complete HTML, so it can be copied in one click.
+Do not split the answer into several code blocks.
+Do not return JSON or XML.
+Do not write anything before or after the code block, no explanations.
 
 The record MUST contain exactly these sections and in this exact order:
 
