@@ -1,5 +1,5 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
-import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder } from "./types";
+import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, titleMoveCss } from "./types";
 import { headerBorderVarsCss, headerLineCss, resolveHeaderUnderline } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
 
@@ -82,7 +82,7 @@ function createCollegeHeader(record: RecordState): string {
           <div class="rh-line">EX : ${exNo}</div>
           <div class="rh-line">DATE : ${date}</div>
         </td>
-        <td class="record-title" style="height:${h}mm">${title}</td>
+        <td class="record-title" style="height:${h}mm"><div style="${titleMoveCss(record.headerLayout, "college")}">${title}</div></td>
       </tr>
     </table>
     <div style="height:7mm"></div>
@@ -126,7 +126,7 @@ function createHeader(record: RecordState): string {
           </div>
         </td>
         <td class="record-title" style="min-height:${minHeightMm}mm">
-          ${title}
+          <div style="${titleMoveCss(record.headerLayout)}">${title}</div>
         </td>
       </tr>
     </table>

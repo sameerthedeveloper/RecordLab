@@ -7,6 +7,8 @@ import {
   HEADER_LINE_NAMES,
   CONTENT_WIDTH_MM,
   HEADER_UNDERLINE_MAX_GAP_MM,
+  TITLE_Y_RANGE_MM,
+  resolveTitlePos,
   headerLineCss,
   resolveHeaderBorders,
   resolveHeaderUnderline,
@@ -23,6 +25,8 @@ interface HeaderBorderControlsProps {
   layout: HeaderLayout;
   onChange: (next: HeaderLayout) => void;
   idPrefix: string;
+  /** Which sheet format the title default follows (centre on standard, left on college). */
+  format?: string;
 }
 
 const OUTER: HeaderLineName[] = ["top", "bottom", "left", "right"];
@@ -73,7 +77,7 @@ const seg = (active: boolean) =>
  * Word-style table borders for the title table. Set the "pen" (style, thickness,
  * colour), then click an edge on the diagram, or a preset, to draw or erase it with that pen.
  */
-export function HeaderBorderControls({ layout, onChange, idPrefix }: HeaderBorderControlsProps) {
+export function HeaderBorderControls({ layout, onChange, idPrefix, format }: HeaderBorderControlsProps) {
   const borders = resolveHeaderBorders(layout);
   const firstOn = HEADER_LINE_NAMES.map((n) => borders[n]).find(isOn);
   const [pen, setPen] = useState<{ style: Exclude<HeaderBorderStyle, "none">; width: number; color: string }>({
@@ -137,8 +141,47 @@ export function HeaderBorderControls({ layout, onChange, idPrefix }: HeaderBorde
     { id: "Right", x: maxX },
   ];
 
+  const tp = resolveTitlePos(layout, format);
+  const TITLE_SLOTS = [
+    { id: "Left", x: 0 },
+    { id: "Center", x: 50 },
+    { id: "Right", x: 100 },
+  ];
+
   return (
     <div className="space-y-3.5">
+      <div>
+        <p className="mb-1 text-xs font-semibold text-ink-soft">Move title text</p>
+        <div className="ui-seg inline-flex items-stretch overflow-hidden">
+          {TITLE_SLOTS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => place({ titleX: s.x })}
+              className={`min-w-[4.5rem] px-3.5 py-1.5 text-xs font-semibold transition-colors max-md:min-h-10 ${
+                Math.abs(tp.x - s.x) < 1 ? "bg-accent text-white" : "text-ink-soft hover:text-accent-ink"
+              }`}
+            >
+              {s.id}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2.5 grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor={`${idPrefix}-tx`} className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+              Left to right <span className="font-mono font-medium">{Math.round(tp.x)}%</span>
+            </label>
+            <input id={`${idPrefix}-tx`} type="range" min={0} max={100} step={1} value={tp.x} onChange={(e) => place({ titleX: Number(e.target.value) })} className="w-full accent-[#c2410c]" />
+          </div>
+          <div>
+            <label htmlFor={`${idPrefix}-ty`} className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+              Up / down <span className="font-mono font-medium">{tp.y > 0 ? "+" : ""}{tp.y}mm</span>
+            </label>
+            <input id={`${idPrefix}-ty`} type="range" min={-TITLE_Y_RANGE_MM} max={TITLE_Y_RANGE_MM} step={0.5} value={tp.y} onChange={(e) => place({ titleY: Number(e.target.value) })} className="w-full accent-[#c2410c]" />
+          </div>
+        </div>
+        <p className="mt-1 text-[11px] text-ink-soft/70">Moves only the title text. Word snaps it to left, centre or right.</p>
+      </div>
       <div>
         <p className="mb-1 text-xs font-semibold text-ink-soft">Move heading</p>
         <div className="ui-seg inline-flex items-stretch overflow-hidden">

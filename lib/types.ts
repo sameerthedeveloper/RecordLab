@@ -27,10 +27,28 @@ export interface HeaderLayout {
   borders?: Partial<Record<HeaderLineName, Partial<HeaderLine>>>;
   /** Full-width rule drawn under the title table (off by default). */
   underline?: Partial<HeaderUnderline>;
+  /** Title text position inside its cell: 0 = left edge, 50 = centre, 100 = right edge. Unset = the format's own default. */
+  titleX?: number;
+  /** Title text nudge, mm: negative = up, positive = down. */
+  titleY?: number;
   /** Legacy uniform border (single style for the whole table). Read only as a fallback. */
   borderStyle?: HeaderBorderStyle;
   borderWidth?: number;
   borderColor?: string;
+}
+
+export const TITLE_Y_RANGE_MM = 10;
+
+/** Where the title text sits in its cell: centre on the standard sheet, left on the college sheet. */
+export function resolveTitlePos(layout: Partial<HeaderLayout> | undefined, format?: string): { x: number; y: number } {
+  const num = (v: unknown, min: number, max: number, d: number) => (Number.isFinite(Number(v)) && v !== undefined && v !== null ? Math.min(max, Math.max(min, Number(v))) : d);
+  return { x: num(layout?.titleX, 0, 100, format === "college" ? 0 : 50), y: num(layout?.titleY, -TITLE_Y_RANGE_MM, TITLE_Y_RANGE_MM, 0) };
+}
+
+/** Inline style that moves a block of text inside its cell without touching the rest of the table. */
+export function titleMoveCss(layout: Partial<HeaderLayout> | undefined, format?: string): string {
+  const { x, y } = resolveTitlePos(layout, format);
+  return `margin-left:${x}%;transform:translate(-${x}%,${y}mm);width:max-content;max-width:100%;`;
 }
 
 export type HeaderBorderStyle = "solid" | "double" | "dashed" | "dotted" | "none";

@@ -24,7 +24,7 @@ import {
   WidthType,
 } from "docx";
 import { toDocxFontName } from "./fonts";
-import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, PAGE_BORDER_SIDES } from "./types";
+import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, resolveTitlePos, PAGE_BORDER_SIDES } from "./types";
 import { collegeGeometry } from "./recordFormat";
 import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
@@ -227,12 +227,21 @@ function collegeHeaderTable(record: RecordState, font: string): Table {
             verticalAlign: "center",
             borders: { top: none, right: none, bottom: docxLine(lines.bottom), left: docxLine(lines.insideV) },
             margins: { top: 100, bottom: 100, left: 280, right: 140 },
-            children: [new Paragraph({ children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })] })],
+            children: [new Paragraph({ ...titleParagraphProps(record, true), children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })] })],
           }),
         ],
       }),
     ],
   });
+}
+
+/** Word can't place text at an arbitrary percentage, so the title snaps to the nearest of left / centre / right; the vertical nudge is kept. */
+function titleParagraphProps(record: RecordState, college: boolean) {
+  const { x, y } = resolveTitlePos(record.headerLayout, college ? "college" : undefined);
+  return {
+    alignment: x < 25 ? AlignmentType.LEFT : x > 75 ? AlignmentType.RIGHT : AlignmentType.CENTER,
+    spacing: { before: Math.max(0, Math.round(convertMillimetersToTwip(y))), after: Math.max(0, Math.round(convertMillimetersToTwip(-y))) },
+  };
 }
 
 function headerTable(record: RecordState, font: string): Table {
@@ -294,7 +303,7 @@ function headerTable(record: RecordState, font: string): Table {
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
             children: [
               new Paragraph({
-                alignment: AlignmentType.CENTER,
+                ...titleParagraphProps(record, false),
                 children: [new TextRun({ text: record.title.trim(), bold: true, size: 28, font })],
               }),
             ],

@@ -1,6 +1,6 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
-import { MANUAL_CALCULATION_LINES, resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
+import { MANUAL_CALCULATION_LINES, resolveTitlePos, resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { RecordState, WatermarkOptions } from "./types";
 
 /**
@@ -209,7 +209,9 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
           doc.text(`DATE : ${formatDate(record.date).replace(/-/g, "/")}`, boxX + 14, boxY + boxH * 0.62, { width: leftW - 20 });
           const collegeTitle = record.title.trim();
           const th = doc.heightOfString(collegeTitle, { width: rightW - 36 });
-          doc.text(collegeTitle, boxX + leftW + 18, boxY + Math.max(8, (boxH - th) / 2), { width: rightW - 36, align: "left" });
+          const cp = resolveTitlePos(layout, "college");
+          const cw = Math.min(rightW - 36, doc.widthOfString(collegeTitle));
+          doc.text(collegeTitle, boxX + leftW + 18 + (rightW - 36 - cw) * (cp.x / 100), boxY + Math.max(8, (boxH - th) / 2) + mm(cp.y), { width: rightW - 36, align: "left" });
           return;
         }
         doc.font(BOLD_FONT).fontSize(10);
@@ -223,9 +225,11 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         const title = record.title.trim();
         doc.font(BOLD_FONT).fontSize(14);
         const titleHeight = doc.heightOfString(title, { width: rightW - 20, align: "center" });
-        doc.text(title, boxX + leftW + 10, boxY + Math.max(10, (boxH - titleHeight) / 2), {
-          width: rightW - 20,
-          align: "center",
+        const tp = resolveTitlePos(layout);
+        const tw = Math.min(rightW - 20, doc.widthOfString(title));
+        doc.text(title, boxX + leftW + 10 + (rightW - 20 - tw) * (tp.x / 100), boxY + Math.max(10, (boxH - titleHeight) / 2) + mm(tp.y), {
+          width: Math.max(tw, 1) + 1,
+          align: "left",
         });
       }
 
