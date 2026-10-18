@@ -54,7 +54,7 @@ Answer with ONE html code block and nothing else (no text before or after it). U
 </div>
 \`\`\`
 
-Inside #message use only <p>, <br>, <ul> and <li>, with no styles, classes, images or scripts. Leave out the <a id="button"> element entirely when there is no single clear action.`;
+Inside #message use only <p>, <br>, <strong>, <ul>, <ol> and <li> (<strong> for the short lead-in of a step, <ol> for steps in order), with no styles, classes, images or scripts. Leave out the <a id="button"> element entirely when there is no single clear action.`;
 }
 
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -96,7 +96,12 @@ function htmlToText(el: Element): string {
     const tag = e.tagName.toLowerCase();
     if (tag === "br") return "\n";
     const inner = Array.from(e.childNodes).map(walk).join("");
-    if (tag === "li") return `- ${inner.trim()}\n`;
+    if (tag === "strong" || tag === "b") return inner.trim() ? `**${inner.trim()}**` : "";
+    if (tag === "li") {
+      const parent = e.parentElement?.tagName.toLowerCase();
+      const n = parent === "ol" ? Array.from(e.parentElement!.children).indexOf(e) + 1 : 0;
+      return `${n ? `${n}.` : "-"} ${inner.trim()}\n`;
+    }
     if (/^(p|div|h[1-6]|ul|ol|section|blockquote)$/.test(tag)) return `${inner.trim()}\n\n`;
     return inner;
   };

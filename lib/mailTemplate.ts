@@ -27,12 +27,32 @@ const SOFT = "#6b7780";
 const LINE = "#e5decb";
 const ACCENT = "#c2410c";
 
-/** Plain text -> paragraphs on blank lines, line breaks inside them, bare links made clickable. */
+/** **bold** inside already-escaped text, and bare links made clickable. */
+function inline(escaped: string): string {
+  return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(https?:\/\/[^\s<]+)/g, `<a href="$1" style="color:${ACCENT};text-decoration:underline">$1</a>`);
+}
+
+/**
+ * Plain text -> email blocks. Blank lines separate blocks. A block whose lines all start with "- " is a bullet
+ * list, one whose lines all start with "1. " is a numbered list, anything else is a paragraph.
+ */
 function paragraphs(text: string): string {
+  const sans = "Arial,Helvetica,sans-serif";
   return esc(text)
     .split(/\n{2,}/)
-    .filter((p) => p.trim())
-    .map((p) => `<p style="margin:0 0 18px;font:16px/1.7 Arial,Helvetica,sans-serif;color:${INK}">${p.replace(/\n/g, "<br>").replace(/(https?:\/\/[^\s<]+)/g, `<a href="$1" style="color:${ACCENT};text-decoration:underline">$1</a>`)}</p>`)
+    .map((b) => b.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const lines = block.split("\n");
+      const bullets = lines.every((l) => /^[-•]\s+/.test(l));
+      const numbered = lines.every((l) => /^\d+[.)]\s+/.test(l));
+      if (bullets || numbered) {
+        const tag = numbered ? "ol" : "ul";
+        const items = lines.map((l) => `<li style="margin:0 0 10px;padding-left:4px">${inline(l.replace(/^([-•]|\d+[.)])\s+/, ""))}</li>`).join("");
+        return `<${tag} style="margin:0 0 18px;padding-left:22px;font:16px/1.65 ${sans};color:${INK}">${items}</${tag}>`;
+      }
+      return `<p style="margin:0 0 18px;font:16px/1.7 ${sans};color:${INK}">${inline(block.replace(/\n/g, "<br>"))}</p>`;
+    })
     .join("");
 }
 
