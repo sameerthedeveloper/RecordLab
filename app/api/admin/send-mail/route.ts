@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { firstName } from "@/lib/adminFormat";
 import { verifyAdmin } from "@/lib/server/adminAuth";
 import { mailConfig, sendMail } from "@/lib/server/gmail";
 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
   for (let i = 0; i < recipients.length; i += 5) {
     await Promise.all(
       recipients.slice(i, i + 5).map(async (r) => {
-        const first = r.name.split(/\s+/)[0] || "there";
+        const first = firstName(r.name);
         const personalise = (s: string) => s.replace(/\{\{\s*name\s*\}\}/gi, first);
         const text = personalise(message);
         try {

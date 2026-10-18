@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Loader2, Mail, Send } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebaseConfig";
 import type { ProfileRow } from "@/lib/adminService";
-import { DAY, emailDomainOf } from "@/lib/adminFormat";
+import { DAY, emailDomainOf, firstName } from "@/lib/adminFormat";
 import { Card } from "./admin/ui";
 
 type Audience = "all" | "active7" | "new7" | "college" | "me";
@@ -78,7 +78,7 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
     return list.map((p) => ({ email: p.email as string, name: p.displayName ?? "" }));
   }, [profiles, audience, domain, adminEmail]);
 
-  const preview = (recipients[0]?.name || "").split(/\s+/)[0] || "there";
+  const preview = firstName(recipients[0]?.name);
   const ready = status !== "loading" && status !== "error" && status.configured;
   const canSend = ready && subject.trim().length > 0 && message.trim().length > 0 && recipients.length > 0 && !sending;
 

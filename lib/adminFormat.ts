@@ -31,3 +31,10 @@ export function domainCandidates(domain: string): string[] {
   for (let i = 0; i < labels.length - 1; i++) out.push(labels.slice(i).join("."));
   return out;
 }
+
+/** First name for a greeting: "MOHAMED SAMEER S" -> "Mohamed", "asha r" -> "Asha"; "there" when there is no name. */
+export function firstName(full: string | null | undefined): string {
+  const w = (full ?? "").trim().split(/\s+/)[0] ?? "";
+  if (!w) return "there";
+  return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+}
