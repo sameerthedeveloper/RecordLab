@@ -147,21 +147,40 @@ const faqs = [
   },
 ];
 
-const contributors = [
+type Person = {
+  name: string;
+  role: string;
+  bio: string;
+  /** What they gave to Record Lab, in their own line each. */
+  gave: string[];
+  links: { label: string; href: string; icon: typeof Globe }[];
+};
+
+const lead: Person = {
+  name: "Mohamed Sameer S",
+  role: "Creator and lead developer",
+  bio: "Frontend and full-stack developer from Chennai, building React and Next.js apps with a focus on offline-first PWAs, real-time sync and accessible interfaces.",
+  gave: ["Conceived, designed and built Record Lab from the first page to the last", "Pagination, exports, the editor, the app on your phone"],
+  links: [
+    { label: "Portfolio", href: "https://mohamedsameer.tech", icon: Globe },
+    { label: "GitHub", href: "https://github.com/sameerthedeveloper", icon: ExternalLink },
+    { label: "LinkedIn", href: "https://linkedin.com/in/mdsameers/", icon: ExternalLink },
+  ],
+};
+
+const contributors: Person[] = [
   {
-    name: "Mohamed Sameer S",
-    role: "Frontend & Full-Stack Developer",
-    bio: "Builds React and Next.js apps out of Chennai, with a focus on offline-first PWAs, real-time/sync systems, and accessible UI.",
-    links: [
-      { label: "Portfolio", href: "https://mohamedsameer.tech", icon: Globe },
-      { label: "GitHub", href: "https://github.com/sameerthedeveloper", icon: ExternalLink },
-      { label: "LinkedIn", href: "https://linkedin.com/in/mdsameers/", icon: ExternalLink },
-    ],
+    name: "Mohammed Ridhwan S Y",
+    role: "Idea contributor",
+    bio: "Shaped what Record Lab became beyond a computer science tool.",
+    gave: ["Manual Calculation: blank hand-written lines before the result", "Layouts for every department", "Running the code to capture real output"],
+    links: [],
   },
   {
     name: "Mohammed Imran A",
     role: "Contributor",
-    bio: "Contributor to Record Lab — reach out on LinkedIn or by email.",
+    bio: "Contributed to Record Lab. Reach out on LinkedIn or by email.",
+    gave: [],
     links: [
       { label: "Portfolio", href: "https://portfolio1-wheat-two.vercel.app", icon: Globe },
       { label: "Email", href: "mailto:mohammed2007imran@gmail.com", icon: Mail },
@@ -172,13 +191,65 @@ const contributors = [
       },
     ],
   },
-  {
-    name: "Mohammed Ridhwan S Y",
-    role: "Idea contributor",
-    bio: "Ideas behind three features: Manual Calculation (35 blank hand-written lines before the result), layouts for every department, and running the code to capture real output.",
-    links: [] as { label: string; href: string; icon: typeof Globe }[],
-  },
 ];
+
+/** Two-letter monogram for a name: "Mohamed Sameer S" -> "MS". */
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter((w) => w.length > 1)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+function Monogram({ name, size }: { name: string; size: "lg" | "md" }) {
+  return (
+    <span
+      aria-hidden
+      className={`flex shrink-0 items-center justify-center rounded-full border border-ink/15 bg-gradient-to-br from-white to-accent-soft/60 font-serif font-bold text-ink shadow-[0_6px_16px_-8px_rgba(28,43,51,0.35)] ${
+        size === "lg" ? "h-20 w-20 text-3xl" : "h-14 w-14 text-xl"
+      }`}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
+function PersonLinks({ links }: { links: Person["links"] }) {
+  if (links.length === 0) return null;
+  return (
+    <ul className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
+      {links.map(({ label, href, icon: Icon }) => (
+        <li key={label}>
+          <a
+            href={href}
+            target={href.startsWith("mailto:") ? undefined : "_blank"}
+            rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
+            className="inline-flex min-h-9 items-center gap-1.5 border-b border-ink/20 pb-0.5 text-[13px] font-semibold text-ink-soft transition-colors hover:border-accent hover:text-accent-ink"
+          >
+            <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+            {label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Gave({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <ul className="mt-4 space-y-2 border-t border-line pt-4">
+      {items.map((g) => (
+        <li key={g} className="flex gap-2.5 text-sm leading-relaxed text-ink">
+          <span aria-hidden className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rotate-45 bg-accent" />
+          {g}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 const steps = [
   { n: "01", t: "Pick your layout", d: "Choose your department or build your own sections once. Every record in a subject starts from it." },
@@ -716,6 +787,29 @@ export function LandingPageClient() {
         </div>
       </div>
 
+      {/* ============ FLOW ============ */}
+      <section aria-label="How a record is made" data-reveal-group className="px-5 pt-14 sm:pt-20">
+        <ol className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-4 sm:gap-0">
+          {[
+            ["Pick a layout", "Your department's sections"],
+            ["Write or draft", "Type it, or let AI draft it"],
+            ["Run the code", "Real output and graphs"],
+            ["Preview, export", "A4 PDF, Word, print or link"],
+          ].map(([t, d], i) => (
+            <li key={t} data-reveal className="relative flex items-center gap-3 sm:flex-col sm:gap-2 sm:px-3 sm:text-center">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-accent/40 bg-white font-serif text-lg font-bold text-accent-ink shadow-sm">
+                {i + 1}
+              </span>
+              <span>
+                <span className="block text-[15px] font-bold text-ink">{t}</span>
+                <span className="block text-[13px] text-ink-soft">{d}</span>
+              </span>
+              {i < 3 && <span aria-hidden className="absolute left-[calc(50%+34px)] right-[calc(-50%+34px)] top-5 hidden h-px bg-gradient-to-r from-accent/40 to-accent/10 sm:block" />}
+            </li>
+          ))}
+        </ol>
+      </section>
+
       {/* ============ DEPARTMENTS ============ */}
       <section aria-label="Departments" data-reveal-group className="px-5 pt-14 sm:pt-20">
         <div className="mx-auto max-w-4xl text-center">
@@ -926,40 +1020,51 @@ export function LandingPageClient() {
       </section>
 
       {/* ============ CONTRIBUTORS ============ */}
-      <section
-        data-reveal-group
-      >
+      <section aria-labelledby="credits-heading" data-reveal-group>
         <div className="mx-auto w-full max-w-4xl px-5 py-20 sm:py-28">
           <div data-reveal className="text-center">
             <PageLabel n={7}>Credits</PageLabel>
-            <h2 className="mt-3 font-serif text-4xl font-bold tracking-[-0.02em] sm:text-6xl">Built by.</h2>
+            <h2 id="credits-heading" className="mx-auto mt-3 max-w-2xl text-balance font-serif text-4xl font-bold tracking-[-0.02em] sm:text-6xl">
+              The people behind Record Lab.
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-ink-soft sm:text-lg">
+              A Cogniheim product, shaped by the friends who gave it their ideas, their time and their honest feedback.
+            </p>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 sm:gap-5">
-            {contributors.map((person) => (
-              <div key={person.name} data-reveal className={`ui-card p-6${person.links.length === 0 ? " sm:col-span-2" : ""}`}>
-                <h3 className="font-serif text-xl font-bold tracking-tight text-ink">{person.name}</h3>
-                <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
-                  {person.role}
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-ink-soft">{person.bio}</p>
-                <div className={`flex flex-wrap gap-2 ${person.links.length ? "mt-4" : ""}`}>
-                  {person.links.map(({ label, href, icon: Icon }) => (
-                    <a
-                      key={label}
-                      href={href}
-                      target={href.startsWith("mailto:") ? undefined : "_blank"}
-                      rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
-                      className="ui-chip flex min-h-9 items-center gap-1.5 px-3.5 text-xs font-semibold text-ink-soft hover:text-accent-ink"
-                    >
-                      <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-                      {label}
-                    </a>
-                  ))}
-                </div>
+          <article data-reveal className="ui-card mt-12 p-6 sm:p-9">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
+              <Monogram name={lead.name} size="lg" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-accent-ink">{lead.role}</p>
+                <h3 className="mt-1 font-serif text-3xl font-bold tracking-tight text-ink sm:text-4xl">{lead.name}</h3>
+                <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-soft">{lead.bio}</p>
+                <Gave items={lead.gave} />
+                <PersonLinks links={lead.links} />
               </div>
+            </div>
+          </article>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            {contributors.map((person) => (
+              <article key={person.name} data-reveal className="ui-card flex flex-col p-6 sm:p-7">
+                <div className="flex items-center gap-4">
+                  <Monogram name={person.name} size="md" />
+                  <div className="min-w-0">
+                    <h3 className="font-serif text-xl font-bold tracking-tight text-ink">{person.name}</h3>
+                    <p className="text-[13px] font-semibold text-accent-ink">{person.role}</p>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-ink-soft">{person.bio}</p>
+                <Gave items={person.gave} />
+                <PersonLinks links={person.links} />
+              </article>
             ))}
           </div>
+
+          <p data-reveal className="mx-auto mt-10 max-w-md text-center font-serif text-lg italic leading-relaxed text-ink-soft">
+            With thanks to everyone who tested it, argued with it, and made it better.
+          </p>
         </div>
       </section>
 
