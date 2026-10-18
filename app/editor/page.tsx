@@ -15,7 +15,7 @@ import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
-import { applyTemplate, isCustomLayout, type SectionTemplate } from "@/lib/sections";
+import { applyTemplate, effectiveLayout, isCustomLayout } from "@/lib/sections";
 import type { AiContext } from "@/lib/aiAssistant";
 import { RunCodeModal } from "@/components/RunCodeModal";
 import { hashCode, outputTarget } from "@/lib/runner/source";
@@ -384,8 +384,9 @@ export default function Home() {
     setCloudFolderId(id);
     const folder = id ? folders?.find((f) => f.id === id) : undefined;
     if (!folder) return;
-    setRecord((prev) => applyTemplate(prev, folder.template ?? null));
-    if (folder.template) showToast(`Using the ${folder.name} layout.`);
+    const layout = effectiveLayout(folder, settingsRef.current.defaultLayout);
+    setRecord((prev) => applyTemplate(prev, layout));
+    if (folder.layoutMode === "custom") showToast(`Using the ${folder.name} layout.`);
   }
 
   /** Puts what a real run produced into the OUTPUT section and marks it as verified. */

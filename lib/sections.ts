@@ -217,3 +217,21 @@ export function suggestPresetId(department: string): string | null {
   if (/(physic|chemi|bio|material|environment|science)/.test(d)) return "science";
   return null;
 }
+
+/** The layout a subject's records start with: its own, the original programming lab, or the default from Settings. */
+export function effectiveLayout(
+  folder: { layoutMode?: "default" | "programming" | "custom"; template?: SectionTemplate | null } | undefined,
+  defaultLayout: SectionTemplate | null
+): SectionTemplate | null {
+  if (!folder) return defaultLayout;
+  if (folder.layoutMode === "custom" && folder.template) return folder.template;
+  if (folder.layoutMode === "programming") return null;
+  return defaultLayout;
+}
+
+/** Short label for a subject's layout, for lists. */
+export function layoutLabel(folder: { layoutMode?: "default" | "programming" | "custom"; template?: SectionTemplate | null }): string {
+  if (folder.layoutMode === "custom" && folder.template) return `Custom, ${folder.template.sections.length} sections`;
+  if (folder.layoutMode === "programming") return "Programming lab";
+  return "Follows your default";
+}

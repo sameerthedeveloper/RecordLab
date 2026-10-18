@@ -11,6 +11,7 @@ import { InstallAppSection } from "./InstallAppSection";
 import { WatermarkControls } from "./WatermarkOptionsSection";
 import { DEPARTMENTS } from "@/lib/sections";
 import { SectionTemplateEditor } from "./SectionTemplateEditor";
+import { SubjectLayouts } from "./SubjectLayouts";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { applyUiStyle, type AppSettings, type UiStyle } from "@/lib/settings";
@@ -255,9 +256,12 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
           {tab === "sections" && (
             <div className="space-y-4">
               <p className="text-xs leading-relaxed text-ink-soft/80">
-                The sections every new record starts with. Pick your department, then rename, reorder or add sections. A subject can have its own layout (Files, open a subject, Edit record sections); picking that subject in the editor switches to it.
+                The default sections every new record starts with. Pick your department, then rename, reorder or add sections. Below, map each subject to its own layout.
               </p>
               <SectionTemplateEditor idPrefix="settings-layout" value={draft.defaultLayout} onChange={(defaultLayout) => setDraft({ ...draft, defaultLayout })} />
+              <div className="border-t border-line pt-6">
+                <SubjectLayouts defaultLayout={draft.defaultLayout} onToast={onToast} />
+              </div>
             </div>
           )}
           {tab === "heading" && (

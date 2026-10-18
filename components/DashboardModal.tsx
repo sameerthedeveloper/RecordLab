@@ -26,7 +26,8 @@ import { MoveToSubjectModal } from "./MoveToSubjectModal";
 import { DriveDetails } from "./DriveDetails";
 import { deleteDocument, moveDocument, renameDocument, watchUserDocuments } from "@/lib/firestoreService";
 import { createFolder, deleteFolder, renameFolder, setFolderTemplate, useFolders, type Folder } from "@/lib/folderService";
-import type { SectionTemplate } from "@/lib/sections";
+import { effectiveLayout, type SectionTemplate } from "@/lib/sections";
+import { loadSettings } from "@/lib/settings";
 import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
 import { useAuthUser } from "@/lib/authService";
@@ -427,7 +428,7 @@ export function DashboardModal({
                       aria-label="Edit record sections"
                       title="Edit record sections"
                       onClick={() => {
-                        setSectionsDraft(activeFolder.template ?? null);
+                        setSectionsDraft(effectiveLayout(activeFolder, loadSettings().defaultLayout));
                         setEditingSections(activeFolder);
                       }}
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"

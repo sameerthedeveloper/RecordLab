@@ -16,8 +16,10 @@ export interface Folder {
   id: string;
   name: string;
   createdAt: number;
-  /** Record layout for this subject. null/absent = the original programming-lab layout. */
+  /** Custom record layout (used when layoutMode is "custom"). */
   template?: SectionTemplate | null;
+  /** Which layout the subject uses: the one from Settings ("default"), the original programming lab, or its own. */
+  layoutMode?: "default" | "programming" | "custom";
 }
 
 const USERS = "users";
@@ -32,6 +34,13 @@ function clean(raw: unknown): Folder[] {
       name: f.name,
       createdAt: typeof f.createdAt === "number" ? f.createdAt : 0,
       template: sanitizeTemplate(f.template),
+      // Older subjects only stored a template: one means custom, none means follow the default.
+      layoutMode:
+        f.layoutMode === "programming" || f.layoutMode === "custom" || f.layoutMode === "default"
+          ? f.layoutMode
+          : sanitizeTemplate(f.template)
+            ? "custom"
+            : "default",
     }));
 }
 
@@ -72,7 +81,8 @@ function assertUnique(folders: Folder[], name: string, exceptId?: string) {
 
 export async function createFolder(uid: string, rawName: string, template: SectionTemplate | null = null): Promise<Folder> {
   const name = normalise(rawName);
-  const folder: Folder = { id: newId(), name, createdAt: Date.now(), template: sanitizeTemplate(template) };
+  const tpl = sanitizeTemplate(template);
+  const folder: Folder = { id: newId(), name, createdAt: Date.now(), template: tpl, layoutMode: tpl ? "custom" : "default" };
   await mutate(uid, (folders) => {
     assertUnique(folders, name);
     return [...folders, folder];
@@ -88,10 +98,16 @@ export async function renameFolder(uid: string, id: string, rawName: string): Pr
   });
 }
 
-/** Sets (or, with null, clears) the record layout new records in this subject start with. */
-export async function setFolderTemplate(uid: string, id: string, template: SectionTemplate | null): Promise<void> {
-  const clean = sanitizeTemplate(template);
-  await mutate(uid, (folders) => folders.map((f) => (f.id === id ? { ...f, template: clean } : f)));
+/** Sets which layout new records in this subject start with. */
+export async function setFolderLayout(uid: string, id: string, layout: { mode: "default" | "programming" | "custom"; template?: SectionTemplate | null }): Promise<void> {
+  const tpl = layout.mode === "custom" ? sanitizeTemplate(layout.template) : null;
+  const mode = layout.mode === "custom" && !tpl ? "default" : layout.mode;
+  await mutate(uid, (folders) => folders.map((f) => (f.id === id ? { ...f, template: tpl, layoutMode: mode } : f)));
+}
+
+/** Back-compat: a template means custom, null means the original programming layout. */
+export function setFolderTemplate(uid: string, id: string, template: SectionTemplate | null): Promise<void> {
+  return setFolderLayout(uid, id, template ? { mode: "custom", template } : { mode: "programming" });
 }
 
 /** Removes the folder; its files are kept and move back to "All files". */
