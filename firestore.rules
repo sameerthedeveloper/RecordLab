@@ -43,6 +43,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // One document per welcomed user: it is the "welcome email already sent" marker. The server creates it
+    // as the user just before sending, so only the owner can create it, and a second create fails. Delete
+    // lets the server release the marker when the mail didn't go out. Admins can read.
+    match /welcomes/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow read: if isAdmin();
+      allow update: if false;
+    }
+
     // Share links: anyone holding the link can read that one snapshot (get by id);
     // listing is limited to the owner's own shares; only the signed-in owner can create or delete it.
     match /shares/{shareId} {

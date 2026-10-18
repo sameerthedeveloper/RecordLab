@@ -27,6 +27,17 @@ export function touchProfile(user: User): void {
     },
     { merge: true }
   ).catch(() => {});
+  requestWelcome(user);
+}
+
+/** Asks the server to send the welcome email. It only sends for a new, verified account, and only once. */
+function requestWelcome(user: User): void {
+  const joined = user.metadata.creationTime ? Date.parse(user.metadata.creationTime) : 0;
+  if (!user.email || Date.now() - joined > 48 * 60 * 60 * 1000) return;
+  void user
+    .getIdToken()
+    .then((token) => fetch("/api/welcome", { method: "POST", headers: { Authorization: `Bearer ${token}` } }))
+    .catch(() => {});
 }
 
 /** Writes the person's chosen name to their admin-panel profile row, so the dashboard shows it straight away. */

@@ -41,3 +41,11 @@ Open **/admin → Send mail**. The card shows "From <your address>" when it is c
 - Mail from a Workspace address is real email: keep it relevant, say who you are, and include a way to reply.
   Users did not opt in to a newsletter, so keep to service messages (updates, fixes, support).
 - If the refresh token is revoked or the app is in "Testing" (tokens last 7 days), create a new token.
+
+## Welcome email
+
+New accounts get a welcome email automatically (`app/api/welcome/route.ts`, text in `lib/welcomeMail.ts`).
+
+- It uses the same `GMAIL_*` / `MAIL_SENDER` setup as above. Without it, nothing is sent and nothing breaks.
+- It goes out once per account, only within 48 hours of sign-up, and only to verified emails (Google sign-in). Email/password sign-ups are skipped because their address is not verified.
+- The "already welcomed" marker is `welcomes/<uid>`. Deploy the rules first (`firebase deploy --only firestore:rules`), otherwise no welcome is sent.
