@@ -50,6 +50,22 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
+    // Colleges named by students, keyed by email domain (e.g. psgtech.ac.in).
+    // Anyone signed in can read; a student can add their own domain's college once
+    // (the id must match the domain of their email). Nobody edits or deletes in the
+    // app; admins fix a wrong name in the Firebase console.
+    match /colleges/{domain} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.split('@')[1] == domain
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     match /documents/{docId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null

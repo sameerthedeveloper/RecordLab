@@ -1,3 +1,6 @@
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { getDb } from "./firebaseConfig";
+
 const LIST_URL = "https://cdn.jsdelivr.net/gh/Hipo/university-domains-list@master/world_universities_and_domains.json";
 const CACHE_KEY = "recordlab.college";
 
@@ -8,11 +11,10 @@ const PERSONAL = new Set([
 ]);
 
 export interface College {
-  /** Full name when found in the university list; otherwise a readable guess from the domain. */
   name: string;
   domain: string;
-  /** True when the name came from the list, false when guessed from the domain. */
-  verified: boolean;
+  /** "list": the public university list. "community": entered by a student and shared with everyone on that domain. */
+  source: "list" | "community";
   country?: string;
 }
 
@@ -22,13 +24,6 @@ export const emailDomain = (email: string | null | undefined): string | null => 
 };
 
 export const isPersonalDomain = (domain: string) => PERSONAL.has(domain);
-
-/** "psgtech.ac.in" -> "Psgtech" : a fallback when the college is not in the list. */
-function guessName(domain: string): string {
-  const parts = domain.split(".").filter((p) => !["ac", "edu", "in", "com", "org", "net", "co", "uk", "au", "gov"].includes(p));
-  const word = parts[parts.length - 1] || domain;
-  return word.charAt(0).toUpperCase() + word.slice(1);
-}
 
 function readCache(domain: string): College | null {
   try {
@@ -47,9 +42,18 @@ function writeCache(college: College) {
   } catch {}
 }
 
+/** The domain and its parent domains, most specific first: "cse.psgtech.ac.in" -> "cse.psgtech.ac.in", "psgtech.ac.in". */
+const candidates = (domain: string) => {
+  const labels = domain.split(".");
+  const out: string[] = [];
+  for (let i = 0; i < labels.length - 1; i++) out.push(labels.slice(i).join("."));
+  return out;
+};
+
 /**
- * Looks the email domain up in the open university-domains list (also tries the parent domain, so
- * "cse.psgtech.ac.in" finds "psgtech.ac.in"). Returns null for personal mail providers.
+ * Finds the college for an email: this browser's cache, then the colleges students have already
+ * entered (Firestore, shared by everyone), then the open university-domains list. Null when nobody
+ * has named it yet, or for personal mail providers.
  */
 export async function findCollege(email: string | null | undefined): Promise<College | null> {
   const domain = emailDomain(email);
@@ -57,23 +61,50 @@ export async function findCollege(email: string | null | undefined): Promise<Col
   const cached = readCache(domain);
   if (cached) return cached;
 
-  let found: College | null = null;
+  const done = (c: College) => {
+    writeCache(c);
+    return c;
+  };
+
+  try {
+    for (const d of candidates(domain)) {
+      const snap = await getDoc(doc(getDb(), "colleges", d));
+      const name = snap.exists() ? snap.data().name : null;
+      if (typeof name === "string" && name) return done({ name, domain, source: "community" });
+    }
+  } catch {
+    // Offline or rules not deployed yet: fall through to the public list.
+  }
+
   try {
     const res = await fetch(LIST_URL);
     if (res.ok) {
       const list = (await res.json()) as { name: string; country?: string; domains: string[] }[];
-      const labels = domain.split(".");
-      // Exact domain first, then each parent domain with at least two labels.
-      for (let i = 0; i < labels.length - 1 && !found; i++) {
-        const candidate = labels.slice(i).join(".");
-        const hit = list.find((u) => u.domains.some((d) => d.toLowerCase() === candidate));
-        if (hit) found = { name: hit.name, domain, verified: true, country: hit.country };
+      for (const d of candidates(domain)) {
+        const hit = list.find((u) => u.domains.some((x) => x.toLowerCase() === d));
+        if (hit) return done({ name: hit.name, domain, source: "list", country: hit.country });
       }
     }
-  } catch {
-    return { name: guessName(domain), domain, verified: false };
+  } catch {}
+  return null;
+}
+
+/** Saves a college name for this email's domain so every other student from it sees the same name. */
+export async function saveCollege(email: string, uid: string, rawName: string): Promise<College> {
+  const domain = emailDomain(email);
+  const name = rawName.trim().replace(/\s+/g, " ");
+  if (!domain || isPersonalDomain(domain)) throw new Error("Sign in with your college email to add your college.");
+  if (name.length < 3 || name.length > 120) throw new Error("Enter the full college name (3 to 120 characters).");
+  try {
+    await setDoc(doc(getDb(), "colleges", domain), { name, domain, createdBy: uid, createdAt: serverTimestamp() });
+  } catch (err) {
+    // Someone from this domain added it first: show their entry instead.
+    const snap = await getDoc(doc(getDb(), "colleges", domain)).catch(() => null);
+    const existing = snap?.exists() ? snap.data().name : null;
+    if (typeof existing === "string" && existing) return { name: existing, domain, source: "community" };
+    throw err;
   }
-  const college = found ?? { name: guessName(domain), domain, verified: false };
+  const college: College = { name, domain, source: "community" };
   writeCache(college);
   return college;
 }
