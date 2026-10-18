@@ -1,8 +1,21 @@
+import type { SectionKind } from "./sections";
+
+/** What the prompt is about: the student's department and, for non-programming records, the sections to fill. */
+export interface AiContext {
+  /** Free-text department from Settings, e.g. "Mechanical Engineering". May be empty. */
+  department: string;
+  /** The record's own sections (custom layouts only); null = the original programming-lab layout. */
+  layout: { id: string; title: string; kind: SectionKind }[] | null;
+  /** Heading of the closing block in a custom layout. */
+  resultTitle: string;
+}
+
 export interface LabRecordPromptInput {
   experimentTitle: string;
   programmingLanguage: string;
   problemRequirements: string;
   customInstructions: string;
+  context?: AiContext;
 }
 
 export interface ParsedLabRecord {
@@ -12,6 +25,87 @@ export interface ParsedLabRecord {
   output: string;
   viva: string;
   result: string;
+  /** Custom layouts: text by section id, plus "result". */
+  custom?: Record<string, string>;
+}
+
+/** Sections the model should write: blank hand-written space is never generated. */
+const writable = (ctx: AiContext) => (ctx.layout ?? []).filter((s) => s.kind !== "lines");
+
+const KIND_HINT: Record<SectionKind, string> = {
+  text: "Plain paragraphs, or an ordered list (<ol><li>) where steps are natural.",
+  code: "Preformatted text inside <pre>. Keep spacing and alignment; type tables as aligned rows separated by | .",
+  output: "Plain text describing the readings or results. Images are added by the student later, so do not mention images.",
+  lines: "",
+};
+
+function buildCustomPrompt(input: LabRecordPromptInput, ctx: AiContext): string {
+  const dept = ctx.department.trim() || "the student's department";
+  const title = input.experimentTitle || "{{EXPERIMENT_TITLE}}";
+  const tools = input.programmingLanguage.trim();
+  const req = input.problemRequirements || "{{PROBLEM_REQUIREMENTS}}";
+  const custom = input.customInstructions || "{{CUSTOM_INSTRUCTIONS}}";
+  const secs = writable(ctx);
+  const result = { id: "result", title: ctx.resultTitle.trim() || "Result" };
+  const upper = (t: string) => `${t.trim().toUpperCase()}:`;
+
+  const list = [...secs.map((s) => s.title), result.title].map((t, i) => `${i + 1}. ${upper(t)}`).join("\n");
+  const ids = [...secs.map((s) => s.id), result.id].map((id) => `- ${id}`).join("\n");
+  const skeleton = [
+    ...secs.map((s) =>
+      s.kind === "code"
+        ? `  <section data-section="${s.id}">\n    <h2>${upper(s.title)}</h2>\n    <pre>Content for ${s.title}.</pre>\n  </section>`
+        : `  <section data-section="${s.id}">\n    <h2>${upper(s.title)}</h2>\n    <p>Content for ${s.title}.</p>\n  </section>`
+    ),
+    `  <section data-section="${result.id}">\n    <h2>${upper(result.title)}</h2>\n    <p>Content for ${result.title}.</p>\n  </section>`,
+  ].join("\n\n");
+  const hints = secs.map((s) => `- ${s.title}: ${KIND_HINT[s.kind]}`).join("\n");
+
+  return `You are a college professor of ${dept} preparing a complete laboratory practical record for a student.
+
+Write the record for the experiment below, in the style and vocabulary a ${dept} lab expects.
+
+EXPERIMENT DETAILS
+- Experiment Title: ${title}
+- Department: ${dept}
+- Apparatus / tools / software: ${tools || "choose what a standard lab would use"}
+- What the experiment covers: ${req}
+- Custom Instructions: ${custom}
+
+The generated response will be parsed automatically by the application.
+
+Return the whole record as ONE single HTML code block: one \`\`\`html fenced block that contains the complete HTML, so it can be copied in one click.
+Do not split the answer into several code blocks.
+Do not return JSON or XML.
+Do not write anything before or after the code block, no explanations.
+
+The record MUST contain exactly these sections and in this exact order:
+
+${list}
+
+Use these exact data-section values:
+${ids}
+
+HTML STRUCTURE:
+
+<div class="lab-record">
+${skeleton}
+</div>
+
+HOW TO WRITE EACH SECTION:
+${hints}
+- ${result.title}: A short conclusion statement tied to the experiment.
+
+CONTENT RULES:
+1. Use simple college-level language.
+2. Generate content based only on the experiment details above.
+3. Use realistic values, units and formulae for ${dept}; do not invent impossible readings.
+4. Follow the custom instructions.
+5. Do not introduce sections that are not listed.
+6. Never change the data-section attribute values.
+7. Properly escape HTML characters where necessary.
+8. Every opening HTML tag must have a matching closing tag.
+9. Return valid parseable HTML only.`;
 }
 
 export function buildLabRecordPrompt({
@@ -19,13 +113,18 @@ export function buildLabRecordPrompt({
   programmingLanguage,
   problemRequirements,
   customInstructions,
+  context,
 }: LabRecordPromptInput): string {
+  if (context?.layout) {
+    return buildCustomPrompt({ experimentTitle, programmingLanguage, problemRequirements, customInstructions, context }, context);
+  }
+  const dept = context?.department.trim() || "Computer Science";
   const title = experimentTitle || "{{EXPERIMENT_TITLE}}";
   const lang = programmingLanguage || "{{PROGRAMMING_LANGUAGE}}";
   const req = problemRequirements || "{{PROBLEM_REQUIREMENTS}}";
   const custom = customInstructions || "{{CUSTOM_INSTRUCTIONS}}";
 
-  return `You are a college professor preparing a complete laboratory practical record for a Computer Science Engineering student.
+  return `You are a college professor of ${dept} preparing a complete laboratory practical record for a ${dept} student.
 
 Generate a laboratory record using the experiment details supplied at runtime.
 
@@ -144,7 +243,7 @@ function extractTag(cleanHTML: string, tagNames: string[]): string {
 }
 
 /** DOMParser-based parser with regex-fallback (`extractTag`), matching the original app 1:1. */
-export function parseLabRecordHTML(cleanHTML: string): ParsedLabRecord {
+export function parseLabRecordHTML(cleanHTML: string, ctx?: AiContext): ParsedLabRecord {
   if (!cleanHTML || !cleanHTML.trim()) {
     throw new Error("Invalid HTML content provided.");
   }
@@ -170,6 +269,17 @@ export function parseLabRecordHTML(cleanHTML: string): ParsedLabRecord {
     const clone = sec.cloneNode(true) as HTMLElement;
     const h2 = clone.querySelector("h2");
     if (h2) h2.remove();
+    return (clone.textContent || "").trim();
+  };
+
+  /** Preformatted section: keeps whitespace exactly. */
+  const getRawText = (id: string): string => {
+    const sec = doc.querySelector(`[data-section="${id}"]`);
+    if (!sec) return "";
+    const pre = sec.querySelector("pre") || sec.querySelector("code");
+    if (pre) return pre.textContent || "";
+    const clone = sec.cloneNode(true) as HTMLElement;
+    clone.querySelector("h2")?.remove();
     return (clone.textContent || "").trim();
   };
 
@@ -209,6 +319,15 @@ export function parseLabRecordHTML(cleanHTML: string): ParsedLabRecord {
     return (clone.textContent || "").trim();
   };
 
+  if (ctx?.layout) {
+    const custom: Record<string, string> = {};
+    for (const sec of writable(ctx)) {
+      custom[sec.id] = sec.kind === "code" ? getRawText(sec.id) : getSectionText(`[data-section="${sec.id}"]`);
+    }
+    custom.result = getSectionText('[data-section="result"]');
+    return { aim: "", algorithm: "", sourceCode: "", output: "", viva: "", result: custom.result, custom };
+  }
+
   return {
     aim: getSectionText('[data-section="aim"]') || extractTag(cleanHTML, ["aim"]),
     algorithm: getSectionText('[data-section="algorithm"]') || extractTag(cleanHTML, ["algorithm", "algo"]),
@@ -219,8 +338,16 @@ export function parseLabRecordHTML(cleanHTML: string): ParsedLabRecord {
   };
 }
 
-export function validateLabRecord(parsed: ParsedLabRecord): void {
+export function validateLabRecord(parsed: ParsedLabRecord, ctx?: AiContext): void {
   const missing: string[] = [];
+
+  if (ctx?.layout && parsed.custom) {
+    // Custom layout: every writable section and the closing block must have come back with text.
+    for (const sec of writable(ctx)) if (!parsed.custom[sec.id]?.trim()) missing.push(sec.title.toUpperCase());
+    if (!parsed.custom.result?.trim()) missing.push((ctx.resultTitle || "Result").toUpperCase());
+    if (missing.length > 0) throw new Error(`Generated record is incomplete. Missing sections: ${missing.join(", ")}.`);
+    return;
+  }
 
   if (!parsed.aim || !parsed.aim.trim()) missing.push("AIM");
   if (!parsed.algorithm || !parsed.algorithm.trim()) missing.push("ALGORITHM");

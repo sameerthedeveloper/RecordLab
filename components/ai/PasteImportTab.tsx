@@ -2,7 +2,7 @@
 
 import { Download, FlaskConical } from "lucide-react";
 import { buildSampleTaggedData, cleanLLMHTML, createNewGenerationId, parseLabRecordHTML, validateLabRecord } from "@/lib/aiAssistant";
-import type { ParsedLabRecord } from "@/lib/aiAssistant";
+import type { AiContext, ParsedLabRecord } from "@/lib/aiAssistant";
 
 interface PasteImportTabProps {
   importText: string;
@@ -12,6 +12,7 @@ interface PasteImportTabProps {
   onError: (msg: string) => void;
   onImported: (parsed: ParsedLabRecord, generationId: string) => void;
   onClose: () => void;
+  context?: AiContext;
 }
 
 export function PasteImportTab({
@@ -22,13 +23,14 @@ export function PasteImportTab({
   onError,
   onImported,
   onClose,
+  context,
 }: PasteImportTabProps) {
   function handleImport() {
     onError("");
     try {
       const cleanHTML = cleanLLMHTML(importText);
-      const parsed = parseLabRecordHTML(cleanHTML);
-      validateLabRecord(parsed);
+      const parsed = parseLabRecordHTML(cleanHTML, context);
+      validateLabRecord(parsed, context);
       onImported(parsed, createNewGenerationId());
       onClose();
     } catch (err) {
@@ -57,14 +59,16 @@ export function PasteImportTab({
           <label htmlFor="aiImportTextarea" className="text-xs font-semibold text-ink-soft">
             Pasted LLM Response / HTML Data <span className="text-red-500 font-semibold">*</span>
           </label>
-          <button
-            type="button"
-            onClick={handleLoadSample}
-            className="flex items-center gap-1 text-xs font-semibold text-accent-ink hover:underline"
-          >
-            <FlaskConical className="h-3 w-3" strokeWidth={2} />
-            <span>Load Sample Tagged Data</span>
-          </button>
+          {!context?.layout && (
+            <button
+              type="button"
+              onClick={handleLoadSample}
+              className="flex items-center gap-1 text-xs font-semibold text-accent-ink hover:underline"
+            >
+              <FlaskConical className="h-3 w-3" strokeWidth={2} />
+              <span>Load Sample Tagged Data</span>
+            </button>
+          )}
         </div>
         <textarea
           id="aiImportTextarea"

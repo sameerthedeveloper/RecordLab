@@ -11,7 +11,7 @@ import {
 import { generateContent } from "@/lib/puter";
 import { createRateLimiter } from "@/lib/rateLimiter";
 import { useToast, ToastViewport } from "@/components/Toast";
-import type { ParsedLabRecord } from "@/lib/aiAssistant";
+import type { AiContext, ParsedLabRecord } from "@/lib/aiAssistant";
 
 interface DirectLlmTabProps {
   title: string;
@@ -22,6 +22,7 @@ interface DirectLlmTabProps {
   beginGeneration: () => string;
   commitIfActive: (generationId: string, parsed: ParsedLabRecord, experimentTitle: string) => boolean;
   onClose: () => void;
+  context?: AiContext;
 }
 
 // At most 5 direct-generation requests per rolling 60s window, so a
@@ -38,6 +39,7 @@ export function DirectLlmTab({
   beginGeneration,
   commitIfActive,
   onClose,
+  context,
 }: DirectLlmTabProps) {
   const [generating, setGenerating] = useState(false);
   const [retryAfterMs, setRetryAfterMs] = useState(0);
@@ -56,8 +58,9 @@ export function DirectLlmTab({
   async function handleGenerate() {
     onError("");
 
-    if (!title.trim() || !lang.trim() || !requirement.trim()) {
-      onError("Please fill in Experiment Title, Programming Language, and Program Requirement.");
+    const needsLang = !context?.layout;
+    if (!title.trim() || (needsLang && !lang.trim()) || !requirement.trim()) {
+      onError(needsLang ? "Please fill in Experiment Title, Programming Language, and Program Requirement." : "Please fill in the Experiment Title and what the experiment covers.");
       return;
     }
 
@@ -81,12 +84,13 @@ export function DirectLlmTab({
         programmingLanguage: lang,
         problemRequirements: requirement,
         customInstructions: custom,
+        context,
       });
 
       const rawHTML = await generateContent(prompt);
       const cleanHTML = cleanLLMHTML(rawHTML);
-      const parsed = parseLabRecordHTML(cleanHTML);
-      validateLabRecord(parsed);
+      const parsed = parseLabRecordHTML(cleanHTML, context);
+      validateLabRecord(parsed, context);
 
       if (commitIfActive(generationId, parsed, title)) {
         onClose();

@@ -190,3 +190,30 @@ export function sanitizeTemplate(raw: unknown): SectionTemplate | null {
   }
   return { sections, resultTitle: String(r.resultTitle ?? "").trim().slice(0, 40) || "Result" };
 }
+
+/** Suggestions for the department field (free text is still allowed). */
+export const DEPARTMENTS = [
+  "Computer Science and Engineering",
+  "Information Technology",
+  "Artificial Intelligence and Data Science",
+  "Electronics and Communication Engineering",
+  "Electrical and Electronics Engineering",
+  "Mechanical Engineering",
+  "Civil Engineering",
+  "Chemical Engineering",
+  "Biotechnology",
+  "Physics",
+  "Chemistry",
+  "Mathematics",
+];
+
+/** Which preset fits a department best (by keyword); null when unsure. */
+export function suggestPresetId(department: string): string | null {
+  const d = department.toLowerCase();
+  if (!d.trim()) return null;
+  if (/(computer|software|information tech|\bit\b|\bcse\b|data science|artificial|\bai\b|machine learning|cyber)/.test(d)) return "programming";
+  if (/(electronic|electrical|\bece\b|\beee\b|instrument|communication)/.test(d)) return "electronics";
+  if (/(mechanic|civil|automobile|aero|production|industrial|structural)/.test(d)) return "mechanical";
+  if (/(physic|chemi|bio|material|environment|science)/.test(d)) return "science";
+  return null;
+}

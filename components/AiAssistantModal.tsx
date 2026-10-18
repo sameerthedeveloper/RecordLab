@@ -7,17 +7,19 @@ import { CopyPromptTab } from "./ai/CopyPromptTab";
 import { PasteImportTab } from "./ai/PasteImportTab";
 import { DirectLlmTab } from "./ai/DirectLlmTab";
 import { createNewGenerationId } from "@/lib/aiAssistant";
-import type { ParsedLabRecord } from "@/lib/aiAssistant";
+import type { AiContext, ParsedLabRecord } from "@/lib/aiAssistant";
 
 interface AiAssistantModalProps {
   open: boolean;
   onClose: () => void;
   onImport: (parsed: ParsedLabRecord, experimentTitle: string) => void;
+  /** Department and (custom) section layout the prompt is written for. */
+  context?: AiContext;
 }
 
 type AiTab = "prompt" | "import" | "direct";
 
-export function AiAssistantModal({ open, onClose, onImport }: AiAssistantModalProps) {
+export function AiAssistantModal({ open, onClose, onImport, context }: AiAssistantModalProps) {
   const [activeTab, setActiveTab] = useState<AiTab>("prompt");
   const [title, setTitle] = useState("");
   const [lang, setLang] = useState("");
@@ -107,6 +109,7 @@ export function AiAssistantModal({ open, onClose, onImport }: AiAssistantModalPr
             onRequirementChange={setRequirement}
             onCustomChange={setCustom}
             onError={setError}
+            context={context}
           />
         )}
 
@@ -119,6 +122,7 @@ export function AiAssistantModal({ open, onClose, onImport }: AiAssistantModalPr
             onError={setError}
             onImported={handleImported}
             onClose={onClose}
+            context={context}
           />
         )}
 
@@ -132,6 +136,7 @@ export function AiAssistantModal({ open, onClose, onImport }: AiAssistantModalPr
             beginGeneration={beginGeneration}
             commitIfActive={commitIfActive}
             onClose={onClose}
+            context={context}
           />
         )}
       </div>

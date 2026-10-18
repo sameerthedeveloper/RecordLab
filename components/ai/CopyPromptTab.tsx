@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Check, Copy } from "lucide-react";
-import { buildLabRecordPrompt } from "@/lib/aiAssistant";
+import { buildLabRecordPrompt, type AiContext } from "@/lib/aiAssistant";
 
 interface CopyPromptTabProps {
   title: string;
@@ -14,6 +14,7 @@ interface CopyPromptTabProps {
   onRequirementChange: (v: string) => void;
   onCustomChange: (v: string) => void;
   onError: (msg: string) => void;
+  context?: AiContext;
 }
 
 const inputClass =
@@ -32,19 +33,22 @@ export function CopyPromptTab({
   onRequirementChange,
   onCustomChange,
   onError,
+  context,
 }: CopyPromptTabProps) {
   const [copied, setCopied] = useState(false);
+  const programming = !context?.layout;
   const promptText = buildLabRecordPrompt({
     experimentTitle: title,
     programmingLanguage: lang,
     problemRequirements: requirement,
     customInstructions: custom,
+    context,
   });
 
   async function handleCopy() {
     onError("");
-    if (!title.trim() || !lang.trim() || !requirement.trim()) {
-      onError("Please fill in Experiment Title, Programming Language, and Program Requirement before copying prompt.");
+    if (!title.trim() || (programming && !lang.trim()) || !requirement.trim()) {
+      onError(programming ? "Please fill in Experiment Title, Programming Language, and Program Requirement before copying prompt." : "Please fill in the Experiment Title and what the experiment covers before copying the prompt.");
       return;
     }
 
@@ -68,6 +72,12 @@ export function CopyPromptTab({
 
   return (
     <div className="space-y-3">
+      {context?.department.trim() && (
+        <p className="rounded-lg bg-accent-soft/50 px-2.5 py-1.5 text-xs font-semibold text-accent-ink">
+          Written for {context.department.trim()}
+          {context.layout ? `, using this record's ${context.layout.filter((s) => s.kind !== "lines").length} sections` : ""}.
+        </p>
+      )}
       <p className="text-xs text-ink-soft/80 leading-relaxed">
         Enter experiment details to create a prefilled prompt requesting the LLM to output content inside structured
         HTML tags (
@@ -93,12 +103,20 @@ export function CopyPromptTab({
 
         <div>
           <label htmlFor="aiLangInput" className={labelClass}>
-            Programming Language <span className="text-red-500 font-semibold">*</span>
+            {programming ? (
+              <>
+                Programming Language <span className="text-red-500 font-semibold">*</span>
+              </>
+            ) : (
+              <>
+                Apparatus / tools <span className="text-gray-400 font-normal text-xs">(Optional)</span>
+              </>
+            )}
           </label>
           <input
             id="aiLangInput"
             type="text"
-            placeholder="Example: Python / C++"
+            placeholder={programming ? "Example: Python / C++" : "Example: Ammeter, voltmeter, 100 Ω resistor"}
             className={inputClass}
             value={lang}
             onChange={(e) => onLangChange(e.target.value)}
@@ -108,12 +126,12 @@ export function CopyPromptTab({
 
       <div>
         <label htmlFor="aiReqInput" className={labelClass}>
-          Program / Problem Requirement <span className="text-red-500 font-semibold">*</span>
+          {programming ? "Program / Problem Requirement" : "What the experiment covers"} <span className="text-red-500 font-semibold">*</span>
         </label>
         <textarea
           id="aiReqInput"
           rows={2}
-          placeholder="Describe what the program should implement (e.g. tree insertion, deletion, and in-order traversal)..."
+          placeholder={programming ? "Describe what the program should implement (e.g. tree insertion, deletion, and in-order traversal)..." : "Describe the experiment (e.g. verify Ohm's law by plotting V against I for a fixed resistor)..."}
           className={textareaClass}
           value={requirement}
           onChange={(e) => onRequirementChange(e.target.value)}

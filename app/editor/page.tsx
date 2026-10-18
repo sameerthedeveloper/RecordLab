@@ -15,7 +15,8 @@ import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
-import { applyTemplate, type SectionTemplate } from "@/lib/sections";
+import { applyTemplate, isCustomLayout, type SectionTemplate } from "@/lib/sections";
+import type { AiContext } from "@/lib/aiAssistant";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
@@ -559,10 +560,27 @@ export default function Home() {
     }
   }
 
+  const aiContext: AiContext = {
+    department: settings.department,
+    layout: isCustomLayout(record) ? (record.sections ?? []).map((s) => ({ id: s.id, title: s.title, kind: s.kind })) : null,
+    resultTitle: record.result_title ?? "Result",
+  };
+
   function handleAiImport(parsed: ParsedLabRecord, experimentTitle: string) {
     track("ai_assist_used");
     setRecord((prev) => {
       const newTitle = experimentTitle.trim() || prev.title.trim();
+      if (parsed.custom && isCustomLayout(prev)) {
+        // Custom layout: fill each section by id; sections not in the answer (blank-line ones) are left alone.
+        const { result, ...bySection } = parsed.custom;
+        return {
+          ...prev,
+          title: newTitle ? newTitle.toUpperCase() : prev.title,
+          section_values: { ...(prev.section_values ?? {}), ...Object.fromEntries(Object.entries(bySection).map(([k, v]) => [k, (v || "").trim()])) },
+          result: (result || "").trim(),
+          output_images: [],
+        };
+      }
       return {
         ...prev,
         title: newTitle ? newTitle.toUpperCase() : prev.title,
@@ -657,7 +675,12 @@ export default function Home() {
         }}
       />
 
-      <AiAssistantModal open={aiModalOpen} onClose={() => setAiModalOpen(false)} onImport={handleAiImport} />
+      <AiAssistantModal
+        open={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        onImport={handleAiImport}
+        context={aiContext}
+      />
 
       <DashboardModal
         open={dashboardOpen}

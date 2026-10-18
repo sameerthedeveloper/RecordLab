@@ -40,6 +40,8 @@ export interface AppSettings {
   recordFormat: RecordFormat;
   /** Page rule new records start with. */
   pageBorder: PageBorder;
+  /** The student's department (free text), used to word AI prompts. */
+  department: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -50,6 +52,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiStyle: "apple",
   recordFormat: "standard",
   pageBorder: DEFAULT_PAGE_BORDER,
+  department: "",
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -66,6 +69,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     uiStyle: UI_STYLES.includes(parsed.uiStyle as UiStyle) ? (parsed.uiStyle as UiStyle) : "apple",
     recordFormat: RECORD_FORMATS.includes(parsed.recordFormat as RecordFormat) ? (parsed.recordFormat as RecordFormat) : "standard",
     pageBorder: resolvePageBorder(parsed.pageBorder),
+    department: typeof parsed.department === "string" ? parsed.department.trim().slice(0, 80) : "",
   };
 }
 

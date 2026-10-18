@@ -9,6 +9,7 @@ import { RecordFormatPicker } from "./RecordFormatPicker";
 import { PageBorderControls } from "./PageBorderControls";
 import { InstallAppSection } from "./InstallAppSection";
 import { WatermarkControls } from "./WatermarkOptionsSection";
+import { DEPARTMENTS } from "@/lib/sections";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { applyUiStyle, type AppSettings, type UiStyle } from "@/lib/settings";
@@ -112,6 +113,32 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
             <AccountSettings
               onToast={onToast}
               afterDetails={
+                <>
+                <section>
+                  <h3 className="mb-3 font-serif text-sm font-bold text-ink">Department</h3>
+                  <label htmlFor="settingsDepartment" className={labelClass}>
+                    Your department
+                  </label>
+                  <input
+                    id="settingsDepartment"
+                    type="text"
+                    list="settingsDepartmentList"
+                    autoComplete="off"
+                    maxLength={80}
+                    placeholder="e.g. Mechanical Engineering"
+                    value={draft.department}
+                    onChange={(e) => setDraft({ ...draft, department: e.target.value })}
+                    className={inputClass}
+                  />
+                  <datalist id="settingsDepartmentList">
+                    {DEPARTMENTS.map((d) => (
+                      <option key={d} value={d} />
+                    ))}
+                  </datalist>
+                  <p className="mt-1.5 text-xs text-ink-soft/70">
+                    Used to word the AI prompt for your field (a Mechanical record reads very differently from a Computer Science one). Type any department.
+                  </p>
+                </section>
                 <section>
                   <h3 className="mb-3 font-serif text-sm font-bold text-ink">Register number</h3>
                   <label htmlFor="settingsRrn" className={labelClass}>
@@ -131,6 +158,7 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
                     Fills in on every new record and prints as the faint watermark. Saved with Save settings. You can still change it on a single record in Record details.
                   </p>
                 </section>
+                </>
               }
             />
           )}
