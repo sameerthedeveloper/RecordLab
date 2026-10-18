@@ -1054,6 +1054,11 @@ export function LandingPageClient() {
           <div className="max-w-md text-xs leading-relaxed text-paper/60">
             <p className="font-semibold text-paper/85">Record Lab is a {BRAND.name} product.</p>
             <p className="mt-1">Built for lab-record season, in every department.</p>
+            <p className="mt-2">
+              <Link href="/sitemap" className="underline-offset-4 hover:text-paper hover:underline">
+                Sitemap
+              </Link>
+            </p>
           </div>
         </div>
       </footer>
