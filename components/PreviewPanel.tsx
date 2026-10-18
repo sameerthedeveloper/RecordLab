@@ -158,11 +158,19 @@ export function PreviewPanel({
         </div>
 
         {/* Phones: account sits beside the title, the actions get their own full-width row. */}
-        <div className="order-2 min-w-0 md:order-3">
+        {/* Ad space in the header's empty stretches: only on screens wide enough that nothing is squeezed. */}
+        <div className="hidden min-w-0 flex-1 justify-center md:order-2 min-[1750px]:flex">
+          <AdSlot shape="small" name="Preview header, left" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_LEFT} />
+        </div>
+        <div className="hidden min-w-0 flex-1 justify-center md:order-4 min-[1450px]:flex">
+          <AdSlot shape="small" name="Preview header, right" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_RIGHT} />
+        </div>
+
+        <div className="order-2 min-w-0 md:order-5">
           <AccountMenu onToast={onToast} />
         </div>
 
-        <div className="order-3 flex w-full items-center gap-2 md:order-2 md:w-auto">
+        <div className="order-3 flex w-full items-center gap-2 md:order-3 md:w-auto">
           <div className="ui-seg flex min-w-0 flex-1 items-stretch overflow-hidden md:flex-none">
             <button
               type="button"
