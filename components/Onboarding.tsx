@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { afterSplash } from "./BootSplash";
 import { ONBOARDING_STEPS, type OnboardingPanel, type OnboardingSide } from "@/lib/onboardingSteps";
 
 const STORAGE_KEY = "recordlab-onboarding-v1";
@@ -65,8 +66,15 @@ export function Onboarding({ activePanel, onRequestPanel }: OnboardingProps) {
     if (fresh.length === 0) return;
     setSteps(fresh);
     reducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const timer = window.setTimeout(() => setStarted(true), 700);
-    return () => window.clearTimeout(timer);
+    // Wait for the opening loader to finish, then a beat, so the tour never plays behind it.
+    let timer = 0;
+    const stop = afterSplash(() => {
+      timer = window.setTimeout(() => setStarted(true), 700);
+    });
+    return () => {
+      stop();
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const finish = useCallback(() => {

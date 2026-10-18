@@ -6,12 +6,35 @@ import { AppLoader } from "./AppLoader";
 /** How long the opening loader stays up. */
 export const SPLASH_SECONDS = 5;
 
+let splashDone = false;
+const SPLASH_DONE_EVENT = "recordlab:splash-done";
+
+/** Runs `fn` once the opening loader is gone (right away if it already is). Returns a cleanup. */
+export function afterSplash(fn: () => void): () => void {
+  if (splashDone) {
+    fn();
+    return () => {};
+  }
+  const on = () => fn();
+  window.addEventListener(SPLASH_DONE_EVENT, on, { once: true });
+  return () => window.removeEventListener(SPLASH_DONE_EVENT, on);
+}
+
 /**
  * Shows the loader over the page for a few seconds each time the app is opened or reloaded
  * (moving between screens inside the app does not remount it). Click, tap or Escape skips it.
  */
 export function BootSplash({ label = "Setting up your sheet" }: { label?: string }) {
-  const [phase, setPhase] = useState<"show" | "fade" | "gone">("show");
+  const [phase, setPhase] = useState<"show" | "fade" | "gone">(() => {
+    splashDone = false; // a new splash, so anything waiting on it (the tour) waits again
+    return "show";
+  });
+
+  useEffect(() => {
+    if (phase !== "gone") return;
+    splashDone = true;
+    window.dispatchEvent(new Event(SPLASH_DONE_EVENT));
+  }, [phase]);
 
   useEffect(() => {
     const fade = window.setTimeout(() => setPhase("fade"), SPLASH_SECONDS * 1000);

@@ -12,6 +12,7 @@
     "@tiptap/pm": "^3.31.3",
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
+    "@webprodigies/flute": "^0.1.2",
     "blob-stream": "^0.1.3",
     "canvas2pdf": "^1.0.7",
     "docx": "^9.7.1",
