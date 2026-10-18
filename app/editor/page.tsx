@@ -26,6 +26,7 @@ import { useAuthUser } from "@/lib/authService";
 import { getUserSettings, saveUserSettings } from "@/lib/userProfile";
 import { collegeGeometry, formatPatch } from "@/lib/recordFormat";
 import { createShareLink, loadSharedRecord } from "@/lib/shareLink";
+import { applyTheme } from "@/lib/theme";
 import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, normalizeSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_PAGE_BORDER, DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
@@ -97,6 +98,10 @@ export default function Home() {
   useEffect(() => {
     applyUiStyle(settings.uiStyle);
   }, [settings.uiStyle]);
+
+  useEffect(() => {
+    applyTheme(settings.theme);
+  }, [settings.theme]);
 
   // Drop a folder id that no longer exists (subject deleted from the dashboard).
   useEffect(() => {

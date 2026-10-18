@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
+import { FileText, FolderOpen, LayoutList, Monitor, Moon, Palette, Rows3, Settings as SettingsIcon, Stamp, Sun, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
 import { CollegeInfo } from "./CollegeInfo";
@@ -15,6 +15,7 @@ import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import { SubjectLayouts } from "./SubjectLayouts";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
+import { applyTheme, type Theme } from "@/lib/theme";
 import { applyUiStyle, type AppSettings, type UiStyle } from "@/lib/settings";
 
 interface SettingsModalProps {
@@ -63,7 +64,13 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
   /** Close without saving: put the interface back to the saved style, since picking one previews it live. */
   function handleCancel() {
     applyUiStyle(settings.uiStyle);
+    applyTheme(settings.theme);
     onClose();
+  }
+
+  function pickTheme(theme: Theme) {
+    setDraft({ ...draft, theme });
+    applyTheme(theme);
   }
 
   function pickStyle(uiStyle: UiStyle) {
@@ -171,6 +178,47 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
           {tab === "appearance" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
       <InstallAppSection />
+      <section>
+            <h3 className="mb-3 font-serif text-sm font-bold text-ink">Theme</h3>
+            <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Theme">
+              {(
+                [
+                  { id: "system", name: "System", note: "Follows your device", Icon: Monitor },
+                  { id: "light", name: "Light", note: "Paper and ink", Icon: Sun },
+                  { id: "dark", name: "Dark", note: "Easy on the eyes", Icon: Moon },
+                ] as const
+              ).map(({ id, name, note, Icon }) => {
+                const active = draft.theme === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => pickTheme(id)}
+                    className={`rounded-2xl border p-2.5 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                      active ? "border-accent bg-accent-soft/40 ring-2 ring-accent/30" : "border-line bg-white hover:border-accent/40"
+                    }`}
+                  >
+                    {/* swatch: a tiny editor in each theme; System splits the two. Fixed colours on purpose: they show the theme, not the current one. */}
+                    <div aria-hidden className="relative mb-2.5 flex h-14 gap-1.5 overflow-hidden rounded-xl border border-black/10 p-2" style={{ background: id === "dark" ? "#161412" : id === "light" ? "#efede7" : "linear-gradient(90deg,#efede7 50%,#161412 50%)" }}>
+                      {(id === "system" ? [false, true] : [id === "dark"]).map((isDark, i) => (
+                        <span key={i} className="flex flex-1 flex-col justify-end gap-1 rounded-md p-1.5" style={{ background: isDark ? "#211e1b" : "#ffffff" }}>
+                          <span className="h-1 w-full rounded-full" style={{ background: isDark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.12)" }} />
+                          <span className="h-2 w-1/2 rounded-full" style={{ background: isDark ? "#e8631f" : "#c2410c" }} />
+                        </span>
+                      ))}
+                    </div>
+                    <p className="flex items-center gap-1.5 text-[13px] font-bold text-ink">
+                      <Icon className="h-3.5 w-3.5" strokeWidth={2} /> {name}
+                    </p>
+                    <p className="text-[11px] text-ink-soft/70">{note}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-xs text-ink-soft/70">The printed record stays white in every theme. Shows right away; Save settings keeps it.</p>
+          </section>
       <section>
             <h3 className="mb-3 font-serif text-sm font-bold text-ink">Interface style</h3>
             <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Interface style">

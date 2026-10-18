@@ -24,6 +24,8 @@ import {
 /** "apple": frosted, rounded, pill buttons (default). "classic": the original flat look. */
 export type UiStyle = "apple" | "classic";
 
+import { THEMES, type Theme } from "./theme";
+
 export const UI_STYLES: UiStyle[] = ["apple", "classic"];
 
 /** Flips the look of the whole app by setting `data-ui` on <html> (see the .ui-* classes in globals.css). */
@@ -37,6 +39,8 @@ export interface AppSettings {
   font: string;
   headerLayout: HeaderLayout;
   uiStyle: UiStyle;
+  /** Light, dark, or follow the device. */
+  theme: Theme;
   /** Format new records start in. */
   recordFormat: RecordFormat;
   /** Page rule new records start with. */
@@ -53,6 +57,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   font: DEFAULT_DOC_FONT,
   headerLayout: DEFAULT_HEADER_LAYOUT,
   uiStyle: "apple",
+  theme: "system",
   recordFormat: "standard",
   pageBorder: DEFAULT_PAGE_BORDER,
   department: "",
@@ -71,6 +76,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     watermark: { ...DEFAULT_WATERMARK, ...(parsed.watermark ?? {}) },
     headerLayout: { ...DEFAULT_HEADER_LAYOUT, ...(parsed.headerLayout ?? {}) },
     uiStyle: UI_STYLES.includes(parsed.uiStyle as UiStyle) ? (parsed.uiStyle as UiStyle) : "apple",
+    theme: THEMES.includes(parsed.theme as Theme) ? (parsed.theme as Theme) : "system",
     recordFormat: RECORD_FORMATS.includes(parsed.recordFormat as RecordFormat) ? (parsed.recordFormat as RecordFormat) : "standard",
     pageBorder: resolvePageBorder(parsed.pageBorder),
     defaultLayout: sanitizeTemplate(parsed.defaultLayout),
