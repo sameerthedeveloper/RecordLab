@@ -28,3 +28,8 @@ export function touchProfile(user: User): void {
     { merge: true }
   ).catch(() => {});
 }
+
+/** Writes the person's chosen name to their admin-panel profile row, so the dashboard shows it straight away. */
+export function setProfileName(uid: string, displayName: string): void {
+  void setDoc(doc(getDb(), "profiles", uid), { displayName }, { merge: true }).catch(() => {});
+}

@@ -5,6 +5,7 @@ import "./globals.css";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { ADSENSE_CLIENT } from "@/lib/ads";
+import { NamePrompt } from "@/components/NamePrompt";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 
 const displayFont = Source_Serif_4({
@@ -115,6 +116,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <NamePrompt />
         <PwaRegister />
         <OfflineBadge />
         <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />

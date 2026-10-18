@@ -18,6 +18,7 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebaseConfig";
+import { setProfileName } from "./profileService";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -66,6 +67,7 @@ export async function updateDisplayName(name: string): Promise<void> {
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error("Sign in first.");
   await updateProfile(user, { displayName: name.trim() });
+  setProfileName(user.uid, name.trim());
 }
 
 /** Re-checks the current password first (Firebase requires a recent sign-in for this), then sets the new one. */

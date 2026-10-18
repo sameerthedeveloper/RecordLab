@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, Timestamp, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, Timestamp, where, writeBatch } from "firebase/firestore";
 import { getDb } from "./firebaseConfig";
 import { useAuthUser } from "./authService";
 import { dayKey } from "./usageStats";
@@ -138,8 +138,43 @@ export async function loadColleges(): Promise<CollegeRow[]> {
 }
 
 /** Everything the admin dashboard shows. Records and colleges are optional: if their rules are not deployed the rest still works. */
+export interface AdminRow {
+  uid: string;
+  grantedBy: string | null;
+  grantedAt: Date | null;
+}
+
+/** Who is an admin: the documents under admins/. Needs the admin rules in docs/admin.md to be deployed. */
+export async function loadAdmins(): Promise<AdminRow[]> {
+  const snap = await getDocs(collection(getDb(), "admins"));
+  return snap.docs.map((d) => ({ uid: d.id, grantedBy: (d.data().grantedBy as string) ?? null, grantedAt: toDate(d.data().grantedAt) }));
+}
+
+/** Makes `toUid` an admin. Only an existing admin can do this. */
+export async function addAdmin(toUid: string, byUid: string): Promise<void> {
+  const batch = writeBatch(getDb());
+  batch.set(doc(getDb(), "admins", toUid), { grantedBy: byUid, grantedAt: serverTimestamp() });
+  await batch.commit();
+}
+
+/** Hands admin access to someone else and gives up your own, in one batch so there is never a moment with no admin. */
+export async function transferAdmin(fromUid: string, toUid: string): Promise<void> {
+  const batch = writeBatch(getDb());
+  batch.set(doc(getDb(), "admins", toUid), { grantedBy: fromUid, grantedAt: serverTimestamp() });
+  batch.delete(doc(getDb(), "admins", fromUid));
+  await batch.commit();
+}
+
+/** Gives up your own admin access (the page refuses when you are the only admin). */
+export async function stepDownAsAdmin(uid: string): Promise<void> {
+  const batch = writeBatch(getDb());
+  batch.delete(doc(getDb(), "admins", uid));
+  await batch.commit();
+}
+
 export interface AdminData {
   usage: UsageSnapshot;
+  admins: AdminRow[] | null;
   records: AdminRecord[] | null;
   recordsError: string;
   colleges: CollegeRow[] | null;
@@ -147,13 +182,14 @@ export interface AdminData {
 
 export async function loadAdminData(rangeDays: number): Promise<AdminData> {
   // Twice the range, so the dashboard can compare this period with the one before it.
-  const [usage, records, colleges] = await Promise.all([
+  const [usage, records, colleges, admins] = await Promise.all([
     loadUsage(rangeDays * 2),
     loadRecords(500).then(
       (r) => ({ r, err: "" }),
       (e: unknown) => ({ r: null, err: e instanceof Error && /permission/i.test(e.message) ? "Firestore refused the read. Deploy the latest firestore.rules (admins can read documents), then reload." : "Couldn't load the records." }),
     ),
     loadColleges().catch(() => null),
+    loadAdmins().catch(() => null),
   ]);
-  return { usage, records: records.r, recordsError: records.err, colleges };
+  return { usage, records: records.r, recordsError: records.err, colleges, admins };
 }
