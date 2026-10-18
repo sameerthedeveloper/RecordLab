@@ -62,9 +62,8 @@ export function AdSlot({ slot, shape = "banner", name, className = "" }: AdSlotP
           }`}
         >
           <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/60">Advertisement</span>
-          <span className="text-[11px] text-ink-soft/50">
-            {name} · {shape === "banner" ? "728×90 responsive" : shape === "small" ? "234×60" : "300×250"}
-          </span>
+          <span className="text-[11px] font-medium text-ink-soft/70">Ads will be placed here</span>
+          <span className="sr-only">{name}</span>
         </div>
       )}
     </aside>

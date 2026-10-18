@@ -458,6 +458,80 @@ plt.show()`}</pre>
   );
 }
 
+type SheetFormat = "standard" | "college";
+type SheetBorder = "solid" | "double" | "rounded";
+
+/** Format + page border, drawn as a small A4 sheet that changes with each choice. */
+function SheetDemo() {
+  const [format, setFormat] = useState<SheetFormat>("college");
+  const [border, setBorder] = useState<SheetBorder>("double");
+  const rule = border === "double" ? "3px double #111827" : "1px solid #111827";
+  const seg = (on: boolean) =>
+    `flex-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-colors ${on ? "bg-accent text-white shadow-sm" : "text-ink-soft hover:bg-ink/5"}`;
+  return (
+    <div>
+      <div className="mb-2 flex gap-1 rounded-full bg-black/[0.05] p-1" role="group" aria-label="Sheet format">
+        {(["standard", "college"] as const).map((f) => (
+          <button key={f} type="button" aria-pressed={format === f} onClick={() => setFormat(f)} className={seg(format === f)}>
+            {f === "standard" ? "Standard" : "College sheet"}
+          </button>
+        ))}
+      </div>
+      <div className="mb-3 flex gap-1 rounded-full bg-black/[0.05] p-1" role="group" aria-label="Page border">
+        {(["solid", "double", "rounded"] as const).map((b) => (
+          <button key={b} type="button" aria-pressed={border === b} onClick={() => setBorder(b)} className={seg(border === b)}>
+            {b === "solid" ? "Solid" : b === "double" ? "Double" : "Rounded"}
+          </button>
+        ))}
+      </div>
+      <div className="mx-auto aspect-[210/250] w-full max-w-[15rem] rounded-sm bg-white p-2 shadow-[0_14px_30px_-14px_rgba(28,43,51,0.35)]">
+        <div className="relative h-full w-full overflow-hidden transition-all" style={{ border: rule, borderRadius: border === "rounded" ? 14 : 0 }}>
+          {format === "college" ? (
+            <div className="grid grid-cols-[34%_1fr] border-b border-ink text-[9px] font-bold">
+              <div className="space-y-1 border-r border-ink px-2 py-2">
+                <div>EX : 07</div>
+                <div>DATE : 18/10</div>
+              </div>
+              <div className="flex items-center px-2">BINARY SEARCH</div>
+            </div>
+          ) : (
+            <div className="m-2.5 grid grid-cols-[34%_1fr] border border-ink text-[9px] font-bold">
+              <div className="space-y-1 border-r border-ink px-2 py-1.5">
+                <div>EX NO : 07</div>
+                <div>DATE : 18-10</div>
+              </div>
+              <div className="flex items-center justify-center px-2 text-center">BINARY SEARCH</div>
+            </div>
+          )}
+          <div className="space-y-1.5 px-3 pt-3">
+            <p className="font-mono text-[8px] font-bold tracking-wider text-[#b3261e]">AIM</p>
+            <div className="h-1 rounded bg-ink/10" />
+            <div className="h-1 w-4/5 rounded bg-ink/10" />
+            <p className="pt-2 font-mono text-[8px] font-bold tracking-wider text-[#b3261e]">ALGORITHM</p>
+            <div className="h-1 rounded bg-ink/10" />
+            <div className="h-1 w-3/5 rounded bg-ink/10" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DEPARTMENTS_STRIP = [
+  "Computer Science",
+  "Information Technology",
+  "AI & Data Science",
+  "Electronics & Communication",
+  "Electrical & Electronics",
+  "Mechanical",
+  "Civil",
+  "Chemical",
+  "Biotechnology",
+  "Physics",
+  "Chemistry",
+  "Mathematics",
+];
+
 const MARQUEE = ["Every department", "Run the code", "Real output", "Graphs", "College sheet", "Page border", "Heading table", "Manual calculation", "Share a link", "Works offline", "A4 pagination"];
 
 
@@ -642,6 +716,24 @@ export function LandingPageClient() {
         </div>
       </div>
 
+      {/* ============ DEPARTMENTS ============ */}
+      <section aria-label="Departments" data-reveal-group className="px-5 pt-14 sm:pt-20">
+        <div className="mx-auto max-w-4xl text-center">
+          <p data-reveal className="font-serif text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            Not just for CSE. Any lab, any department.
+          </p>
+          <ul data-reveal className="mt-6 flex flex-wrap justify-center gap-2">
+            {DEPARTMENTS_STRIP.map((d) => (
+              <li key={d} className="ui-chip flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-ink-soft">
+                <GraduationCap className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
+                {d}
+              </li>
+            ))}
+            <li className="ui-chip px-3.5 py-1.5 text-xs font-semibold text-accent-ink">+ build your own</li>
+          </ul>
+        </div>
+      </section>
+
       {/* ============ SEE IT ============ */}
       <section id="see-it" data-reveal-group className="lp-grain px-5 py-20 sm:py-28">
         <div className="mx-auto w-full max-w-5xl">
@@ -688,6 +780,12 @@ export function LandingPageClient() {
                 body: "One folder per subject. Drag records in, find any of them in seconds.",
                 demo: <SubjectsDemo />,
               },
+              {
+                icon: Frame,
+                title: "Sheet, border, heading",
+                body: "Standard or college format, and a page border you style line by line.",
+                demo: <SheetDemo />,
+              },
             ].map(({ icon: Icon, title, body, demo }) => (
               <article
                 key={title}
@@ -723,20 +821,19 @@ export function LandingPageClient() {
           </div>
 
           <div data-reveal className="mt-12 ui-card overflow-hidden">
-            <div className="hidden grid-cols-[44px_1fr_28px] border-b border-line bg-black/[0.03] px-6 py-3 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft/70 sm:grid sm:grid-cols-[56px_1fr_36px]">
-              <span>S.No</span>
-              <span>Particulars</span>
-              <span className="text-right">✓</span>
+            <div className="hidden border-b border-line bg-black/[0.03] px-6 py-3 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft/70 sm:block">
+              Particulars <span className="float-right">{index.length} features ✓</span>
             </div>
+            <div className="md:grid md:grid-cols-2">
             {index.map(({ icon: Icon, title, body }, i) => (
               <div
                 key={title}
-                className="grid grid-cols-[1fr_24px] items-start gap-3 border-b border-line/70 px-5 py-4 last:border-b-0 transition-colors hover:bg-white/70 sm:grid-cols-[56px_1fr_36px] sm:items-center sm:gap-4 sm:px-6"
+                className="grid grid-cols-[1fr_24px] items-start gap-3 border-b border-line/70 px-5 py-4 transition-colors hover:bg-white/70 sm:grid-cols-[32px_1fr_24px] sm:gap-3 sm:px-6 md:border-r md:border-line/70 md:even:border-r-0"
               >
-                <span className="hidden font-mono text-sm font-semibold text-[#b3261e]/80 sm:block">
+                <span className="hidden pt-2 font-mono text-sm font-semibold text-[#b3261e]/80 sm:block">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <div className="flex items-start gap-3.5 sm:items-center">
+                <div className="flex items-start gap-3.5">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink">
                     <Icon className="h-4 w-4" strokeWidth={2} />
                   </span>
@@ -745,11 +842,12 @@ export function LandingPageClient() {
                     <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">{body}</p>
                   </div>
                 </div>
-                <span className="flex justify-end pt-1 sm:pt-0">
+                <span className="flex justify-end pt-1">
                   <Check data-check className="h-4 w-4 text-[#b3261e]" strokeWidth={3} />
                 </span>
               </div>
             ))}
+            </div>
           </div>
         </div>
       </section>
