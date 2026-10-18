@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, Mail, Send, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardPaste, Copy, Loader2, Mail, Send, Sparkles } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebaseConfig";
 import type { ProfileRow } from "@/lib/adminService";
 import { DAY, emailDomainOf, firstName } from "@/lib/adminFormat";
@@ -44,6 +44,9 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   const [message, setMessage] = useState("Hi {{name}},\n\n\n\nThanks,\nRecord Lab");
   const [purpose, setPurpose] = useState("");
   const [tone, setTone] = useState<MailTone>("friendly");
+  const [aiMode, setAiMode] = useState<"direct" | "copy">("direct");
+  const [copied, setCopied] = useState(false);
+  const [pasted, setPasted] = useState("");
   const [writing, setWriting] = useState(false);
   const [aiError, setAiError] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
@@ -95,6 +98,40 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   const ctaBad = ctaLabel.trim().length > 0 && !/^https?:\/\//i.test(ctaUrl.trim());
   const ready = status !== "loading" && status !== "error" && status.configured;
   const canSend = ready && !ctaBad && subject.trim().length > 0 && message.trim().length > 0 && recipients.length > 0 && !sending;
+
+  /** The prompt for the current purpose, tone and audience: what "Copy prompt" puts on the clipboard. */
+  const promptText = () => buildMailPrompt(purpose, tone, AUDIENCES.find((a) => a.id === audience)?.note ?? "Record Lab users");
+
+  async function copyPrompt() {
+    if (!purpose.trim()) return;
+    try {
+      await navigator.clipboard.writeText(promptText());
+    } catch {
+      const t = document.createElement("textarea");
+      t.value = promptText();
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand("copy");
+      t.remove();
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  function useAnswer() {
+    const draft = parseMailDraft(pasted);
+    if (!draft) {
+      setAiError("That doesn't look like an email. Paste the whole answer, including the subject.");
+      return;
+    }
+    setAiError("");
+    setSubject(draft.subject);
+    setMessage(draft.message);
+    setCtaLabel(draft.buttonLabel);
+    setCtaUrl(draft.buttonUrl);
+    setConfirm(false);
+    setPasted("");
+  }
 
   async function writeWithAi() {
     if (!purpose.trim() || writing) return;
@@ -166,9 +203,18 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
           )}
 
           <div className="rounded-xl border border-accent/30 bg-accent-soft/30 p-3.5">
-            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-accent-ink">
-              <Sparkles className="h-4 w-4" strokeWidth={2.2} /> Write it with AI
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-accent-ink">
+                <Sparkles className="h-4 w-4" strokeWidth={2.2} /> Write it with AI
+              </p>
+              <div role="tablist" aria-label="How to use AI" className="flex rounded-full bg-black/[0.05] p-0.5">
+                {([["direct", "Write for me"], ["copy", "Copy prompt"]] as const).map(([id, label]) => (
+                  <button key={id} type="button" role="tab" aria-selected={aiMode === id} onClick={() => { setAiMode(id); setAiError(""); }} className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${aiMode === id ? "bg-white text-accent-ink shadow-sm" : "text-ink-soft hover:text-ink"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <label className="mt-2 block">
               <span className="sr-only">What is this email for?</span>
               <textarea value={purpose} onChange={(e) => setPurpose(e.target.value)} rows={2} maxLength={600} placeholder="What is this email for? e.g. We added HTML, CSS and JavaScript output to records. Tell students how to try it." className={`${field} resize-y`} />
@@ -188,12 +234,37 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
                   </option>
                 ))}
               </select>
-              <button type="button" onClick={() => void writeWithAi()} disabled={!purpose.trim() || writing} className="ui-primary flex min-h-10 items-center gap-2 px-4 py-2 text-xs font-semibold disabled:opacity-50">
-                {writing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />}
-                {writing ? "Writing…" : subject || message.trim().length > 40 ? "Write again" : "Write the email"}
-              </button>
-              <span className="text-[11px] text-ink-soft/80">Fills the subject, message and button below. You can edit everything.</span>
+              {aiMode === "direct" ? (
+                <>
+                  <button type="button" onClick={() => void writeWithAi()} disabled={!purpose.trim() || writing} className="ui-primary flex min-h-10 items-center gap-2 px-4 py-2 text-xs font-semibold disabled:opacity-50">
+                    {writing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />}
+                    {writing ? "Writing…" : subject || message.trim().length > 40 ? "Write again" : "Write the email"}
+                  </button>
+                  <span className="text-[11px] text-ink-soft/80">Fills the subject, message and button below. You can edit everything.</span>
+                </>
+              ) : (
+                <button type="button" onClick={() => void copyPrompt()} disabled={!purpose.trim()} className="ui-primary flex min-h-10 items-center gap-2 px-4 py-2 text-xs font-semibold disabled:opacity-50">
+                  <Copy className="h-3.5 w-3.5" strokeWidth={2.4} />
+                  {copied ? "Copied" : "Copy prompt"}
+                </button>
+              )}
             </div>
+            {aiMode === "copy" && (
+              <div className="mt-3 space-y-2 border-t border-accent/20 pt-3">
+                <ol className="space-y-1 text-[12px] leading-relaxed text-ink-soft">
+                  <li><span className="font-semibold text-ink">1.</span> Describe the purpose above, then press <span className="font-semibold">Copy prompt</span>.</li>
+                  <li><span className="font-semibold text-ink">2.</span> Paste it into ChatGPT, Claude or Gemini.</li>
+                  <li><span className="font-semibold text-ink">3.</span> Copy the whole answer and paste it here.</li>
+                </ol>
+                <label className="block">
+                  <span className="sr-only">Paste the AI&apos;s answer</span>
+                  <textarea value={pasted} onChange={(e) => { setPasted(e.target.value); setAiError(""); }} rows={4} placeholder="Paste the AI's answer here" className={`${field} resize-y font-mono text-xs`} />
+                </label>
+                <button type="button" onClick={useAnswer} disabled={!pasted.trim()} className="ui-btn ui-btn-secondary flex min-h-10 items-center gap-2 px-4 text-xs font-semibold disabled:opacity-50">
+                  <ClipboardPaste className="h-3.5 w-3.5" strokeWidth={2.2} /> Use this answer
+                </button>
+              </div>
+            )}
             {aiError && <p role="alert" className="mt-2 text-xs font-medium text-red-700">{aiError}</p>}
           </div>
 

@@ -43,20 +43,31 @@ Answer with ONLY a JSON object, no code fence and no other text:
 {"subject": "...", "message": "...", "buttonLabel": "...", "buttonUrl": "..."}`;
 }
 
-/** Reads the model's answer, tolerating a code fence or a sentence before the JSON. */
+/**
+ * Reads the model's answer: the JSON the prompt asks for (a code fence or a sentence around it is fine),
+ * or, when a chat assistant ignores that, plain text with a "Subject:" line.
+ */
 export function parseMailDraft(text: string): DraftedMail | null {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  try {
-    const j = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
-    const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
-    const subject = str(j.subject).slice(0, 150);
-    const message = str(j.message);
-    if (!subject || !message) return null;
-    const url = str(j.buttonUrl);
-    return { subject, message, buttonLabel: /^https?:\/\//i.test(url) ? str(j.buttonLabel).slice(0, 60) : "", buttonUrl: /^https?:\/\//i.test(url) ? url : "" };
-  } catch {
-    return null;
+  if (start !== -1 && end > start) {
+    try {
+      const j = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+      const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+      const subject = str(j.subject).slice(0, 150);
+      const message = str(j.message);
+      if (subject && message) {
+        const url = str(j.buttonUrl);
+        const ok = /^https?:\/\//i.test(url);
+        return { subject, message, buttonLabel: ok ? str(j.buttonLabel).slice(0, 60) : "", buttonUrl: ok ? url : "" };
+      }
+    } catch {
+      /* fall through to the plain-text reading */
+    }
   }
+  const plain = text.replace(/```[a-z]*\n?|```/gi, "").trim();
+  const m = plain.match(/^\s*subject\s*:\s*(.+)$/im);
+  if (!m) return null;
+  const message = plain.replace(m[0], "").replace(/^\s*(body|message)\s*:\s*/im, "").trim();
+  return message ? { subject: m[1].trim().slice(0, 150), message, buttonLabel: "", buttonUrl: "" } : null;
 }
