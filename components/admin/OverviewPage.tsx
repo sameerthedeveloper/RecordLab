@@ -1,10 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, FileText, UserPlus, Users } from "lucide-react";
+import { Activity, AlertCircle, ChevronRight, FileText, UserPlus, Users } from "lucide-react";
 import { ago } from "@/lib/adminFormat";
 import { Avatar, BarChart, Card, Empty, Kpi } from "./ui";
 import { WhenLoaded } from "./LoadState";
+import type { AdminData } from "@/lib/adminService";
+import type { AdminView } from "@/lib/adminView";
+
+/** Things an admin can act on right now, each linking to where it is fixed. */
+function attention(view: AdminView, data: AdminData): { text: string; href?: string }[] {
+  const out: { text: string; href?: string }[] = [];
+  const unnamed = data.usage.profiles.filter((p) => !p.displayName?.trim()).length;
+  if (unnamed > 0) out.push({ text: `${unnamed} ${unnamed === 1 ? "user hasn't" : "users haven't"} given a name yet`, href: "/admin/users?filter=noname" });
+  const colleges = view.domainRows.filter((d) => !d.name).length;
+  if (colleges > 0) out.push({ text: `${colleges} college email ${colleges === 1 ? "domain isn't" : "domains aren't"} named yet`, href: "/admin/colleges" });
+  if (view.records === null) out.push({ text: "Saved records can't be read. Deploy the latest firestore.rules." });
+  if (data.admins === null) out.push({ text: "The admin list can't be read. Deploy the latest firestore.rules.", href: "/admin/admins" });
+  else if (view.adminCount === 1) out.push({ text: "You are the only admin. Add a second one so access is never lost.", href: "/admin/admins" });
+  return out;
+}
 
 const LABELS: Record<string, string> = {
   save_cloud: "Saved to cloud",
@@ -27,12 +42,39 @@ const LABELS: Record<string, string> = {
 export function OverviewPage() {
   return (
     <WhenLoaded>
-      {({ view, range }) => (
+      {({ view, range, data }) => (
         <>
+          {attention(view, data).length > 0 && (
+            <Card title="Needs attention" aside={`${attention(view, data).length} to look at`}>
+              <ul className="divide-y divide-line/70 px-2 pb-3 pt-2">
+                {attention(view, data).map((a) => {
+                  const inner = (
+                    <>
+                      <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" strokeWidth={2.1} />
+                      <span className="min-w-0 flex-1 text-[13px] font-medium text-ink">{a.text}</span>
+                      {a.href && <ChevronRight className="h-4 w-4 shrink-0 text-ink-soft/50" strokeWidth={2.2} />}
+                    </>
+                  );
+                  return (
+                    <li key={a.text}>
+                      {a.href ? (
+                        <Link href={a.href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-black/[0.03]">
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-3 px-3 py-2.5">{inner}</div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
+
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-            <Kpi label="Users" icon={Users} value={view.users} current={view.newNow} previous={view.newPrev} note={`${view.newNow} joined in ${range} days`} />
-            <Kpi label="Active · 7 days" icon={Activity} value={view.active7} current={view.active7} previous={view.activePrevWeek} note={`${view.users ? Math.round((view.active7 / view.users) * 100) : 0}% of users`} />
-            <Kpi label="Saved records" icon={FileText} value={view.records ?? "—"} current={view.records === null ? undefined : view.recordsNow} previous={view.records === null ? undefined : view.recordsPrev} note={view.records === null ? "Deploy rules to see" : `${view.recordsNow} new in ${range} days`} />
+            <Kpi href="/admin/users" label="Users" icon={Users} value={view.users} current={view.newNow} previous={view.newPrev} note={`${view.newNow} joined in ${range} days`} />
+            <Kpi href="/admin/users?filter=active7" label="Active · 7 days" icon={Activity} value={view.active7} current={view.active7} previous={view.activePrevWeek} note={`${view.users ? Math.round((view.active7 / view.users) * 100) : 0}% of users`} />
+            <Kpi href="/admin/records" label="Saved records" icon={FileText} value={view.records ?? "—"} current={view.records === null ? undefined : view.recordsNow} previous={view.records === null ? undefined : view.recordsPrev} note={view.records === null ? "Deploy rules to see" : `${view.recordsNow} new in ${range} days`} />
             <Kpi label="Actions" icon={UserPlus} value={view.actionsNow} current={view.actionsNow} previous={view.actionsPrev} note={view.lifetime !== null ? `${view.lifetime} all time` : `last ${range} days`} />
           </div>
 

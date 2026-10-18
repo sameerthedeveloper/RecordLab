@@ -41,7 +41,20 @@ export function useAdmin(): AdminContextValue {
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const access = useAdminAccess();
   const user = useAuthUser();
-  const [range, setRange] = useState<Range>(30);
+  const [range, setRangeState] = useState<Range>(30);
+  // Remember the range between visits.
+  useEffect(() => {
+    try {
+      const saved = Number(localStorage.getItem("recordlab.admin-range"));
+      if (RANGES.includes(saved as Range)) setRangeState(saved as Range);
+    } catch {}
+  }, []);
+  const setRange = useCallback((r: Range) => {
+    setRangeState(r);
+    try {
+      localStorage.setItem("recordlab.admin-range", String(r));
+    } catch {}
+  }, []);
   const [data, setData] = useState<AdminData | null>(null);
   const [loadedAt, setLoadedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);

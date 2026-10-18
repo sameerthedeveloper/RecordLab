@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AlertTriangle, CheckCircle2, ClipboardPaste, Copy, Loader2, Mail, Send, Sparkles } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebaseConfig";
 import type { ProfileRow } from "@/lib/adminService";
@@ -10,7 +11,17 @@ import { buildMailPrompt, draftFromAnswer, MAIL_PURPOSES, MAIL_TONES, parseMailD
 import { generateContent } from "@/lib/puter";
 import { Card } from "./admin/ui";
 
-type Audience = "all" | "active7" | "new7" | "college" | "me";
+type Audience = "all" | "active7" | "new7" | "college" | "me" | "one";
+
+const DRAFT_KEY = "recordlab.admin-mail-draft";
+const LOG_KEY = "recordlab.admin-mail-log";
+interface SentLog {
+  at: number;
+  subject: string;
+  audience: string;
+  sent: number;
+  failed: number;
+}
 
 const AUDIENCES: { id: Audience; label: string; note: string }[] = [
   { id: "all", label: "Everyone", note: "Every user with an email address" },
@@ -18,6 +29,7 @@ const AUDIENCES: { id: Audience; label: string; note: string }[] = [
   { id: "new7", label: "New this week", note: "Joined in the last 7 days" },
   { id: "college", label: "One college", note: "Everyone with the same email domain" },
   { id: "me", label: "Just me (test)", note: "Send it to yourself first" },
+  { id: "one", label: "One person", note: "The user you chose in Users" },
 ];
 
 const CHUNK = 50;
@@ -38,7 +50,12 @@ interface Props {
 /** Admin: write a message and send it from the Workspace address to a chosen group of users. */
 export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   const [status, setStatus] = useState<{ configured: boolean; sender: string | null } | "loading" | "error">("loading");
-  const [audience, setAudience] = useState<Audience>("all");
+  const toUid = useSearchParams().get("to");
+  const [audience, setAudience] = useState<Audience>(toUid ? "one" : "all");
+  const [log, setLog] = useState<SentLog[]>([]);
+  const [testing, setTesting] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const draftLoaded = useRef(false);
   const [domain, setDomain] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("Hi {{name}},\n\n\n\nThanks,\nRecord Lab");
@@ -54,7 +71,34 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   const [confirm, setConfirm] = useState(false);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<{ sent: number; failed: { email: string; error: string }[]; error?: string } | null>(null);
+  const [result, setResult] = useState<{ sent: number; failed: { email: string; error: string }[]; error?: string; note?: string } | null>(null);
+
+  // Bring back an unsent draft and the recent sends from this browser.
+  useEffect(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null") as { subject?: string; message?: string; ctaLabel?: string; ctaUrl?: string; purpose?: string } | null;
+      if (d) {
+        if (d.subject) setSubject(d.subject);
+        if (d.message) setMessage(d.message);
+        if (d.ctaLabel) setCtaLabel(d.ctaLabel);
+        if (d.ctaUrl) setCtaUrl(d.ctaUrl);
+        if (d.purpose) setPurpose(d.purpose);
+        if (d.subject || (d.message && d.message.trim().length > 40)) setDraftSaved(true);
+      }
+      setLog(JSON.parse(localStorage.getItem(LOG_KEY) || "[]") as SentLog[]);
+    } catch {}
+    draftLoaded.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded.current) return;
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ subject, message, ctaLabel, ctaUrl, purpose }));
+      } catch {}
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [subject, message, ctaLabel, ctaUrl, purpose]);
 
   useEffect(() => {
     let live = true;
@@ -85,10 +129,11 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
       if (audience === "new7") return p.createdAt !== null && now - p.createdAt.getTime() <= 7 * DAY;
       if (audience === "college") return emailDomainOf(p.email) === domain;
       if (audience === "me") return p.email.toLowerCase() === (adminEmail ?? "").toLowerCase();
+      if (audience === "one") return p.uid === toUid;
       return true;
     });
     return list.map((p) => ({ email: p.email as string, name: p.displayName ?? "" }));
-  }, [profiles, audience, domain, adminEmail]);
+  }, [profiles, audience, domain, adminEmail, toUid]);
 
   const preview = firstName(recipients[0]?.name);
   const previewHtml = useMemo(
@@ -154,6 +199,51 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
     }
   }
 
+  function recordSend(sent: number, failedCount: number) {
+    const entry: SentLog = { at: Date.now(), subject, audience: AUDIENCES.find((a) => a.id === audience)?.label ?? "", sent, failed: failedCount };
+    const next = [entry, ...log].slice(0, 8);
+    setLog(next);
+    try {
+      localStorage.setItem(LOG_KEY, JSON.stringify(next));
+      if (failedCount === 0) localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+  }
+
+  function clearDraft() {
+    setSubject("");
+    setMessage("Hi {{name}},\n\n\n\nThanks,\nRecord Lab");
+    setCtaLabel("");
+    setCtaUrl("");
+    setPurpose("");
+    setPasted("");
+    setResult(null);
+    setDraftSaved(false);
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+  }
+
+  /** One real email to the admin only, no confirmation needed: the safe way to check how it looks in an inbox. */
+  async function sendTest() {
+    if (!adminEmail || !subject.trim() || !message.trim() || testing) return;
+    setTesting(true);
+    setResult(null);
+    try {
+      const me = profiles.find((p) => p.email?.toLowerCase() === adminEmail.toLowerCase());
+      const res = await fetch("/api/admin/send-mail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await idToken()}` },
+        body: JSON.stringify({ subject: `[Test] ${subject}`, message, cta: ctaLabel.trim() ? { label: ctaLabel, url: ctaUrl } : null, recipients: [{ email: adminEmail, name: me?.displayName ?? "" }] }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { sent?: number; error?: string };
+      setResult(res.ok && j.sent ? { sent: 1, failed: [], note: `Test sent to ${adminEmail}. Check your inbox.` } : { sent: 0, failed: [], error: j.error || "The test didn't send." });
+    } catch (e) {
+      setResult({ sent: 0, failed: [], error: e instanceof Error ? e.message : "The test didn't send." });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function send() {
     setSending(true);
     setConfirm(false);
@@ -178,7 +268,8 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
         failed.push(...(j.failed ?? []));
         setProgress(Math.min(recipients.length, i + CHUNK));
       }
-      setResult({ sent, failed });
+      setResult({ sent, failed: failed });
+      recordSend(sent, failed.length);
     } catch (e) {
       setResult({ sent, failed, error: e instanceof Error ? e.message : "Couldn't send." });
     } finally {
@@ -203,6 +294,14 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
             </div>
           )}
 
+          {draftSaved && (
+            <p className="flex items-center justify-between gap-3 rounded-lg bg-black/[0.04] px-3 py-2 text-xs text-ink-soft">
+              <span>Your unsent draft was restored. It saves as you type.</span>
+              <button type="button" onClick={clearDraft} className="shrink-0 font-semibold text-accent hover:underline">
+                Start over
+              </button>
+            </p>
+          )}
           <div className="rounded-xl border border-accent/30 bg-accent-soft/30 p-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold text-accent-ink">
@@ -300,7 +399,7 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
       <div className="space-y-4">
         <Card title="Who gets it">
           <div className="space-y-2 px-5 pb-5 pt-3">
-            {AUDIENCES.map((a) => (
+            {AUDIENCES.filter((a) => a.id !== "one" || toUid).map((a) => (
               <label key={a.id} className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5 transition-colors ${audience === a.id ? "border-accent bg-accent-soft/40" : "border-line hover:border-accent/40"}`}>
                 <input type="radio" name="audience" checked={audience === a.id} onChange={() => { setAudience(a.id); setConfirm(false); }} className="mt-0.5 accent-[#c2410c]" />
                 <span>
@@ -333,9 +432,14 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
               </p>
             )}
             {!confirm ? (
-              <button type="button" disabled={!canSend} onClick={() => setConfirm(true)} className="ui-primary flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold disabled:opacity-50">
-                <Mail className="h-4 w-4" strokeWidth={2.25} /> Review and send
-              </button>
+              <>
+                <button type="button" disabled={!canSend} onClick={() => setConfirm(true)} className="ui-primary flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold disabled:opacity-50">
+                  <Mail className="h-4 w-4" strokeWidth={2.25} /> Review and send
+                </button>
+                <button type="button" onClick={() => void sendTest()} disabled={!ready || !adminEmail || !subject.trim() || !message.trim() || testing || sending} className="ui-btn ui-btn-secondary flex min-h-10 w-full items-center justify-center gap-2 px-4 text-xs font-semibold disabled:opacity-50" title={adminEmail ? `Sends one copy to ${adminEmail}` : undefined}>
+                  {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" strokeWidth={2.2} />} Send a test to me
+                </button>
+              </>
             ) : (
               <div className="space-y-2 rounded-xl border border-accent/40 bg-accent-soft/40 p-3">
                 <p className="text-xs font-semibold text-accent-ink">Send &quot;{subject}&quot; to {recipients.length} {recipients.length === 1 ? "person" : "people"}? This can&apos;t be undone.</p>
@@ -358,9 +462,10 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
               <div role="status" className={`rounded-xl p-3 text-xs ${result.error || result.failed.length ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
                 <p className="flex items-center gap-1.5 font-semibold">
                   {result.error || result.failed.length ? <AlertTriangle className="h-4 w-4" strokeWidth={2.2} /> : <CheckCircle2 className="h-4 w-4" strokeWidth={2.2} />}
-                  {result.sent} sent{result.failed.length ? `, ${result.failed.length} failed` : ""}
+                  {result.note ? "Test sent" : `${result.sent} sent${result.failed.length ? `, ${result.failed.length} failed` : ""}`}
                 </p>
                 {result.error && <p className="mt-1">{result.error}</p>}
+                {result.note && <p className="mt-1">{result.note}</p>}
                 {result.failed.slice(0, 5).map((f) => (
                   <p key={f.email} className="mt-1 break-all">{f.email}: {f.error}</p>
                 ))}
@@ -368,6 +473,21 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
             )}
           </div>
         </Card>
+
+        {log.length > 0 && (
+          <Card title="Recently sent" aside="From this browser">
+            <ul className="divide-y divide-line/70 px-2 pb-3 pt-2">
+              {log.slice(0, 5).map((l) => (
+                <li key={l.at} className="px-3 py-2.5">
+                  <p className="truncate text-[13px] font-semibold text-ink">{l.subject}</p>
+                  <p className="text-xs text-ink-soft">
+                    {l.audience} · {l.sent} sent{l.failed ? `, ${l.failed} failed` : ""} · {new Date(l.at).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, type LucideIcon } from "lucide-react";
 import { delta } from "@/lib/adminFormat";
 
@@ -16,11 +17,11 @@ export function Card({ title, aside, children, className = "" }: { title?: strin
 }
 
 /** One headline number with what changed. `previous` makes the trend chip; `note` is the plain-language line under it. */
-export function Kpi({ label, value, note, current, previous, icon: Icon }: { label: string; value: string | number; note?: string; current?: number; previous?: number; icon: LucideIcon }) {
+export function Kpi({ label, value, note, current, previous, icon: Icon, href }: { href?: string; label: string; value: string | number; note?: string; current?: number; previous?: number; icon: LucideIcon }) {
   const d = current !== undefined && previous !== undefined ? delta(current, previous) : null;
   const TrendIcon = d?.tone === "up" ? ArrowUpRight : d?.tone === "down" ? ArrowDownRight : ArrowRight;
-  return (
-    <div className="ui-card p-5">
+  const body = (
+    <>
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-semibold text-ink-soft">{label}</p>
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-accent-ink">
@@ -37,7 +38,14 @@ export function Kpi({ label, value, note, current, previous, icon: Icon }: { lab
         )}
         {note && <span className="text-ink-soft/80">{note}</span>}
       </div>
-    </div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className="ui-card block p-5 transition-shadow hover:shadow-md">
+      {body}
+    </Link>
+  ) : (
+    <div className="ui-card p-5">{body}</div>
   );
 }
 

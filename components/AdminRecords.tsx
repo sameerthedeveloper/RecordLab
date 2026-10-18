@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FileText, Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ChevronLeft, ChevronRight, FileText, Search } from "lucide-react";
 import type { AdminRecord } from "@/lib/adminService";
 import { ago, fmtDateTime } from "@/lib/adminFormat";
 import { resolveSections } from "@/lib/sections";
@@ -17,14 +18,23 @@ interface AdminRecordsProps {
 /** Every saved record with its owner, openable read-only. */
 export function AdminRecords({ rows, error, ownerName }: AdminRecordsProps) {
   const [q, setQ] = useState("");
+  const [owner, setOwner] = useState(useSearchParams().get("user") ?? "");
   const [shown, setShown] = useState(20);
   const [open, setOpen] = useState<AdminRecord | null>(null);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return (rows ?? []).filter((r) => !needle || [r.title, r.record?.rrn, r.record?.aim, ownerName(r.userId)].some((v) => (v ?? "").toLowerCase().includes(needle)));
+    return (rows ?? []).filter((r) => (!owner || r.userId === owner) && (!needle || [r.title, r.record?.rrn, r.record?.aim, ownerName(r.userId)].some((v) => (v ?? "").toLowerCase().includes(needle))));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, q]);
+  }, [rows, q, owner]);
+
+  const owners = useMemo(() => {
+    const ids = [...new Set((rows ?? []).map((r) => r.userId))];
+    return ids.map((id) => ({ id, name: ownerName(id) })).sort((a, b) => a.name.localeCompare(b.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
+  const at = open ? filtered.findIndex((r) => r.id === open.id) : -1;
 
   const sections = open?.record ? resolveSections(open.record) : [];
 
@@ -48,7 +58,20 @@ export function AdminRecords({ rows, error, ownerName }: AdminRecordsProps) {
           </label>
         }
       >
-        <p className="px-5 pt-1 text-xs text-ink-soft sm:px-6">{rows ? `${filtered.length} of ${rows.length} most recent saved records. Read-only.` : ""}</p>
+        <div className="flex flex-wrap items-center gap-2 px-5 pt-2 sm:px-6">
+          <label className="flex items-center gap-2 text-xs font-semibold text-ink-soft">
+            Owner
+            <select value={owner} onChange={(e) => { setOwner(e.target.value); setShown(20); }} className="rounded-xl border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink outline-none focus:border-accent">
+              <option value="">Everyone</option>
+              {owners.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="text-xs text-ink-soft" aria-live="polite">{rows ? `${filtered.length} of ${rows.length} most recent saved records. Read-only.` : ""}</p>
+        </div>
         {error && <p role="alert" className="mx-5 mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 sm:mx-6">{error}</p>}
         {rows && (
           <div className="mt-3 overflow-x-auto">
@@ -96,7 +119,21 @@ export function AdminRecords({ rows, error, ownerName }: AdminRecordsProps) {
         )}
       </Card>
 
-      <Modal open={!!open} onClose={() => setOpen(null)} title={open?.title ?? ""} description={open ? `${ownerName(open.userId)} · updated ${fmtDateTime(open.updatedAt)}` : ""} icon={FileText} size="big" bodyClassName="p-5 sm:p-6">
+      <Modal open={!!open} onClose={() => setOpen(null)} title={open?.title ?? ""} description={open ? `${ownerName(open.userId)} · updated ${fmtDateTime(open.updatedAt)}` : ""} icon={FileText}
+        size="big"
+        bodyClassName="p-5 sm:p-6"
+        footer={
+          <>
+            <span className="mr-auto text-xs text-ink-soft">{at >= 0 ? `${at + 1} of ${filtered.length}` : ""}</span>
+            <button type="button" disabled={at <= 0} onClick={() => setOpen(filtered[at - 1])} className="ui-btn ui-btn-secondary flex min-h-10 items-center gap-1 px-3 text-xs font-semibold disabled:opacity-50">
+              <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.4} /> Newer
+            </button>
+            <button type="button" disabled={at < 0 || at >= filtered.length - 1} onClick={() => setOpen(filtered[at + 1])} className="ui-btn ui-btn-secondary flex min-h-10 items-center gap-1 px-3 text-xs font-semibold disabled:opacity-50">
+              Older <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
+            </button>
+          </>
+        }
+      >
         {open?.record ? (
           <div className="space-y-5">
             <dl className="grid grid-cols-2 gap-3 rounded-xl border border-line bg-paper/60 p-3 text-xs sm:grid-cols-4">
