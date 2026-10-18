@@ -6,7 +6,7 @@ import { getFirebaseAuth } from "@/lib/firebaseConfig";
 import type { ProfileRow } from "@/lib/adminService";
 import { DAY, emailDomainOf, firstName } from "@/lib/adminFormat";
 import { buildMailHtml } from "@/lib/mailTemplate";
-import { buildMailPrompt, MAIL_PURPOSES, MAIL_TONES, parseMailDraft, type MailTone } from "@/lib/mailAi";
+import { buildMailPrompt, draftFromAnswer, MAIL_PURPOSES, MAIL_TONES, parseMailDraft, type MailTone } from "@/lib/mailAi";
 import { generateContent } from "@/lib/puter";
 import { Card } from "./admin/ui";
 
@@ -119,13 +119,14 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   }
 
   function useAnswer() {
-    const draft = parseMailDraft(pasted);
+    const draft = draftFromAnswer(pasted);
     if (!draft) {
-      setAiError("That doesn't look like an email. Paste the whole answer, including the subject.");
+      setAiError("Nothing to use yet. Paste the AI's whole answer.");
       return;
     }
-    setAiError("");
-    setSubject(draft.subject);
+    // No subject line in the answer: keep the message and let the person write the subject.
+    setAiError(draft.subject ? "" : "Used the message. The answer had no subject line, so write one in the Subject box.");
+    if (draft.subject) setSubject(draft.subject);
     setMessage(draft.message);
     setCtaLabel(draft.buttonLabel);
     setCtaUrl(draft.buttonUrl);
