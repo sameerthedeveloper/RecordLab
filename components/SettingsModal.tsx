@@ -109,30 +109,30 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           {tab === "account" && (
-            <div className="space-y-6">
-              <section>
-                <h3 className="mb-3 font-serif text-sm font-bold text-ink">Register number</h3>
-                <label htmlFor="settingsRrn" className={labelClass}>
-                  Your register number
-                </label>
-                <input
-                  id="settingsRrn"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="Enter your register number"
-                  value={draft.rrn}
-                  onChange={(e) => setDraft({ ...draft, rrn: e.target.value })}
-                  className={inputClass}
-                />
-                <p className="mt-1.5 text-xs text-ink-soft/70">
-                  Fills in on every new record and prints as the faint watermark. Saved with Save settings. You can still change it on a single record in Record details.
-                </p>
-              </section>
-              <div className="border-t border-line pt-6">
-                <AccountSettings onToast={onToast} />
-              </div>
-            </div>
+            <AccountSettings
+              onToast={onToast}
+              afterDetails={
+                <section>
+                  <h3 className="mb-3 font-serif text-sm font-bold text-ink">Register number</h3>
+                  <label htmlFor="settingsRrn" className={labelClass}>
+                    Your register number
+                  </label>
+                  <input
+                    id="settingsRrn"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Enter your register number"
+                    value={draft.rrn}
+                    onChange={(e) => setDraft({ ...draft, rrn: e.target.value })}
+                    className={inputClass}
+                  />
+                  <p className="mt-1.5 text-xs text-ink-soft/70">
+                    Fills in on every new record and prints as the faint watermark. Saved with Save settings. You can still change it on a single record in Record details.
+                  </p>
+                </section>
+              }
+            />
           )}
           {tab === "appearance" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">

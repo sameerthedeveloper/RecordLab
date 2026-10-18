@@ -17,6 +17,8 @@ import { SharedLinks } from "./SharedLinks";
 
 interface AccountSettingsProps {
   onToast: (message: string) => void;
+  /** Rendered right after the user's own details (profile, name), before password and the rest. */
+  afterDetails?: React.ReactNode;
 }
 
 const field =
@@ -29,7 +31,7 @@ const primary =
   "rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50";
 
 /** The Account tab of Settings: profile, display name, password, Puter link and sign out. */
-export function AccountSettings({ onToast }: AccountSettingsProps) {
+export function AccountSettings({ onToast, afterDetails }: AccountSettingsProps) {
   const user = useAuthUser();
   const [authOpen, setAuthOpen] = useState(false);
   const [name, setName] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export function AccountSettings({ onToast }: AccountSettingsProps) {
 
   if (!user) {
     return (
+      <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
       <section>
         <h3 className={heading}>Account</h3>
         <div className="flex items-start gap-3.5 rounded-2xl border border-line bg-white p-4">
@@ -64,6 +67,8 @@ export function AccountSettings({ onToast }: AccountSettingsProps) {
         </div>
         <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onToast={onToast} />
       </section>
+      {afterDetails}
+      </div>
     );
   }
 
@@ -169,6 +174,8 @@ export function AccountSettings({ onToast }: AccountSettingsProps) {
           </button>
         </form>
       </section>
+
+      {afterDetails}
 
       <section>
         <h3 className={heading}>Password</h3>
