@@ -8,16 +8,21 @@ rules_version = '2';
 // here.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Admins are listed by hand in the Firebase console: create a document at
-    // admins/<their uid> (any fields). Nothing in the app can write here.
+    // Admins are the documents under admins/<uid>. The FIRST admin is created by hand in the
+    // Firebase console (any fields). After that, an admin can add another admin and can give up
+    // their own access (hand-over); nobody can remove someone else's access from the app.
     function isAdmin() {
       return request.auth != null
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     match /admins/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
+      // You can always read your own document (that is how the app checks "am I an admin");
+      // admins can also read the list.
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create: if isAdmin();
+      allow delete: if isAdmin() && request.auth.uid == uid;
+      allow update: if false;
     }
 
     // One lightweight, content-free row per signed-in user, for the admin
