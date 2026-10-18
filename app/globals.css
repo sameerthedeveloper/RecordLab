@@ -983,8 +983,13 @@ summary,
    dashboard, popovers) without touching each component.
    Classic is untouched: all of this is scoped away from it.
 ===================================================== */
-html:not([data-ui="classic"]) :is(button, a).rounded-xl {
+/* Single-line controls are pills. Buttons that stack or left-align several lines (tabs with a value
+   under the label, option cards) keep a soft 16px corner: a full pill squeezes two-line content. */
+html:not([data-ui="classic"]) :is(button, a).rounded-xl:not(.flex-col):not(.items-start) {
   border-radius: 9999px;
+}
+html:not([data-ui="classic"]) :is(button, a).rounded-xl:is(.flex-col, .items-start) {
+  border-radius: 16px;
 }
 html:not([data-ui="classic"]) button.rounded-xl.bg-accent,
 html:not([data-ui="classic"]) a.rounded-xl.bg-accent {
