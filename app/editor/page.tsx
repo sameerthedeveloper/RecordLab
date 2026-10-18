@@ -631,6 +631,7 @@ export default function Home() {
         review_questions_enabled: true,
         result: (parsed.result || "").trim(),
         output_images: [],
+        program_input: (parsed.input || "").replace(/\s+$/, ""),
       };
     });
   }
@@ -732,7 +733,14 @@ export default function Home() {
         onToast={showToast}
       />
 
-      <RunCodeModal open={runOpen} onClose={() => setRunOpen(false)} record={record} autoRun={runAuto} onUse={handleUseRun} />
+      <RunCodeModal
+        open={runOpen}
+        onClose={() => setRunOpen(false)}
+        record={record}
+        autoRun={runAuto}
+        onUse={handleUseRun}
+        onInputChange={(v) => setRecord((prev) => ({ ...prev, program_input: v }))}
+      />
 
       <SettingsModal
         open={settingsOpen}

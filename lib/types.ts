@@ -174,6 +174,8 @@ export interface RecordState {
   result_title?: string;
   /** Set when the OUTPUT came from actually running the code (see lib/runner). Absent = typed or sample output. */
   output_run?: OutputRun;
+  /** Standard input for the program when it is run (from the AI answer or typed in the run dialog). */
+  program_input?: string;
   result: string;
   headerLayout: HeaderLayout;
   /** Optional so older records open as "standard". */

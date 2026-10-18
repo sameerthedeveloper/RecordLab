@@ -15,6 +15,8 @@ interface RunCodeModalProps {
   /** Start running as soon as the dialog opens (the person already chose "run" elsewhere). */
   autoRun?: boolean;
   /** Put the captured output in the record. `replace` swaps the current OUTPUT instead of adding below it. */
+  /** Remembers the program's input on the record, so it is there next time. */
+  onInputChange: (value: string) => void;
   onUse: (result: RunResult, code: string, opts: { replace: boolean; text: boolean; images: boolean }) => void;
 }
 
@@ -31,10 +33,10 @@ const field =
  * on this device; C, C++ and Java are compiled by a runner service the person agrees to first.
  * Nothing reaches the record until "Use in record" is pressed, so results can be inspected first.
  */
-export function RunCodeModal({ open, onClose, record, autoRun, onUse }: RunCodeModalProps) {
+export function RunCodeModal({ open, onClose, record, autoRun, onUse, onInputChange }: RunCodeModalProps) {
   const code = runnableSource(record);
   const [choice, setChoice] = useState<RunLanguage | "auto">("auto");
-  const [stdin, setStdin] = useState("");
+  const stdin = record.program_input ?? "";
   const [phase, setPhase] = useState<Phase>("idle");
   const [status, setStatus] = useState("");
   const [result, setResult] = useState<RunResult | null>(null);
@@ -176,9 +178,9 @@ export function RunCodeModal({ open, onClose, record, autoRun, onUse }: RunCodeM
 
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
-              Input for the program <span className="font-normal text-ink-soft/60">(one line per input(), optional)</span>
+              Input for the program <span className="font-normal text-ink-soft/60">(one value per line; filled in by the AI when the program asks for input)</span>
             </span>
-            <textarea rows={2} value={stdin} onChange={(e) => setStdin(e.target.value)} spellCheck={false} className={`${field} resize-y`} placeholder={"5\n10"} />
+            <textarea rows={2} value={stdin} onChange={(e) => onInputChange(e.target.value)} spellCheck={false} className={`${field} resize-y`} placeholder={"5\n10"} />
           </label>
 
           {needsConsent && (

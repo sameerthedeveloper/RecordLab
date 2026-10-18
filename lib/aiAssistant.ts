@@ -25,6 +25,8 @@ export interface ParsedLabRecord {
   output: string;
   viva: string;
   result: string;
+  /** Standard input the program reads, one value per line (empty when it reads none). Used when running the code. */
+  input?: string;
   /** Custom layouts: text by section id, plus "result". */
   custom?: Record<string, string>;
 }
@@ -154,9 +156,12 @@ Use these exact data-section values:
 - aim
 - algorithm
 - source-code
+- input
 - output
 - viva
 - result
+
+The "input" section is NOT one of the six printed sections. It carries the standard input the program reads, so the record can be run later. It goes right after source-code.
 
 HTML STRUCTURE:
 
@@ -176,6 +181,11 @@ HTML STRUCTURE:
   <section data-section="source-code">
     <h2>SOURCE CODE:</h2>
     <pre><code>Generate the complete executable source code here.</code></pre>
+  </section>
+
+  <section data-section="input">
+    <h2>INPUT:</h2>
+    <pre>Exactly what the program reads from standard input, one value per line, in the order it reads them. Leave this empty if the program reads no input.</pre>
   </section>
 
   <section data-section="output">
@@ -205,7 +215,8 @@ CONTENT RULES:
 5. Follow the custom instructions.
 6. The algorithm must accurately describe the generated source code.
 7. The source code must be complete and executable.
-8. The output must correspond to the generated source code.
+8. The output must be exactly what the source code prints when run with the input above.
+8a. If the program asks for values (input(), scanf, cin, Scanner), give realistic test values in the input section, one per line. If it reads nothing, leave the input section empty.
 9. Generate exactly 5 viva questions by default.
 10. Viva questions must be directly related to the current experiment.
 11. Viva answers must be concise and easy to understand.
@@ -333,6 +344,7 @@ export function parseLabRecordHTML(cleanHTML: string, ctx?: AiContext): ParsedLa
     algorithm: getSectionText('[data-section="algorithm"]') || extractTag(cleanHTML, ["algorithm", "algo"]),
     sourceCode: getCodeText() || extractTag(cleanHTML, ["source-code", "sourcecode", "code"]),
     output: getSectionText('[data-section="output"]') || extractTag(cleanHTML, ["output"]),
+    input: getRawText("input"),
     viva: getVivaText() || extractTag(cleanHTML, ["viva", "review", "review_questions"]),
     result: getSectionText('[data-section="result"]') || extractTag(cleanHTML, ["result"]),
   };
@@ -418,6 +430,11 @@ if __name__ == "__main__":
     print("In-order Traversal of BST:")
     inorder(root)
     print()</code></pre>
+  </section>
+
+  <section data-section="input">
+    <h2>INPUT:</h2>
+    <pre></pre>
   </section>
 
   <section data-section="output">
