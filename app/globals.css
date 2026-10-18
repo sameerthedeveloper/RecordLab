@@ -1181,3 +1181,40 @@ html[data-theme="dark"] [class*="divide-gray-"] > * + * { border-color: rgb(var(
 html[data-theme="dark"] [class*="from-white"]:not(.a4-page *) { background-image: none; background-color: var(--surface-2); box-shadow: none; }
 html[data-theme="dark"] [class*="border-white"]:not(.a4-page *) { border-color: var(--hairline); }
 html[data-theme="dark"] .peer:checked ~ .bg-gray-200 { background-color: rgb(var(--c-accent)); }
+
+/* Status colours: the light-theme shades are dark text on pale tints; in dark they flip to light text on translucent tints. */
+html[data-theme="dark"] :is(.text-red-600, .text-red-700, .text-red-800, .text-red-900):not(.a4-page *) { color: #fca5a5; }
+html[data-theme="dark"] :is(.text-emerald-600, .text-emerald-700, .text-emerald-800, .text-green-700):not(.a4-page *) { color: #6ee7b7; }
+html[data-theme="dark"] :is(.text-amber-700, .text-amber-800, .text-amber-900, .text-yellow-800):not(.a4-page *) { color: #fcd34d; }
+html[data-theme="dark"] :is(.text-blue-600, .text-blue-700, .text-sky-700):not(.a4-page *) { color: #93c5fd; }
+html[data-theme="dark"] :is(.bg-red-50, .bg-red-100):not(.a4-page *) { background-color: rgba(239, 68, 68, 0.14); }
+html[data-theme="dark"] :is(.bg-amber-50, .bg-amber-100, .bg-yellow-50):not(.a4-page *) { background-color: rgba(245, 158, 11, 0.14); }
+html[data-theme="dark"] :is(.bg-emerald-50, .bg-emerald-100, .bg-green-50):not(.a4-page *) { background-color: rgba(16, 185, 129, 0.14); }
+html[data-theme="dark"] :is(.bg-blue-50, .bg-sky-50):not(.a4-page *) { background-color: rgba(59, 130, 246, 0.14); }
+html[data-theme="dark"] :is(.border-red-200, .border-red-300):not(.a4-page *) { border-color: rgba(239, 68, 68, 0.35); }
+html[data-theme="dark"] :is(.border-amber-200, .border-amber-300, .border-yellow-200):not(.a4-page *) { border-color: rgba(245, 158, 11, 0.35); }
+html[data-theme="dark"] :is(.border-emerald-200, .border-emerald-300, .border-green-200):not(.a4-page *) { border-color: rgba(16, 185, 129, 0.35); }
+html[data-theme="dark"] :is(.bg-red-600, .bg-red-700) { color: #fff; }
+
+/* Fields keep a dark fill while focused, whatever "focus:bg-white" says. */
+html[data-theme="dark"] :is(input, select, textarea):not(.a4-page *):focus,
+html[data-theme="dark"] [class*="focus:bg-white"]:focus { background-color: var(--surface-2); color: rgb(var(--c-ink)); }
+html[data-theme="dark"] :is(input, textarea, select):not(.a4-page *) { color: rgb(var(--c-ink)); }
+html[data-theme="dark"] ::placeholder { color: rgb(var(--c-ink-soft) / 0.6); }
+
+/* =====================================================
+   APP LOADER (components/AppLoader.tsx)
+===================================================== */
+.loader-sheet { fill: var(--surface); stroke: rgb(var(--c-line)); stroke-width: 1.5; }
+.loader-margin { stroke: rgb(var(--c-accent) / 0.55); stroke-width: 1.4; stroke-dasharray: 132; stroke-dashoffset: 132; animation: loader-draw 0.7s ease-out 0.1s forwards; }
+.loader-rule { stroke: rgb(var(--c-ink) / 0.28); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 80; stroke-dashoffset: 80; animation: loader-draw 0.5s ease-out forwards; }
+.loader-stamp { fill: none; stroke: rgb(var(--c-accent)); stroke-width: 1.8; opacity: 0; transform-box: fill-box; transform-origin: center; animation: loader-stamp 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) 1.2s forwards; }
+.loader-dots::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: loader-dots 1.4s steps(4, end) infinite; }
+@keyframes loader-draw { to { stroke-dashoffset: 0; } }
+@keyframes loader-stamp { from { opacity: 0; transform: scale(1.6) rotate(-8deg); } to { opacity: 1; transform: scale(1) rotate(-6deg); } }
+@keyframes loader-dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75%, 100% { content: "..."; } }
+@media (prefers-reduced-motion: reduce) {
+  .loader-margin, .loader-rule { animation: none; stroke-dashoffset: 0; }
+  .loader-stamp { animation: none; opacity: 1; transform: rotate(-6deg); }
+  .loader-dots::after { animation: none; content: "..."; }
+}
