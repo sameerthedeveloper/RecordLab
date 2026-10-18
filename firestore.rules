@@ -59,6 +59,7 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.token.email != null
         && request.auth.token.email.split('@')[1] == domain
+        && domain.matches('.*(^|[.])(edu|ac)([.].*|$)')
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 3
         && request.resource.data.name.size() <= 120

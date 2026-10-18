@@ -25,6 +25,9 @@ export const emailDomain = (email: string | null | undefined): string | null => 
 
 export const isPersonalDomain = (domain: string) => PERSONAL.has(domain);
 
+/** Educational domains carry an "edu" or "ac" label: psgtech.edu, college.ac.in, uni.edu.au, school.ac.uk. */
+export const isEducationalDomain = (domain: string) => !isPersonalDomain(domain) && /(^|\.)(edu|ac)(\.|$)/.test(domain);
+
 function readCache(domain: string): College | null {
   try {
     const all = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}") as Record<string, College>;
@@ -93,7 +96,7 @@ export async function findCollege(email: string | null | undefined): Promise<Col
 export async function saveCollege(email: string, uid: string, rawName: string): Promise<College> {
   const domain = emailDomain(email);
   const name = rawName.trim().replace(/\s+/g, " ");
-  if (!domain || isPersonalDomain(domain)) throw new Error("Sign in with your college email to add your college.");
+  if (!domain || !isEducationalDomain(domain)) throw new Error("Only a college email (like name@college.edu or name@college.ac.in) can add a college.");
   if (name.length < 3 || name.length > 120) throw new Error("Enter the full college name (3 to 120 characters).");
   try {
     await setDoc(doc(getDb(), "colleges", domain), { name, domain, createdBy: uid, createdAt: serverTimestamp() });

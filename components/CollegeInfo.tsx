@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { GraduationCap, Loader2 } from "lucide-react";
 import { useAuthUser } from "@/lib/authService";
-import { emailDomain, findCollege, isPersonalDomain, saveCollege, type College } from "@/lib/college";
+import { emailDomain, findCollege, isEducationalDomain, isPersonalDomain, saveCollege, type College } from "@/lib/college";
 
 /** Account tab: the college behind the signed-in email's domain (e.g. name@psgtech.ac.in). */
 export function CollegeInfo() {
@@ -16,6 +16,7 @@ export function CollegeInfo() {
   const [error, setError] = useState("");
   const domain = emailDomain(email);
   const personal = domain ? isPersonalDomain(domain) : false;
+  const notCollege = domain ? !isEducationalDomain(domain) : false;
 
   useEffect(() => {
     setCollege(null);
@@ -58,11 +59,11 @@ export function CollegeInfo() {
             <p className="flex items-center gap-2 text-sm text-ink-soft">
               <Loader2 className="h-4 w-4 animate-spin text-accent" /> Finding your college…
             </p>
-          ) : personal ? (
+          ) : (personal || (notCollege && !college)) ? (
             <>
               <p className="text-sm font-semibold text-ink">No college email</p>
               <p className="mt-0.5 text-xs leading-relaxed text-ink-soft/80">
-                You signed in with a personal address (<span className="font-mono">@{domain}</span>). Sign in with your college email to see your college here.
+                <span className="font-mono">@{domain}</span> isn&apos;t a college email. Sign in with your college address (like name@college.edu or name@college.ac.in) to see or add your college.
               </p>
             </>
           ) : college ? (
