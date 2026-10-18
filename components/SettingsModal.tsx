@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, LayoutList, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
+import { FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
 import { AccountSettings } from "./AccountSettings";
@@ -28,13 +28,14 @@ const inputClass =
   "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
-type Tab = "account" | "appearance" | "record" | "sections" | "heading" | "watermark";
+type Tab = "account" | "appearance" | "record" | "sections" | "subjects" | "heading" | "watermark";
 
 const TABS: { id: Tab; label: string; icon: typeof Palette }[] = [
   { id: "account", label: "Account", icon: UserIcon },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "record", label: "Record", icon: FileText },
   { id: "sections", label: "Record sections", icon: LayoutList },
+  { id: "subjects", label: "Subjects", icon: FolderOpen },
   { id: "heading", label: "Heading table", icon: Rows3 },
   { id: "watermark", label: "Watermark", icon: Stamp },
 ];
@@ -256,14 +257,12 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
           {tab === "sections" && (
             <div className="space-y-4">
               <p className="text-xs leading-relaxed text-ink-soft/80">
-                The default sections every new record starts with. Pick your department, then rename, reorder or add sections. Below, map each subject to its own layout.
+                The default sections every new record starts with. Pick your department, then rename, reorder or add sections. Subjects can have their own layout in the Subjects tab.
               </p>
               <SectionTemplateEditor idPrefix="settings-layout" value={draft.defaultLayout} onChange={(defaultLayout) => setDraft({ ...draft, defaultLayout })} />
-              <div className="border-t border-line pt-6">
-                <SubjectLayouts defaultLayout={draft.defaultLayout} onToast={onToast} />
-              </div>
             </div>
           )}
+          {tab === "subjects" && <SubjectLayouts defaultLayout={draft.defaultLayout} onToast={onToast} />}
           {tab === "heading" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
       <section>

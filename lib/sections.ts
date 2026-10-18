@@ -235,3 +235,17 @@ export function layoutLabel(folder: { layoutMode?: "default" | "programming" | "
   if (folder.layoutMode === "programming") return "Programming lab";
   return "Follows your default";
 }
+
+const NAME_HINTS: { id: string; re: RegExp }[] = [
+  { id: "programming", re: /(data struct|algorithm|programming|python|java\b|\bc\+\+|\bc lang|\boop|dbms|database|\bsql\b|operating system|computer network|\bweb\b|software|compiler|machine learning|artificial|\bai\b|cyber|cloud|\bdsa\b|\bos\b)/ },
+  { id: "electronics", re: /(electronic|circuit|digital|analog|vlsi|microprocessor|microcontroller|embedded|signal|communication|electrical|machine|power system|control system|\bbeee\b|\bede\b|\bnetwork analysis)/ },
+  { id: "mechanical", re: /(mechanic|thermal|thermo|fluid|strength of material|manufactur|workshop|\bcivil\b|survey|concrete|structur|hydraulic|\bcad\b|\bcam\b|heat transfer|dynamics|automobile|material testing)/ },
+  { id: "science", re: /(physic|chemi|biolog|material science|environment|biochem|organic|inorganic|optics|quantum)/ },
+];
+
+/** Best-fit preset for a subject, guessed from its name; null when nothing matches. */
+export function suggestPresetForSubject(name: string): string | null {
+  const n = name.toLowerCase();
+  for (const h of NAME_HINTS) if (h.re.test(n)) return h.id;
+  return null;
+}
