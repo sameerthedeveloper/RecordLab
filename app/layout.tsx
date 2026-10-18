@@ -46,17 +46,17 @@ export const metadata: Metadata = {
   creator: "Cogniheim",
   publisher: "Cogniheim",
   title: "Record Lab",
-  description: "Type your lab record once — Record Lab paginates it to true A4 pages and exports a print-ready fair copy.",
+  description: "Lab records for every department — pick your sections, run your code for real output, and export a print-ready fair copy on true A4 pages.",
   openGraph: {
     title: "Record Lab",
-    description: "Type your lab record once — Record Lab paginates it to true A4 pages and exports a print-ready fair copy.",
+    description: "Lab records for every department — pick your sections, run your code for real output, and export a print-ready fair copy on true A4 pages.",
     siteName: "Record Lab",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Record Lab",
-    description: "Type your lab record once — Record Lab paginates it to true A4 pages and exports a print-ready fair copy.",
+    description: "Lab records for every department — pick your sections, run your code for real output, and export a print-ready fair copy on true A4 pages.",
   },
 };
 

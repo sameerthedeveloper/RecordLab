@@ -175,7 +175,7 @@ const contributors = [
   {
     name: "Mohammed Ridhwan S Y",
     role: "Idea contributor",
-    bio: "Suggested the Manual Calculation section: 35 blank, hand-written lines before the result, switched on per record.",
+    bio: "Ideas behind three features: Manual Calculation (35 blank hand-written lines before the result), layouts for every department, and running the code to capture real output.",
     links: [] as { label: string; href: string; icon: typeof Globe }[],
   },
 ];
