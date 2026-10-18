@@ -124,7 +124,7 @@ export function TerminalImageModal({ open, onClose, initialOutput, editing, onAd
       title={editing ? "Edit terminal screenshot" : "Terminal screenshot"}
       description="Turn your output into a terminal-style image."
       icon={TerminalSquare}
-      size="lg"
+      size="big"
       bodyClassName="p-5 pb-6 sm:p-7 sm:pb-8"
       footer={
         <>
@@ -138,15 +138,20 @@ export function TerminalImageModal({ open, onClose, initialOutput, editing, onAd
         </>
       }
     >
-      <div className="space-y-6">
-        {/* live preview: stays in view while the fields below scroll */}
-        <div className="sticky -top-5 z-10 -mx-1 sm:-top-7">
-          <div className="overflow-hidden rounded-2xl border border-line bg-[repeating-conic-gradient(#f1ede0_0%_25%,#faf7f0_0%_50%)] bg-[length:16px_16px] p-3 shadow-[0_10px_24px_-14px_rgba(28,43,51,0.35)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {preview && <img src={preview} alt="Terminal preview" className="mx-auto max-h-48 max-w-full rounded-md shadow-lg sm:max-h-56" />}
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-8">
+        {/* left: live preview, stays in view while the controls on the right scroll */}
+        <div className="min-w-0">
+          <div className="top-0 md:sticky">
+            <p className={`${group} mb-2.5`}>Preview</p>
+            <div className="overflow-hidden rounded-2xl border border-line bg-[repeating-conic-gradient(#f1ede0_0%_25%,#faf7f0_0%_50%)] bg-[length:16px_16px] p-3 shadow-[0_10px_24px_-14px_rgba(28,43,51,0.35)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {preview && <img src={preview} alt="Terminal preview" className="mx-auto max-h-[28rem] max-w-full rounded-md shadow-lg" />}
+            </div>
           </div>
         </div>
 
+        {/* right: settings */}
+        <div className="min-w-0 space-y-6">
         <section>
           <h3 className={`${group} mb-2.5`}>Terminal</h3>
           <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Terminal">
@@ -237,6 +242,7 @@ export function TerminalImageModal({ open, onClose, initialOutput, editing, onAd
             {!editing && initialOutput.trim() && toggle("Replace output text with image", clearText, setClearText)}
           </div>
         </section>
+        </div>
       </div>
     </Modal>
   );

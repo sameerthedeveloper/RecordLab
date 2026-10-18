@@ -13,6 +13,7 @@ const SIZE: Record<NonNullable<ModalProps["size"]>, string> = {
   md: "max-w-lg",
   lg: "max-w-xl",
   wide: "max-w-3xl",
+  big: "max-w-5xl",
   xl: "max-w-6xl",
 };
 
@@ -23,7 +24,7 @@ interface ModalProps {
   description?: string;
   /** Icon in the accent chip left of the title. */
   icon?: LucideIcon;
-  size?: "sm" | "md" | "lg" | "wide" | "xl";
+  size?: "sm" | "md" | "lg" | "wide" | "big" | "xl";
   /** Fill the viewport height (up to 760px) instead of fitting the content. */
   fullHeight?: boolean;
   /** Replaces the description line, e.g. a search field. */
