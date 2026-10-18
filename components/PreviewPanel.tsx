@@ -149,7 +149,7 @@ export function PreviewPanel({
       id="previewPanel"
       className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex min-w-0 flex-1 flex-col ui-panel overflow-hidden`}
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 ui-panel-header p-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-5 gap-y-3 ui-panel-header px-5 py-4 max-md:px-4">
         <div data-onboarding="preview-heading" className="order-1">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/60">
             {pages.length > 0 ? `${pages.length} page${pages.length === 1 ? "" : "s"}` : "Live"}
@@ -159,10 +159,10 @@ export function PreviewPanel({
 
         {/* Phones: account sits beside the title, the actions get their own full-width row. */}
         {/* Ad space in the header's empty stretches: only on screens wide enough that nothing is squeezed. */}
-        <div className="hidden min-w-0 flex-1 justify-center md:order-2 min-[1750px]:flex">
+        <div className="hidden min-w-0 flex-1 justify-center px-2 md:order-2 min-[1750px]:flex">
           <AdSlot shape="small" name="Preview header, left" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_LEFT} />
         </div>
-        <div className="hidden min-w-0 flex-1 justify-center md:order-4 min-[1450px]:flex">
+        <div className="hidden min-w-0 flex-1 justify-center px-2 md:order-4 min-[1450px]:flex">
           <AdSlot shape="small" name="Preview header, right" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_RIGHT} />
         </div>
 
