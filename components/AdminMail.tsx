@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, Mail, Send } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Mail, Send, Sparkles } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebaseConfig";
 import type { ProfileRow } from "@/lib/adminService";
 import { DAY, emailDomainOf, firstName } from "@/lib/adminFormat";
 import { buildMailHtml } from "@/lib/mailTemplate";
+import { buildMailPrompt, MAIL_PURPOSES, MAIL_TONES, parseMailDraft, type MailTone } from "@/lib/mailAi";
+import { generateContent } from "@/lib/puter";
 import { Card } from "./admin/ui";
 
 type Audience = "all" | "active7" | "new7" | "college" | "me";
@@ -40,6 +42,10 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   const [domain, setDomain] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("Hi {{name}},\n\n\n\nThanks,\nRecord Lab");
+  const [purpose, setPurpose] = useState("");
+  const [tone, setTone] = useState<MailTone>("friendly");
+  const [writing, setWriting] = useState(false);
+  const [aiError, setAiError] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
   const [ctaUrl, setCtaUrl] = useState("");
   const [confirm, setConfirm] = useState(false);
@@ -90,6 +96,26 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   const ready = status !== "loading" && status !== "error" && status.configured;
   const canSend = ready && !ctaBad && subject.trim().length > 0 && message.trim().length > 0 && recipients.length > 0 && !sending;
 
+  async function writeWithAi() {
+    if (!purpose.trim() || writing) return;
+    setWriting(true);
+    setAiError("");
+    try {
+      const audienceLabel = AUDIENCES.find((a) => a.id === audience)?.note ?? "Record Lab users";
+      const draft = parseMailDraft(await generateContent(buildMailPrompt(purpose, tone, audienceLabel)));
+      if (!draft) throw new Error("The AI answer wasn't an email. Try again, or give it a bit more detail.");
+      setSubject(draft.subject);
+      setMessage(draft.message);
+      setCtaLabel(draft.buttonLabel);
+      setCtaUrl(draft.buttonUrl);
+      setConfirm(false);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Couldn't write the email. Try again.");
+    } finally {
+      setWriting(false);
+    }
+  }
+
   async function send() {
     setSending(true);
     setConfirm(false);
@@ -138,6 +164,38 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
               </div>
             </div>
           )}
+
+          <div className="rounded-xl border border-accent/30 bg-accent-soft/30 p-3.5">
+            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-accent-ink">
+              <Sparkles className="h-4 w-4" strokeWidth={2.2} /> Write it with AI
+            </p>
+            <label className="mt-2 block">
+              <span className="sr-only">What is this email for?</span>
+              <textarea value={purpose} onChange={(e) => setPurpose(e.target.value)} rows={2} maxLength={600} placeholder="What is this email for? e.g. We added HTML, CSS and JavaScript output to records. Tell students how to try it." className={`${field} resize-y`} />
+            </label>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {MAIL_PURPOSES.map((p) => (
+                <button key={p} type="button" onClick={() => setPurpose(p)} className="rounded-full border border-line bg-white px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-colors hover:border-accent/40 hover:text-accent">
+                  {p}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <select value={tone} onChange={(e) => setTone(e.target.value as MailTone)} aria-label="Tone" className="rounded-xl border border-line bg-white px-3 py-2 text-xs font-semibold text-ink-soft outline-none focus:border-accent">
+                {MAIL_TONES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={() => void writeWithAi()} disabled={!purpose.trim() || writing} className="ui-primary flex min-h-10 items-center gap-2 px-4 py-2 text-xs font-semibold disabled:opacity-50">
+                {writing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />}
+                {writing ? "Writing…" : subject || message.trim().length > 40 ? "Write again" : "Write the email"}
+              </button>
+              <span className="text-[11px] text-ink-soft/80">Fills the subject, message and button below. You can edit everything.</span>
+            </div>
+            {aiError && <p role="alert" className="mt-2 text-xs font-medium text-red-700">{aiError}</p>}
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-ink-soft">Subject</span>
