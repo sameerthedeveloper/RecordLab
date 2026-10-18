@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, doc, getDocs, onSnapshot, query, runTransaction, where, writeBatch } from "firebase/firestore";
 import { getDb } from "./firebaseConfig";
 import { useAuthUser } from "./authService";
+import { sanitizeTemplate, type SectionTemplate } from "./sections";
 
 /**
  * Subject folders. They live on the user's profile doc (`users/{uid}.folders`)
@@ -15,6 +16,8 @@ export interface Folder {
   id: string;
   name: string;
   createdAt: number;
+  /** Record layout for this subject. null/absent = the original programming-lab layout. */
+  template?: SectionTemplate | null;
 }
 
 const USERS = "users";
@@ -24,7 +27,12 @@ function clean(raw: unknown): Folder[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((f): f is Folder => !!f && typeof f.id === "string" && typeof f.name === "string")
-    .map((f) => ({ id: f.id, name: f.name, createdAt: typeof f.createdAt === "number" ? f.createdAt : 0 }));
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      createdAt: typeof f.createdAt === "number" ? f.createdAt : 0,
+      template: sanitizeTemplate(f.template),
+    }));
 }
 
 function normalise(name: string): string {
@@ -62,9 +70,9 @@ function assertUnique(folders: Folder[], name: string, exceptId?: string) {
   }
 }
 
-export async function createFolder(uid: string, rawName: string): Promise<Folder> {
+export async function createFolder(uid: string, rawName: string, template: SectionTemplate | null = null): Promise<Folder> {
   const name = normalise(rawName);
-  const folder: Folder = { id: newId(), name, createdAt: Date.now() };
+  const folder: Folder = { id: newId(), name, createdAt: Date.now(), template: sanitizeTemplate(template) };
   await mutate(uid, (folders) => {
     assertUnique(folders, name);
     return [...folders, folder];
@@ -78,6 +86,12 @@ export async function renameFolder(uid: string, id: string, rawName: string): Pr
     assertUnique(folders, name, id);
     return folders.map((f) => (f.id === id ? { ...f, name } : f));
   });
+}
+
+/** Sets (or, with null, clears) the record layout new records in this subject start with. */
+export async function setFolderTemplate(uid: string, id: string, template: SectionTemplate | null): Promise<void> {
+  const clean = sanitizeTemplate(template);
+  await mutate(uid, (folders) => folders.map((f) => (f.id === id ? { ...f, template: clean } : f)));
 }
 
 /** Removes the folder; its files are kept and move back to "All files". */

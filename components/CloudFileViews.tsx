@@ -4,6 +4,8 @@ import { FileDown, FileText, FolderInput, MoreVertical, Pencil, Trash2, FolderOp
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CloudDocument } from "@/lib/firestoreService";
+import { resolveSections } from "@/lib/sections";
+import { DEFAULT_RECORD } from "@/lib/types";
 
 export function stripHtml(html: string | undefined): string {
   return (html ?? "")
@@ -32,8 +34,10 @@ export function relativeTime(ts: CloudDocument["updatedAt"]): string {
 /** A miniature of the record's first page, so a file is recognisable at a glance. */
 export function FileThumb({ document }: { document: CloudDocument }) {
   const record = document.data?.record;
-  const aim = stripHtml(record?.aim).slice(0, 140);
-  const code = (record?.source_code ?? "").split("\n").slice(0, 5);
+  // First text section and first code section, whichever layout the record uses.
+  const sections = record ? resolveSections({ ...DEFAULT_RECORD, ...record }) : [];
+  const aim = stripHtml(sections.find((s) => s.kind === "text" && s.value.trim())?.value ?? record?.aim).slice(0, 140);
+  const code = (sections.find((s) => s.kind === "code")?.value ?? record?.source_code ?? "").split("\n").slice(0, 5);
 
   return (
     <div className="drive-thumb flex h-full w-full items-center justify-center overflow-hidden p-3">

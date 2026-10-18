@@ -14,7 +14,8 @@ import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
-import { createFolder, useFolders } from "@/lib/folderService";
+import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
+import { applyTemplate, type SectionTemplate } from "@/lib/sections";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
@@ -358,6 +359,26 @@ export default function Home() {
     }
   }
 
+  /** Applies a section layout to the open record; optionally keeps it as the subject's layout for new records. */
+  function handleApplyLayout(template: SectionTemplate | null, saveToSubject: boolean) {
+    setRecord((prev) => applyTemplate(prev, template));
+    showToast(template ? "Record layout updated." : "Back to the programming layout.");
+    if (saveToSubject && cloudFolderId && authUser) {
+      setFolderTemplate(authUser.uid, cloudFolderId, template)
+        .then(() => showToast("Saved as this subject's layout."))
+        .catch(() => showToast("Couldn't save the subject's layout."));
+    }
+  }
+
+  /** Picking a subject also switches the record to that subject's layout. */
+  function handleFolderChange(id: string | null) {
+    setCloudFolderId(id);
+    const folder = id ? folders?.find((f) => f.id === id) : undefined;
+    if (!folder) return;
+    setRecord((prev) => applyTemplate(prev, folder.template ?? null));
+    if (folder.template) showToast(`Using the ${folder.name} layout.`);
+  }
+
   /** A clean record seeded from the saved defaults, like a first visit. Confirms first when edits would be lost. */
   function handleNewRecord() {
     const s = settingsRef.current;
@@ -572,7 +593,8 @@ export default function Home() {
           signedIn={Boolean(authUser)}
           folders={folders ?? []}
           folderId={cloudFolderId}
-          onFolderChange={setCloudFolderId}
+          onFolderChange={handleFolderChange}
+          onApplyLayout={handleApplyLayout}
           onCreateFolder={async (name) => {
             if (!authUser) return null;
             try {

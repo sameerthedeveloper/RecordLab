@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Cloud, FilePlus2, Files, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
+import { Cloud, FilePlus2, Files, LayoutList, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { SheetSetup } from "./SheetSetup";
+import { Modal, modalButton } from "./Modal";
+import { SectionTemplateEditor } from "./SectionTemplateEditor";
+import { SECTION_PRESETS, isCustomLayout, type SectionTemplate } from "@/lib/sections";
 import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
@@ -38,15 +41,17 @@ interface RecordEditorPanelProps {
   /** Starts a clean record (asks first when the current one has unsaved edits). */
   onNewRecord: () => void;
   onOpenSettings: () => void;
+  /** Sets this record's section layout (null = original programming layout); optionally saves it as the subject's default. */
+  onApplyLayout: (template: SectionTemplate | null, saveToSubject: boolean) => void;
   isSavingCloud: boolean;
   /** Pages the record currently paginates to. */
   pageCount?: number;
   visible: boolean;
 }
 
-type SectionId = "details" | "aim" | "algorithm" | "code" | "output" | "review" | "manual" | "result";
+type SectionId = string;
 
-const SECTIONS: { id: SectionId; label: string }[] = [
+const LEGACY_SECTIONS: { id: SectionId; label: string }[] = [
   { id: "details", label: "Details" },
   { id: "aim", label: "Aim" },
   { id: "algorithm", label: "Algorithm" },
@@ -84,6 +89,7 @@ export function RecordEditorPanel({
   onOpenDashboard,
   onNewRecord,
   onOpenSettings,
+  onApplyLayout,
   isSavingCloud,
   pageCount,
   visible,
@@ -97,18 +103,141 @@ export function RecordEditorPanel({
   const [newSubject, setNewSubject] = useState<string | null>(null);
   const [editingImage, setEditingImage] = useState<OutputImage | null>(null);
 
+  const custom = isCustomLayout(record);
+  const customSections = record.sections ?? [];
+  const sectionValue = (id: string) => record.section_values?.[id] ?? "";
+  const setSectionValue = (id: string, v: string) => onFieldChange("section_values", { ...(record.section_values ?? {}), [id]: v });
+  const [layoutOpen, setLayoutOpen] = useState(false);
+  const [layoutDraft, setLayoutDraft] = useState<SectionTemplate | null>(null);
+  const [saveToSubject, setSaveToSubject] = useState(false);
+
+  // Section rail: the original six, or this record's own sections, always bracketed by Details and the closing block.
+  const SECTIONS: { id: SectionId; label: string }[] = custom
+    ? [
+        { id: "details", label: "Details" },
+        ...customSections.map((c) => ({ id: c.id, label: c.title || "Section" })),
+        { id: "result", label: record.result_title?.trim() || "Result" },
+      ]
+    : LEGACY_SECTIONS;
+
   const filled: Record<SectionId, boolean> = {
     details: Boolean(record.rrn.trim() || record.exercise_number.trim() || record.title.trim()),
-    aim: Boolean(record.aim.trim()),
-    algorithm: Boolean(record.algorithm.trim()),
-    code: Boolean(record.source_code.trim()),
-    output: Boolean(record.output.trim() || record.output_images.length),
-    review: record.review_questions_enabled && Boolean(record.review_questions.trim()),
-    manual: Boolean(record.manual_calculation_enabled),
     result: Boolean(record.result.trim()),
+    ...(custom
+      ? Object.fromEntries(
+          customSections.map((c) => [c.id, c.kind === "lines" ? true : Boolean(sectionValue(c.id).trim() || (c.kind === "output" && record.output_images.length))])
+        )
+      : {
+          aim: Boolean(record.aim.trim()),
+          algorithm: Boolean(record.algorithm.trim()),
+          code: Boolean(record.source_code.trim()),
+          output: Boolean(record.output.trim() || record.output_images.length),
+          review: record.review_questions_enabled && Boolean(record.review_questions.trim()),
+          manual: Boolean(record.manual_calculation_enabled),
+        }),
   };
-  const trackedIds = SECTIONS.filter((s) => s.id !== "manual" && (s.id !== "review" || record.review_questions_enabled));
+  const linesIds = new Set(customSections.filter((c) => c.kind === "lines").map((c) => c.id));
+  const trackedIds = SECTIONS.filter((s) =>
+    custom ? !linesIds.has(s.id) : s.id !== "manual" && (s.id !== "review" || record.review_questions_enabled)
+  );
   const doneCount = trackedIds.filter((s) => filled[s.id]).length;
+  const layoutKey = SECTIONS.map((x) => x.id).join("|");
+
+  function openLayoutEditor() {
+    setLayoutDraft(custom ? { sections: customSections.map((c) => ({ ...c })), resultTitle: record.result_title ?? "Result" } : null);
+    setSaveToSubject(false);
+    setLayoutOpen(true);
+  }
+  const layoutName = custom
+    ? `Custom, ${customSections.length} sections`
+    : SECTION_PRESETS[0].name;
+
+  /** The text + images section: the fixed Output of the programming layout, or any custom section of that kind. */
+  const renderOutputSection = (o: { id: string; title: string; index: string; text: string; onText: (v: string) => void; textLabel: string; placeholder: string; inputId: string; imagesInputId: string }) => (
+<EditorSection id={o.id} title={o.title} index={o.index} filled={Boolean(o.text.trim() || record.output_images.length)}>
+            <label htmlFor={o.inputId} className={labelClass}>
+              {o.textLabel}
+            </label>
+            <AutoTextarea
+              id={o.inputId}
+              minRows={3}
+              placeholder={o.placeholder}
+              value={o.text}
+              onChange={o.onText}
+            />
+
+            <div className="image-upload-area mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingImage(null);
+                  setTerminalOpen(true);
+                }}
+                className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-ink p-2.5 text-xs font-semibold text-paper transition-colors hover:bg-ink/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <TerminalSquare className="h-4 w-4" strokeWidth={2} />
+                <span>Make terminal screenshot from this text</span>
+              </button>
+              <label
+                htmlFor={o.imagesInputId}
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-[#fdfcf8] p-2.5 text-xs font-semibold text-ink-soft transition-all hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent-ink"
+              >
+                <ImagePlus className="h-4 w-4" strokeWidth={2} />
+                <span>Add screenshots or diagrams</span>
+                <input
+                  id={o.imagesInputId}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) onImageUpload(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+
+              <div className="uploaded-images mt-2.5">
+                {record.output_images.map((image: OutputImage) => (
+                  <div className="uploaded-image-card" key={image.id}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={image.src} alt={image.name} />
+                    {image.terminal && (
+                      <button
+                        type="button"
+                        className="edit-image-button"
+                        aria-label={`Edit terminal screenshot ${image.name}`}
+                        title="Edit terminal screenshot"
+                        onClick={() => {
+                          setEditingImage(image);
+                          setTerminalOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="remove-image-button"
+                      aria-label={`Remove output image ${image.name}`}
+                      onClick={() => onRemoveImage(image.id)}
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <TerminalImageModal
+              open={terminalOpen}
+              onClose={() => setTerminalOpen(false)}
+              initialOutput={o.text}
+              editing={editingImage}
+              onAdd={onAddOutputImage}
+              onUpdate={onUpdateOutputImage}
+            />
+          </EditorSection>
+  );
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -136,7 +265,8 @@ export function RecordEditorPanel({
       observer.disconnect();
       root.removeEventListener("scroll", onScroll);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutKey]);
 
   useEffect(() => {
     if (!fileMenuOpen) return;
@@ -315,7 +445,7 @@ export function RecordEditorPanel({
         className="ui-rail flex shrink-0 items-center gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {SECTIONS.map((s) => {
-          const off = s.id === "review" && !record.review_questions_enabled;
+          const off = !custom && s.id === "review" && !record.review_questions_enabled;
           const active = activeSection === s.id;
           return (
             <button
@@ -461,6 +591,23 @@ export function RecordEditorPanel({
                 </div>
               )}
 
+
+              <div data-onboarding="record-layout" className="rounded-xl border border-line bg-paper/60 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-ink-soft">Record layout</p>
+                    <p className="truncate text-sm font-semibold text-ink">{layoutName}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openLayoutEditor}
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent max-md:min-h-11"
+                  >
+                    <LayoutList className="h-3.5 w-3.5" strokeWidth={2.1} />
+                    Edit sections
+                  </button>
+                </div>
+              </div>
             </div>
           </EditorSection>
         </div>
@@ -474,6 +621,8 @@ export function RecordEditorPanel({
         />
 
         <div data-onboarding="sections" className="space-y-3.5">
+          {!custom && (
+            <>
           <EditorSection id="aim" title="Aim" index="01" filled={filled.aim}>
             <label htmlFor="aimInput" className="sr-only">
               Aim
@@ -515,89 +664,7 @@ export function RecordEditorPanel({
             />
           </EditorSection>
 
-          <EditorSection id="output" title="Output" index="04" filled={filled.output}>
-            <label htmlFor="outputInput" className={labelClass}>
-              Output text
-            </label>
-            <AutoTextarea
-              id="outputInput"
-              minRows={3}
-              placeholder="Paste what the program printed. Optional."
-              value={record.output}
-              onChange={(v) => onFieldChange("output", v)}
-            />
-
-            <div className="image-upload-area mt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingImage(null);
-                  setTerminalOpen(true);
-                }}
-                className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-ink p-2.5 text-xs font-semibold text-paper transition-colors hover:bg-ink/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                <TerminalSquare className="h-4 w-4" strokeWidth={2} />
-                <span>Make terminal screenshot from output</span>
-              </button>
-              <label
-                htmlFor="outputImagesInput"
-                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-[#fdfcf8] p-2.5 text-xs font-semibold text-ink-soft transition-all hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent-ink"
-              >
-                <ImagePlus className="h-4 w-4" strokeWidth={2} />
-                <span>Add output screenshots</span>
-                <input
-                  id="outputImagesInput"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) onImageUpload(e.target.files);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-
-              <div className="uploaded-images mt-2.5">
-                {record.output_images.map((image: OutputImage) => (
-                  <div className="uploaded-image-card" key={image.id}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image.src} alt={image.name} />
-                    {image.terminal && (
-                      <button
-                        type="button"
-                        className="edit-image-button"
-                        aria-label={`Edit terminal screenshot ${image.name}`}
-                        title="Edit terminal screenshot"
-                        onClick={() => {
-                          setEditingImage(image);
-                          setTerminalOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" strokeWidth={2.25} />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="remove-image-button"
-                      aria-label={`Remove output image ${image.name}`}
-                      onClick={() => onRemoveImage(image.id)}
-                    >
-                      <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <TerminalImageModal
-              open={terminalOpen}
-              onClose={() => setTerminalOpen(false)}
-              initialOutput={record.output}
-              editing={editingImage}
-              onAdd={onAddOutputImage}
-              onUpdate={onUpdateOutputImage}
-            />
-          </EditorSection>
+          {renderOutputSection({ id: "output", title: "Output", index: "04", text: record.output, onText: (v) => onFieldChange("output", v), textLabel: "Output text", placeholder: "Paste what the program printed. Optional.", inputId: "outputInput", imagesInputId: "outputImagesInput" })}
 
           <EditorSection
             id="review"
@@ -665,7 +732,58 @@ export function RecordEditorPanel({
             </p>
           </EditorSection>
 
-          <EditorSection id="result" title="Result" index="07" filled={filled.result}>
+            </>
+          )}
+
+          {custom &&
+            customSections.map((c, i) => {
+              const index = String(i + 1).padStart(2, "0");
+              if (c.kind === "output") {
+                return renderOutputSection({
+                  id: c.id,
+                  title: c.title,
+                  index,
+                  text: sectionValue(c.id),
+                  onText: (v) => setSectionValue(c.id, v),
+                  textLabel: `${c.title} (text)`,
+                  placeholder: "Type here, or add images below. Optional.",
+                  inputId: `in-${c.id}`,
+                  imagesInputId: `img-${c.id}`,
+                });
+              }
+              if (c.kind === "lines") {
+                return (
+                  <EditorSection key={c.id} id={c.id} title={c.title} index={index} filled={false}>
+                    <p className="text-xs text-ink-soft/80">
+                      Prints {c.lines ?? 20} blank lines for hand-written work. Nothing to type here.
+                    </p>
+                  </EditorSection>
+                );
+              }
+              return (
+                <EditorSection key={c.id} id={c.id} title={c.title} index={index} filled={filled[c.id]}>
+                  <label htmlFor={`in-${c.id}`} className="sr-only">
+                    {c.title}
+                  </label>
+                  <AutoTextarea
+                    id={`in-${c.id}`}
+                    code={c.kind === "code"}
+                    minRows={c.kind === "code" ? 6 : 4}
+                    maxRows={c.kind === "code" ? 24 : undefined}
+                    placeholder={c.kind === "code" ? "Type or paste. Spacing is kept." : `Write the ${c.title.toLowerCase()}.`}
+                    value={sectionValue(c.id)}
+                    onChange={(v) => setSectionValue(c.id, v)}
+                  />
+                </EditorSection>
+              );
+            })}
+
+          <EditorSection
+            id="result"
+            title={custom ? record.result_title?.trim() || "Result" : "Result"}
+            index={custom ? String(customSections.length + 1).padStart(2, "0") : "07"}
+            filled={filled.result}
+          >
             <label htmlFor="resultInput" className="sr-only">
               Result
             </label>
@@ -679,6 +797,41 @@ export function RecordEditorPanel({
           </EditorSection>
         </div>
       </div>
+
+      <Modal
+        open={layoutOpen}
+        onClose={() => setLayoutOpen(false)}
+        title="Record sections"
+        description="Choose what this record contains, in print order."
+        icon={LayoutList}
+        size="md"
+        footer={
+          <>
+            <button type="button" onClick={() => setLayoutOpen(false)} className={modalButton.secondary}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onApplyLayout(layoutDraft, saveToSubject);
+                setLayoutOpen(false);
+              }}
+              className={modalButton.primary}
+            >
+              Use this layout
+            </button>
+          </>
+        }
+      >
+        <SectionTemplateEditor idPrefix="record-layout" value={layoutDraft} onChange={setLayoutDraft} />
+        {signedIn && folderId && (
+          <label className="mt-4 flex cursor-pointer items-start gap-2 text-xs text-ink-soft">
+            <input type="checkbox" checked={saveToSubject} onChange={(e) => setSaveToSubject(e.target.checked)} className="mt-0.5 accent-[#c2410c]" />
+            <span>Also use this layout for new records in {folders.find((f) => f.id === folderId)?.name ?? "this subject"}.</span>
+          </label>
+        )}
+        <p className="mt-3 text-[11px] text-ink-soft/70">Text you already typed stays with its section; sections you remove are hidden, not erased.</p>
+      </Modal>
     </div>
   );
 }

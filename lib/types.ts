@@ -1,3 +1,4 @@
+import type { SectionDef } from "./sections";
 import type { TerminalImageOptions } from "./terminalImage";
 
 export interface OutputImage {
@@ -149,6 +150,15 @@ export interface RecordState {
   review_questions_enabled: boolean;
   /** Blank hand-written working space (MANUAL_CALCULATION_LINES lines) before RESULT. Off unless set, so older records are unchanged. */
   manual_calculation_enabled?: boolean;
+  /**
+   * Custom record layout (see lib/sections.ts). Absent = the original programming-lab layout using the
+   * fixed fields above, so older files are unchanged.
+   */
+  sections?: SectionDef[];
+  /** Text typed into each custom section, by section id. */
+  section_values?: Record<string, string>;
+  /** Heading of the closing block in a custom layout ("Result", "Conclusion"...). */
+  result_title?: string;
   result: string;
   headerLayout: HeaderLayout;
   /** Optional so older records open as "standard". */

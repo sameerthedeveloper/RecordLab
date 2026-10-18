@@ -1,7 +1,8 @@
 import { formatDate } from "./escapeHtml";
 import { mapToPdfKitFont } from "./fonts";
+import { resolveSections, resultHeading } from "./sections";
 import { MANUAL_CALCULATION_LINES, resolveTitlePos, resolvePageBorder, resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
-import type { RecordState, WatermarkOptions } from "./types";
+import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 
 /**
  * Vector PDF export via canvas2pdf (https://github.com/joshua-gould/canvas2pdf),
@@ -253,9 +254,8 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         }
       }
 
-      async function drawOutputSection(): Promise<void> {
-        const text = record.output.trim();
-        const images = record.output_images;
+      async function drawOutputSection(heading: string, value: string, images: OutputImage[]): Promise<void> {
+        const text = value.trim();
         if (!text && images.length === 0) return;
 
         doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
@@ -263,7 +263,7 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + bodyHeight + SECTION_GAP);
 
         doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
-        doc.text("OUTPUT:", MARGIN_LEFT, y, { width: CONTENT_WIDTH });
+        doc.text(heading, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
         y = doc.y + HEADING_GAP;
 
         if (text) {
@@ -288,34 +288,33 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
       (async () => {
         drawHeaderTable();
 
-        if (record.aim.trim()) drawTextSection("AIM:", record.aim);
-        if (record.algorithm.trim()) drawTextSection("ALGORITHM:", record.algorithm);
-        if (record.source_code.trim()) drawTextSection("SOURCE CODE:", record.source_code);
-        await drawOutputSection();
-        if (record.review_questions_enabled && record.review_questions.trim()) {
-          drawTextSection(record.format === "college" ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", record.review_questions);
-        }
-        if (record.manual_calculation_enabled) {
-          // Starts right under the previous section; the lines that don't fit continue on the next page.
-          const lineH = BODY_FONT_SIZE * 1.5;
-          ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + lineH * 3);
-          doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
-          doc.text("MANUAL CALCULATION:", MARGIN_LEFT, y, { width: CONTENT_WIDTH });
-          y = doc.y + HEADING_GAP;
-          let left = MANUAL_CALCULATION_LINES;
-          while (left > 0) {
-            const room = Math.max(1, Math.floor((PAGE_HEIGHT - MARGIN_BOTTOM - y) / lineH));
-            const take = Math.min(left, room);
-            y += take * lineH;
-            left -= take;
-            if (left > 0) {
-              doc.addPage();
-              y = MARGIN_TOP;
+        for (const sec of resolveSections(record)) {
+          if (sec.kind === "lines") {
+            // Starts right under the previous section; the lines that don't fit continue on the next page.
+            const lineH = BODY_FONT_SIZE * 1.5;
+            ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + lineH * 3);
+            doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
+            doc.text(sec.heading, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
+            y = doc.y + HEADING_GAP;
+            let left = sec.lines;
+            while (left > 0) {
+              const room = Math.max(1, Math.floor((PAGE_HEIGHT - MARGIN_BOTTOM - y) / lineH));
+              const take = Math.min(left, room);
+              y += take * lineH;
+              left -= take;
+              if (left > 0) {
+                doc.addPage();
+                y = MARGIN_TOP;
+              }
             }
+            y += SECTION_GAP;
+          } else if (sec.kind === "output") {
+            await drawOutputSection(sec.heading, sec.value, sec.images);
+          } else if (sec.value.trim()) {
+            drawTextSection(sec.heading, sec.value);
           }
-          y += SECTION_GAP;
         }
-        if (record.result.trim()) drawTextSection(record.format === "college" ? "RESULT :" : "RESULT:", record.result);
+        if (record.result.trim()) drawTextSection(resultHeading(record), record.result);
 
         ctx.stream.on("finish", () => resolve(ctx.stream.toBlob("application/pdf")));
         doc.end();

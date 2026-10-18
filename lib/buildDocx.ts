@@ -26,6 +26,7 @@ import {
 import { toDocxFontName } from "./fonts";
 import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, resolveTitlePos, PAGE_BORDER_SIDES } from "./types";
 import { collegeGeometry } from "./recordFormat";
+import { resolveSections, resultHeading } from "./sections";
 import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
 import type { OutputImage, RecordState, WatermarkOptions } from "./types";
 
@@ -331,36 +332,26 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
   const collegeSpacer = new Paragraph({ spacing: { before: convertMillimetersToTwip(Math.max(0, record.headerLayout.height - 10 + 4)) }, children: [] });
   const children: (Paragraph | Table)[] = college ? [collegeHeaderTable(record, font), collegeSpacer] : [headerTable(record, font), afterHeader];
 
-  if (record.aim.trim()) {
-    if (college) children.push(inlineAimParagraph(record.aim, font));
-    else children.push(headingParagraph("AIM:", font), bodyParagraph(record.aim, font));
-  }
-  if (record.algorithm.trim()) {
-    children.push(headingParagraph("ALGORITHM:", font, college), bodyParagraph(record.algorithm, font, college));
-  }
-  if (record.source_code.trim()) {
-    children.push(headingParagraph("SOURCE CODE:", font, college), bodyParagraph(record.source_code, font, college));
-  }
-  if (record.output.trim() || record.output_images.length > 0) {
-    children.push(headingParagraph("OUTPUT:", font, college));
-    if (record.output.trim()) children.push(bodyParagraph(record.output, font, college));
-    for (const image of record.output_images) {
-      children.push(await outputImageParagraph(image));
-    }
-  }
-  if (record.review_questions_enabled && record.review_questions.trim()) {
-    children.push(headingParagraph(college ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:", font, college), bodyParagraph(record.review_questions, font, college));
-  }
-  if (record.manual_calculation_enabled) {
-    // Starts right under the previous section and flows on to the next page if it runs out of room;
-    // the heading stays with its first lines.
-    children.push(new Paragraph({ keepNext: true, spacing: { before: college ? 200 : 240, after: 80 }, children: [new TextRun({ text: "MANUAL CALCULATION:", bold: true, size: college ? 24 : 28, font })] }));
-    for (let i = 0; i < MANUAL_CALCULATION_LINES; i++) {
-      children.push(new Paragraph({ keepNext: i < 2, spacing: { after: 0, line: 360, lineRule: "exact" }, children: [] }));
+  for (const sec of resolveSections(record)) {
+    if (sec.kind === "lines") {
+      // Starts right under the previous section and flows on to the next page if it runs out of room;
+      // the heading stays with its first lines.
+      children.push(new Paragraph({ keepNext: true, spacing: { before: college ? 200 : 240, after: 80 }, children: [new TextRun({ text: sec.heading, bold: true, size: college ? 24 : 28, font })] }));
+      for (let i = 0; i < sec.lines; i++) {
+        children.push(new Paragraph({ keepNext: i < 2, spacing: { after: 0, line: 360, lineRule: "exact" }, children: [] }));
+      }
+    } else if (sec.kind === "output") {
+      if (!sec.value.trim() && sec.images.length === 0) continue;
+      children.push(headingParagraph(sec.heading, font, college));
+      if (sec.value.trim()) children.push(bodyParagraph(sec.value, font, college));
+      for (const image of sec.images) children.push(await outputImageParagraph(image));
+    } else if (sec.value.trim()) {
+      if (college && sec.id === "aim") children.push(inlineAimParagraph(sec.value, font));
+      else children.push(headingParagraph(sec.heading, font, college), bodyParagraph(sec.value, font, college));
     }
   }
   if (record.result.trim()) {
-    children.push(headingParagraph(college ? "RESULT :" : "RESULT:", font, college, college ? 28 : undefined), bodyParagraph(record.result, font, college));
+    children.push(headingParagraph(resultHeading(record), font, college, college ? 28 : undefined), bodyParagraph(record.result, font, college));
   }
 
   const watermarkBytes = await buildWatermarkImage(record.rrn, watermark);

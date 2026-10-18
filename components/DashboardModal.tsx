@@ -16,6 +16,7 @@ import {
   Pencil,
   Search,
   Trash2,
+  LayoutList,
 } from "lucide-react";
 import Link from "next/link";
 import { Modal, modalButton } from "./Modal";
@@ -24,7 +25,9 @@ import { FILE_DRAG_TYPE, FileCard, FileRow, FileThumb, relativeTime } from "./Cl
 import { MoveToSubjectModal } from "./MoveToSubjectModal";
 import { DriveDetails } from "./DriveDetails";
 import { deleteDocument, moveDocument, renameDocument, watchUserDocuments } from "@/lib/firestoreService";
-import { createFolder, deleteFolder, renameFolder, useFolders, type Folder } from "@/lib/folderService";
+import { createFolder, deleteFolder, renameFolder, setFolderTemplate, useFolders, type Folder } from "@/lib/folderService";
+import type { SectionTemplate } from "@/lib/sections";
+import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
 import { useAuthUser } from "@/lib/authService";
 import { AuthModal } from "./AuthModal";
@@ -86,6 +89,9 @@ export function DashboardModal({
   const [moving, setMoving] = useState<CloudDocument | null>(null);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderTemplate, setNewFolderTemplate] = useState<SectionTemplate | null>(null);
+  const [editingSections, setEditingSections] = useState<Folder | null>(null);
+  const [sectionsDraft, setSectionsDraft] = useState<SectionTemplate | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<Folder | null>(null);
   const [folderRenameValue, setFolderRenameValue] = useState("");
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
@@ -214,16 +220,28 @@ export function DashboardModal({
   const total = documents?.length ?? 0;
   const countIn = (id: string) => (documents ?? []).filter((d) => d.folderId === id).length;
 
-  async function addFolder(name: string): Promise<string | null> {
+  async function addFolder(name: string, template: SectionTemplate | null = null): Promise<string | null> {
     if (!user) return null;
     try {
-      const f = await createFolder(user.uid, name);
+      const f = await createFolder(user.uid, name, template);
       track("create_subject");
       onToast(`Created "${f.name}".`);
       return f.id;
     } catch (err) {
       onToast(err instanceof Error ? err.message : "Unable to create the subject.");
       return null;
+    }
+  }
+
+  async function saveSections() {
+    if (!user || !editingSections) return;
+    try {
+      await setFolderTemplate(user.uid, editingSections.id, sectionsDraft);
+      track("edit_subject_sections");
+      onToast(`Updated the layout for "${editingSections.name}". New records in it use it.`);
+      setEditingSections(null);
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Unable to save the layout.");
     }
   }
 
@@ -404,6 +422,18 @@ export function DashboardModal({
                 </p>
                 {activeFolder && (
                   <>
+                    <button
+                      type="button"
+                      aria-label="Edit record sections"
+                      title="Edit record sections"
+                      onClick={() => {
+                        setSectionsDraft(activeFolder.template ?? null);
+                        setEditingSections(activeFolder);
+                      }}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"
+                    >
+                      <LayoutList className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
                     <button
                       type="button"
                       aria-label="Rename subject"
@@ -663,9 +693,9 @@ export function DashboardModal({
         open={newFolderOpen}
         onClose={() => setNewFolderOpen(false)}
         title="New subject"
-        description="A folder for one subject's records."
+        description="A folder for one subject's records, with its own record layout."
         icon={FolderPlus}
-        size="sm"
+        size="md"
         footer={
           <>
             <button type="button" onClick={() => setNewFolderOpen(false)} className={modalButton.secondary}>
@@ -681,9 +711,10 @@ export function DashboardModal({
           id="new-subject-form"
           onSubmit={async (e) => {
             e.preventDefault();
-            const id = await addFolder(newFolderName);
+            const id = await addFolder(newFolderName, newFolderTemplate);
             if (id) {
               setNewFolderName("");
+              setNewFolderTemplate(null);
               setNewFolderOpen(false);
               setSection(`f:${id}`);
             }
@@ -701,6 +732,10 @@ export function DashboardModal({
             placeholder="Data Structures"
             className="w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15"
           />
+          <div className="mt-4 border-t border-line pt-4">
+            <h3 className="mb-2 font-serif text-sm font-bold text-ink">Record layout</h3>
+            <SectionTemplateEditor idPrefix="new-subject" value={newFolderTemplate} onChange={setNewFolderTemplate} />
+          </div>
         </form>
       </Modal>
 
@@ -740,6 +775,28 @@ export function DashboardModal({
             className="w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15"
           />
         </form>
+      </Modal>
+
+      <Modal
+        open={editingSections !== null}
+        onClose={() => setEditingSections(null)}
+        title="Record sections"
+        description={editingSections ? `What every new record in "${editingSections.name}" contains.` : undefined}
+        icon={LayoutList}
+        size="md"
+        footer={
+          <>
+            <button type="button" onClick={() => setEditingSections(null)} className={modalButton.secondary}>
+              Cancel
+            </button>
+            <button type="button" onClick={saveSections} className={modalButton.primary}>
+              Save layout
+            </button>
+          </>
+        }
+      >
+        <SectionTemplateEditor idPrefix="edit-subject" value={sectionsDraft} onChange={setSectionsDraft} />
+        <p className="mt-3 text-[11px] text-ink-soft/70">Records you already wrote keep their own sections. Open one in the editor to change it.</p>
       </Modal>
 
       <Modal

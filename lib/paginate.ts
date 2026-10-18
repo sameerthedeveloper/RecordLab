@@ -1,4 +1,5 @@
 import { escapeHTML, formatDate } from "./escapeHtml";
+import { resolveSections, resultHeading } from "./sections";
 import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, titleMoveCss } from "./types";
 import { headerBorderVarsCss, headerLineCss, resolveHeaderUnderline } from "./types";
 import type { OutputImage, PageObject, RecordState } from "./types";
@@ -33,7 +34,8 @@ const EMPTY_SECTION_MIN_HEIGHT: Record<string, number> = {
 };
 
 function emptyBlockStyleAttr(sectionId: string): string {
-  const minHeight = EMPTY_SECTION_MIN_HEIGHT[sectionId];
+  // Custom-layout sections (ids start with c_) all leave a few lines to write in.
+  const minHeight = EMPTY_SECTION_MIN_HEIGHT[sectionId] ?? (sectionId.startsWith("c_") ? FIVE_LINE_MIN_HEIGHT : undefined);
   return minHeight ? ` style="min-height:${minHeight}px"` : "";
 }
 
@@ -61,6 +63,8 @@ interface Section {
   val?: string;
   textVal?: string;
   images?: OutputImage[];
+  /** Blank-lines sections only. */
+  lines?: number;
 }
 
 /** College sheet: heading block flush to the page border, title left-aligned beside EX / DATE. */
@@ -189,28 +193,19 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
     }
   }
 
-  const sections: Section[] = [
-    { id: "aim", heading: "AIM:", type: "text", val: record.aim },
-    { id: "algorithm", heading: "ALGORITHM:", type: "text", val: record.algorithm },
-    { id: "source_code", heading: "SOURCE CODE:", type: "code", val: record.source_code },
-    { id: "output", heading: "OUTPUT:", type: "output", textVal: record.output, images: record.output_images },
-    ...(record.review_questions_enabled
-      ? [
-          {
-            id: "review_questions",
-            heading: record.format === "college" ? "REVIEW QUESTIONS WITH ANSWERS:" : "REVIEW QUESTIONS:",
-            type: "text" as const,
-            val: record.review_questions,
-          },
-        ]
-      : []),
-    ...(record.manual_calculation_enabled
-      ? [{ id: "manual_calculation", heading: "MANUAL CALCULATION:", type: "blank" as const }]
-      : []),
-  ];
+  // Legacy programming-lab fields or the record's custom layout: lib/sections.ts decides which.
+  const sections: Section[] = resolveSections(record).map((r) => ({
+    id: r.id,
+    heading: r.heading,
+    type: r.kind === "lines" ? ("blank" as const) : r.kind,
+    val: r.value,
+    textVal: r.value,
+    images: r.images,
+    lines: r.lines,
+  }));
 
   function buildFullSectionHTML(sec: Section): string {
-    if (sec.type === "blank") return manualBlockHTML(sec.heading, MANUAL_CALCULATION_LINES, false);
+    if (sec.type === "blank") return manualBlockHTML(sec.heading, sec.lines ?? MANUAL_CALCULATION_LINES, false);
     if (sec.type === "text" || sec.type === "code") {
       const rawText = (sec.val || "").trim();
       if (!rawText) return "";
@@ -265,12 +260,13 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
     // it stays; otherwise it fills what room is left (at least MIN lines) and the remaining lines
     // continue at the top of the next page. With less room than that, it all moves to the next page.
     if (sec.type === "blank") {
+      const total = sec.lines ?? MANUAL_CALCULATION_LINES;
       if (tryAddFragment(fullSectionHTML)) {
         currentMainFlowHTML += fullSectionHTML;
         return;
       }
       let fit = 0;
-      for (let k = MANUAL_CALCULATION_LINES - 1; k >= MANUAL_MIN_LINES_ON_PAGE; k--) {
+      for (let k = total - 1; k >= MANUAL_MIN_LINES_ON_PAGE; k--) {
         if (tryAddFragment(manualBlockHTML(sec.heading, k, false))) {
           fit = k;
           break;
@@ -279,7 +275,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
       if (fit > 0) {
         currentMainFlowHTML += manualBlockHTML(sec.heading, fit, false);
         commitCurrentPage();
-        currentMainFlowHTML += manualBlockHTML(sec.heading, MANUAL_CALCULATION_LINES - fit, true);
+        currentMainFlowHTML += manualBlockHTML(sec.heading, total - fit, true);
       } else {
         if (currentMainFlowHTML.trim() !== headerHTML.trim()) commitCurrentPage();
         currentMainFlowHTML += fullSectionHTML;
@@ -532,12 +528,12 @@ export function paginateRecord(record: RecordState): PageObject[] {
   const measurePage = createMeasurePage(record.format);
   const measureContent = measurePage.querySelector(".a4-content") as HTMLElement;
 
-  const resultHeading = record.format === "college" ? "RESULT :" : "RESULT:";
+  const resultHeadingText = resultHeading(record);
   const resultVal = record.result;
   const resultIsEmpty = resultVal.trim() === "";
   const resultBlockContent = `
     <section class="record-block record-block-result">
-      <h2 class="record-heading">${resultHeading}</h2>
+      <h2 class="record-heading">${resultHeadingText}</h2>
       <div class="record-body"${resultIsEmpty ? emptyBlockStyleAttr("result") : ""}>${escapeHTML(resultVal)}</div>
     </section>
   `;
@@ -547,7 +543,7 @@ export function paginateRecord(record: RecordState): PageObject[] {
   // how empty AIM/ALGORITHM sections already degrade in paginateMainFlow.
   const compactResultBlockContent = `
     <section class="record-block record-block-result">
-      <h2 class="record-heading">${resultHeading}</h2>
+      <h2 class="record-heading">${resultHeadingText}</h2>
       <div class="record-body">${escapeHTML(resultVal)}</div>
     </section>
   `;

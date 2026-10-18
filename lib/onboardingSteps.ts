@@ -124,4 +124,12 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "New: files and new records",
     body: "Open your files, download any of them as a PDF from its menu, or start a clean new record.",
   },
+  {
+    target: '[data-onboarding="record-layout"]',
+    panel: "inputs",
+    side: "right",
+    since: 2,
+    title: "New: sections for every department",
+    body: "Not a programming lab? Pick Physics, Electronics, Mechanical or build your own sections. Give each subject its own layout from the Files screen.",
+  },
 ];
