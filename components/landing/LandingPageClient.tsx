@@ -18,9 +18,15 @@ import {
   FileDown,
   Folder,
   FolderOpen,
+  GraduationCap,
   Globe,
   Layers,
+  LayoutTemplate,
   Mail,
+  Play,
+  Share2,
+  ShieldCheck,
+  Frame,
   Rows3,
   Ruler,
   Save,
@@ -31,14 +37,34 @@ import {
 
 const index = [
   {
+    icon: GraduationCap,
+    title: "A layout for every department",
+    body: "Programming, Physics, Chemistry, Electronics, Mechanical, Civil, or your own. Each subject keeps its own list of sections: apparatus, theory, observations, calculations, anything.",
+  },
+  {
+    icon: Play,
+    title: "Run the code, keep the real output",
+    body: "Run Python or JavaScript right in the browser, and C, C++ or Java on a runner. The console output and any graph go into the record, marked as verified.",
+  },
+  {
     icon: Sparkles,
-    title: "AI-assisted drafting",
-    body: "Paste a program or describe the experiment. Record Lab drafts the aim, algorithm and viva questions for you to check over.",
+    title: "AI drafts it for your department",
+    body: "Say which department you study. The prompt is written for it, lists your own sections, and brings back the program's input too.",
   },
   {
     icon: Ruler,
     title: "True-to-scale A4 layout",
-    body: "Every section is measured against real A4 dimensions, so the preview on screen is the page you hand in.",
+    body: "Every section is measured against real A4 dimensions, so the preview on screen is the page you hand in. Zoom, fit and page-by-page controls included.",
+  },
+  {
+    icon: LayoutTemplate,
+    title: "Standard or college sheet",
+    body: "Switch to the college format: the heading block runs edge to edge, with the EX / DATE column and the title, like a printed lab sheet.",
+  },
+  {
+    icon: Frame,
+    title: "Page border and heading table",
+    body: "Style, thickness, colour, distance and rounded corners for the page border. Word-style lines for the heading table, and move the title or the whole table where you want it.",
   },
   {
     icon: TerminalSquare,
@@ -46,24 +72,24 @@ const index = [
     body: "Turn program output into a macOS, Linux, CMD or PowerShell screenshot in one click. Edit it again any time.",
   },
   {
-    icon: Rows3,
-    title: "Heading table, your way",
-    body: "Word-style borders for the title table, line by line, plus an optional rule underneath like a hand-ruled record.",
-  },
-  {
     icon: Stamp,
-    title: "Register-number watermark",
-    body: "A faint, rotated watermark of your register number sits behind every page. Set its font, size, angle and opacity.",
+    title: "Manual calculation space",
+    body: "Switch on 35 blank lines before the result for working you write by hand. It flows onto the next page if it needs to.",
   },
   {
     icon: FileDown,
     title: "PDF, Word or print",
-    body: "Export a print-ready PDF (picture-perfect or selectable-text), a Word file, or send it straight to the printer.",
+    body: "Export a print-ready PDF (picture-perfect or selectable-text), a Word file, or send it straight to the printer. A saved record downloads as a PDF from Files.",
+  },
+  {
+    icon: Share2,
+    title: "Share a link",
+    body: "Send a link anyone can open as an editable copy. Revoke it any time from Settings.",
   },
   {
     icon: Folder,
     title: "Subject folders",
-    body: "Keep every record under its subject. Drag files between folders, rename them, search across all of it.",
+    body: "Keep every record under its subject, each with its own layout. Drag files between folders, rename them, search across all of it.",
   },
   {
     icon: Cloud,
@@ -72,8 +98,8 @@ const index = [
   },
   {
     icon: Save,
-    title: "Save & resume, offline",
-    body: "Export a .rlab.json file partway through and continue later on this device or another.",
+    title: "Install it, use it offline",
+    body: "Add Record Lab to your phone's home screen. It opens on the editor and keeps working without a connection.",
   },
   {
     icon: Layers,
@@ -85,23 +111,39 @@ const index = [
 const faqs = [
   {
     q: "Is it really free?",
-    a: "Yes. Record Lab runs in your browser, there is nothing to install and no payment step.",
+    a: "Yes. Record Lab runs in your browser, there is nothing to install and no payment step. It is supported by small ads.",
+  },
+  {
+    q: "Is it only for computer science?",
+    a: "No. Pick your department's layout, or build your own: Aim, Apparatus, Theory, Procedure, Observations, Calculations, Result, whatever your lab asks for. Each subject remembers its layout.",
+  },
+  {
+    q: "Which languages can it run?",
+    a: "Python and JavaScript run on your own device, even offline once loaded, and Python graphs (matplotlib) come out as images. C, C++ and Java need a compiler, so they run on a runner service, and only after you agree to send the code.",
+  },
+  {
+    q: "How do I know the output is real?",
+    a: "Output captured from a run is marked Verified, with the language and time. If you edit the code afterwards it flags the output as out of date, so sample text and real output never get mixed up.",
   },
   {
     q: "Do I need an account?",
-    a: "No. You can write, preview and export without signing in. An account (email or Google) only adds cloud saving, subject folders and sync across devices.",
+    a: "No. You can write, run, preview and export without signing in. An account (email or Google) only adds cloud saving, subject folders, share links and sync across devices.",
+  },
+  {
+    q: "Does it work offline?",
+    a: "Yes. Install it from your browser or add it to your home screen and the editor, preview and exports keep working without a connection. Saving to the cloud, sharing and AI drafting need one.",
   },
   {
     q: "What can I export?",
-    a: "A PDF (rendered snapshot or vector with selectable text), a Word .docx you can keep editing, or print directly. Your .rlab.json file saves work-in-progress.",
+    a: "A PDF (rendered snapshot or vector with selectable text), a Word .docx you can keep editing, or print directly. Saved records can be downloaded as a PDF straight from the Files screen.",
   },
   {
     q: "Will it match my college's record format?",
-    a: "The layout follows the usual lab-record structure: heading table, aim, algorithm, program, output, result. The heading table's borders, watermark and font are adjustable, so you can match your department's sheet.",
+    a: "Choose the standard sheet or the college sheet, then adjust the heading table, page border, watermark, font and sections until it matches your department's format.",
   },
   {
     q: "Where is my data stored?",
-    a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account and are visible only to you.",
+    a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account and are visible only to you. A share link shows a copy only to people who have the link, until you revoke it.",
   },
 ];
 
@@ -139,9 +181,9 @@ const contributors = [
 ];
 
 const steps = [
-  { n: "01", t: "Fill in the record", d: "Aim, algorithm, source code, output, and result — one panel, no formatting fuss." },
-  { n: "02", t: "Watch it paginate", d: "The live preview lays out real A4 pages as you type, matching what will print." },
-  { n: "03", t: "Export the fair copy", d: "Save a PDF, print directly, or save your work to finish later." },
+  { n: "01", t: "Pick your layout", d: "Choose your department or build your own sections once. Every record in a subject starts from it." },
+  { n: "02", t: "Write it, or let AI draft it, then run it", d: "Type the sections, or generate them for your department. Run the code to capture the real output and graphs." },
+  { n: "03", t: "Check the pages, then export", d: "The live preview lays out real A4 pages. Save a PDF or Word file, print it, or share a link." },
 ];
 
 /** Parent brand shown in the footer. Swap the name/URL here when the branding is final. */
@@ -331,7 +373,92 @@ function SubjectsDemo() {
 }
 
 
-const MARQUEE = ["Aim", "Algorithm", "Source code", "Output", "Review questions", "Result", "Heading table", "Watermark", "A4 pagination"];
+const LAYOUTS = [
+  { id: "programming", label: "Programming", sections: ["Aim", "Algorithm", "Source code", "Output", "Review questions"], close: "Result" },
+  { id: "science", label: "Physics / Chem", sections: ["Aim", "Apparatus required", "Theory", "Procedure", "Observations", "Calculations"], close: "Result" },
+  { id: "electronics", label: "Electronics", sections: ["Aim", "Components required", "Circuit diagram", "Procedure", "Tabulation", "Model calculation"], close: "Result" },
+  { id: "mechanical", label: "Mechanical / Civil", sections: ["Aim", "Apparatus", "Procedure", "Observation table", "Calculations", "Precautions"], close: "Conclusion" },
+];
+
+/** Department layouts: the section list changes with the department, like the real section editor. */
+function DepartmentDemo() {
+  const [id, setId] = useState(LAYOUTS[1].id);
+  const layout = LAYOUTS.find((l) => l.id === id) ?? LAYOUTS[0];
+  return (
+    <div>
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-2xl bg-black/[0.05] p-1" role="tablist" aria-label="Department">
+        {LAYOUTS.map((l) => (
+          <button
+            key={l.id}
+            role="tab"
+            aria-selected={id === l.id}
+            onClick={() => setId(l.id)}
+            className={`rounded-xl px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+              id === l.id ? "bg-accent text-white shadow-sm" : "text-ink-soft hover:bg-ink/5"
+            }`}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+      <ol className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-white text-[12px] shadow-[0_14px_30px_-14px_rgba(28,43,51,0.3)]">
+        {[...layout.sections, layout.close].map((t, i) => (
+          <li key={t} className="flex items-center gap-2.5 px-3 py-2">
+            <span className="w-5 font-mono text-[10px] font-semibold text-[#b3261e]/80">{String(i + 1).padStart(2, "0")}</span>
+            <span className="font-semibold text-ink">{t.toUpperCase()}:</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-[11px] text-ink-soft/70">Rename, reorder or add your own. Each subject remembers its layout.</p>
+    </div>
+  );
+}
+
+/** Run the code: press Run, get console output and a graph, marked as verified. */
+function RunDemo() {
+  const [ran, setRan] = useState(false);
+  return (
+    <div>
+      <pre className="overflow-x-auto rounded-lg border border-line bg-[#faf7f0] p-3 font-mono text-[11px] leading-[1.6] text-ink">{`import matplotlib.pyplot as plt
+v = [1, 2, 3, 4]
+i = [0.2, 0.41, 0.59, 0.8]
+print("R =", round(v[-1]/i[-1], 2), "ohm")
+plt.plot(v, i, marker="o")
+plt.show()`}</pre>
+      <button
+        type="button"
+        onClick={() => setRan((r) => !r)}
+        className="ui-primary mt-3 flex min-h-10 w-full items-center justify-center gap-2 px-4 py-2 text-[12px] font-semibold"
+      >
+        <Play className="h-3.5 w-3.5" strokeWidth={2.5} /> {ran ? "Reset" : "Run the code"}
+      </button>
+      <div className="mt-3 min-h-[8.5rem]">
+        {ran ? (
+          <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+              <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.2} /> Verified: ran on this device
+            </p>
+            <div className="rounded-md bg-[#1f1f1f] px-3 py-2 font-mono text-[11px] text-[#e8e8e8]">R = 5.0 ohm</div>
+            <svg viewBox="0 0 160 70" role="img" aria-label="Graph of current against voltage" className="w-full rounded-md border border-line bg-white">
+              <line x1="14" y1="58" x2="150" y2="58" stroke="#9ca3af" strokeWidth="1" />
+              <line x1="14" y1="8" x2="14" y2="58" stroke="#9ca3af" strokeWidth="1" />
+              <polyline points="28,50 68,38 108,26 146,12" fill="none" stroke="#c2410c" strokeWidth="2" />
+              {[[28, 50], [68, 38], [108, 26], [146, 12]].map(([x, y]) => (
+                <circle key={x} cx={x} cy={y} r="3" fill="#c2410c" />
+              ))}
+            </svg>
+          </div>
+        ) : (
+          <p className="rounded-lg border border-dashed border-line bg-paper/60 p-3 text-[11px] text-ink-soft">
+            Press Run. The real output and the graph appear here, ready to go into your record.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const MARQUEE = ["Every department", "Run the code", "Real output", "Graphs", "College sheet", "Page border", "Heading table", "Manual calculation", "Share a link", "Works offline", "A4 pagination"];
 
 
 /** Small "PAGE 0N / 06" mono label — the landing page's own section counter,
@@ -418,7 +545,7 @@ export function LandingPageClient() {
           </span>
           <nav aria-label="Sections" className="hidden items-center gap-6 text-xs font-semibold text-ink-soft md:flex">
             <a href="#see-it" className="transition-colors hover:text-accent">See it</a>
-            <a href="#index" className="transition-colors hover:text-accent">Index</a>
+            <a href="#index" className="transition-colors hover:text-accent">Features</a>
             <a href="#how" className="transition-colors hover:text-accent">How it works</a>
             <a href="#faq" className="transition-colors hover:text-accent">FAQ</a>
           </nav>
@@ -453,17 +580,17 @@ export function LandingPageClient() {
           titleComponent={
             <div data-hero-text className="relative mx-auto max-w-3xl px-2">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b3261e]">
-                Skip the rough copy
+                Lab records, done properly
               </p>
               <h1 className="mt-4 text-balance font-serif text-[2.6rem] font-bold leading-[1.03] tracking-[-0.02em] text-ink sm:text-7xl">
                 Straight to the fair copy.
               </h1>
               <p className="mt-4 ui-chip inline-flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-soft">
-                Curated for Crescent CSE students
+                For every department, not just CSE
               </p>
               <p className="mx-auto mt-6 max-w-xl text-pretty text-[1.05rem] leading-relaxed text-ink-soft sm:text-xl">
-                Type the aim, algorithm, and code once. Record Lab lays it out on true A4 pages, watermarks your
-                register number, and hands you the fair copy. No rewriting it out by hand the night before.
+                Set up your department&apos;s sections once, write or generate the record, run the code for real output, and
+                let Record Lab lay it out on true A4 pages with your register number watermarked. No rewriting it out by hand the night before.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <Link
@@ -481,7 +608,7 @@ export function LandingPageClient() {
                 </a>
               </div>
               <ul className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium text-ink-soft">
-                {["Free, in your browser", "PDF + Word + print", "No sign-in needed"].map((t) => (
+                {["Free, in your browser", "Any department", "Runs your code", "Works offline"].map((t) => (
                   <li key={t} className="flex items-center gap-1.5">
                     <Check className="h-3.5 w-3.5 text-accent" strokeWidth={3} />
                     {t}
@@ -524,13 +651,25 @@ export function LandingPageClient() {
               The fiddly parts, already handled.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-ink-soft sm:text-lg">
-              Try the three things students spend the most time on: output screenshots, the heading table, and keeping
-              records organised.
+              Try the parts that take students the longest: setting up the record for their department, getting real
+              output, screenshots, the heading table, and keeping records organised.
             </p>
           </div>
 
           <div className="-mx-5 mt-12 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-6 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
             {[
+              {
+                icon: GraduationCap,
+                title: "Every department",
+                body: "Pick a layout for your lab, or build your own list of sections.",
+                demo: <DepartmentDemo />,
+              },
+              {
+                icon: Play,
+                title: "Run it, keep the output",
+                body: "Run the program and get the real console output and graphs, marked as verified.",
+                demo: <RunDemo />,
+              },
               {
                 icon: TerminalSquare,
                 title: "Output screenshots",
