@@ -76,6 +76,8 @@ export default function Home() {
   const [cloudFolderId, setCloudFolderId] = useState<string | null>(null);
   const folders = useFolders();
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("pdf");
+  // Bumped to remount the editor and preview, so every field (including rich-text ones) starts clean.
+  const [editorKey, setEditorKey] = useState(0);
   const [pdfEngine, setPdfEngine] = useState<PdfEngine>("html2pdf");
 
   const authUser = useAuthUser();
@@ -356,6 +358,29 @@ export default function Home() {
     }
   }
 
+  /** A clean record seeded from the saved defaults, like a first visit. Confirms first when edits would be lost. */
+  function handleNewRecord() {
+    const s = settingsRef.current;
+    const fresh: RecordState = {
+      ...DEFAULT_RECORD,
+      rrn: s.rrn,
+      headerLayout: s.headerLayout,
+      pageBorder: s.pageBorder,
+      ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout, s.pageBorder) : {}),
+    };
+    const dirty = JSON.stringify(record) !== JSON.stringify(fresh);
+    if (dirty && !window.confirm("Start a new record? Changes you haven't saved to the cloud or downloaded will be lost.")) return;
+    setRecord(fresh);
+    setWatermark({ ...DEFAULT_WATERMARK, ...s.watermark });
+    setCloudDocId(null);
+    setCloudFolderId(null);
+    setDashboardOpen(false);
+    setMobilePanel("inputs");
+    setEditorKey((k) => k + 1);
+    showToast("New record started.");
+    track("new_record");
+  }
+
   async function handleSaveCloud() {
     setIsSavingCloud(true);
     try {
@@ -536,6 +561,7 @@ export default function Home() {
     <>
       <div className="app-layout app-canvas flex h-full w-full gap-3.5 md:gap-4 p-3.5 md:p-4 overflow-hidden">
         <RecordEditorPanel
+          key={`editor-${editorKey}`}
           record={record}
           watermark={watermark}
           onFieldChange={handleFieldChange}
@@ -563,6 +589,7 @@ export default function Home() {
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}
           onSaveCloud={handleSaveCloud}
+          onNewRecord={handleNewRecord}
           onOpenDashboard={() => setDashboardOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
           isSavingCloud={isSavingCloud}
@@ -571,6 +598,7 @@ export default function Home() {
         />
 
         <PreviewPanel
+          key={`preview-${editorKey}`}
           onShare={handleShare}
           isSharing={isSharing}
           record={record}
@@ -613,6 +641,7 @@ export default function Home() {
         open={dashboardOpen}
         onClose={() => setDashboardOpen(false)}
         onLoad={handleLoadFromDashboard}
+        onNewRecord={handleNewRecord}
         onToast={showToast}
       />
 

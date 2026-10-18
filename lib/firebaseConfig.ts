@@ -1,6 +1,6 @@
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
 import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -32,7 +32,15 @@ function getFirebaseApp(): FirebaseApp {
 }
 
 export function getDb(): Firestore {
-  if (!dbInstance) dbInstance = getFirestore(getFirebaseApp());
+  if (!dbInstance) {
+    try {
+      // Records carry optional fields that can be undefined (Firestore rejects those by default).
+      dbInstance = initializeFirestore(getFirebaseApp(), { ignoreUndefinedProperties: true });
+    } catch {
+      // Already initialised (hot reload): reuse that instance.
+      dbInstance = getFirestore(getFirebaseApp());
+    }
+  }
   return dbInstance;
 }
 

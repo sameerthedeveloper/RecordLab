@@ -134,6 +134,7 @@ export function PreviewPanel({
             onClick={() => onShare()}
             disabled={isSharing}
             aria-label="Share link"
+            data-onboarding="share"
             title="Share link"
             className="ui-icon-btn flex shrink-0 items-center justify-center max-md:h-11 max-md:w-11 max-md:p-0 disabled:opacity-60"
           >

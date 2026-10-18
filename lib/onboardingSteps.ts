@@ -10,6 +10,8 @@ export interface OnboardingStep {
   side: OnboardingSide;
   title: string;
   body: string;
+  /** Tour version that introduced this step (default 1). Returning visitors only see steps newer than what they've seen. */
+  since?: number;
 }
 
 /**
@@ -81,5 +83,45 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     side: "bottom",
     title: "Your account",
     body: "Sign in with Google to sync records across devices. Once signed in, link your Puter account here too for AI drafting under your own name.",
+  },
+  {
+    target: '[data-onboarding="record-format"]',
+    panel: "inputs",
+    side: "right",
+    since: 2,
+    title: "New: College sheet format",
+    body: "Switch to the College sheet to get the heading block that runs edge to edge, like a printed lab sheet.",
+  },
+  {
+    target: '[data-onboarding="page-border"]',
+    panel: "inputs",
+    side: "right",
+    since: 2,
+    title: "New: page border",
+    body: "Pick the style, thickness, colour, distance from the edge and corner radius, per side, for every page.",
+  },
+  {
+    target: '#manual',
+    panel: "inputs",
+    side: "right",
+    since: 2,
+    title: "New: manual calculation",
+    body: "Turn it on to leave 35 blank lines before Result for hand-written working. It starts right under the last section.",
+  },
+  {
+    target: '[data-onboarding="share"]',
+    panel: "preview",
+    side: "bottom",
+    since: 2,
+    title: "New: share a link",
+    body: "Make a link anyone can open as an editable copy. Manage or revoke your links in Settings.",
+  },
+  {
+    target: '[data-onboarding="open-files"]',
+    panel: "inputs",
+    side: "bottom",
+    since: 2,
+    title: "New: files and new records",
+    body: "Open your files, download any of them as a PDF from its menu, or start a clean new record.",
   },
 ];

@@ -33,6 +33,8 @@ import { track } from "@/lib/analytics";
 interface DashboardModalProps {
   open: boolean;
   onClose: () => void;
+  /** Start a clean record. When absent, "New record" just returns to the editor. */
+  onNewRecord?: () => void;
   /** `docId` lets the editor update this file on later saves instead of creating a copy. */
   onLoad: (payload: RlabPayload, docId: string, folderId: string | null) => void;
   onToast: (message: string) => void;
@@ -63,6 +65,7 @@ function groupLabel(doc: CloudDocument): string {
 export function DashboardModal({
   open,
   onClose,
+  onNewRecord,
   onLoad,
   onToast,
   embedded = false,
@@ -327,8 +330,8 @@ export function DashboardModal({
         >
           <button
             type="button"
-            onClick={onClose}
-            className="mb-1 hidden items-center gap-2.5 rounded-2xl border border-line bg-white px-4 py-3 text-[13px] font-semibold text-ink shadow-sm transition-colors hover:border-accent/40 hover:text-accent md:flex"
+            onClick={onNewRecord ?? onClose}
+            className="flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-2xl border border-line bg-white px-4 py-2.5 text-[13px] font-semibold text-ink shadow-sm transition-colors hover:border-accent/40 hover:text-accent max-md:min-h-10 md:mb-1 md:py-3"
           >
             <FilePlus2 className="h-4 w-4 text-accent" strokeWidth={2} />
             New record

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Cloud, Files, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
+import { Cloud, FilePlus2, Files, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
@@ -40,6 +40,8 @@ interface RecordEditorPanelProps {
   onLoadWork: (file: File) => void;
   onSaveCloud: () => void;
   onOpenDashboard: () => void;
+  /** Starts a clean record (asks first when the current one has unsaved edits). */
+  onNewRecord: () => void;
   onOpenSettings: () => void;
   isSavingCloud: boolean;
   /** Pages the record currently paginates to. */
@@ -85,6 +87,7 @@ export function RecordEditorPanel({
   onLoadWork,
   onSaveCloud,
   onOpenDashboard,
+  onNewRecord,
   onOpenSettings,
   isSavingCloud,
   pageCount,
@@ -197,6 +200,7 @@ export function RecordEditorPanel({
               type="button"
               title="My files"
               aria-label="My files"
+              data-onboarding="open-files"
               onClick={onOpenDashboard}
               className={iconBtn}
             >
@@ -236,6 +240,17 @@ export function RecordEditorPanel({
               </button>
               {fileMenuOpen && (
                 <div role="menu" className="ui-menu absolute right-0 top-[calc(100%+6px)] z-20 w-52 p-1">
+                  <button
+                    role="menuitem"
+                    type="button"
+                    className={menuItem}
+                    onClick={() => {
+                      setFileMenuOpen(false);
+                      onNewRecord();
+                    }}
+                  >
+                    <FilePlus2 className="h-3.5 w-3.5" strokeWidth={2} /> New record
+                  </button>
                   <button
                     role="menuitem"
                     type="button"
@@ -471,13 +486,16 @@ export function RecordEditorPanel({
           </EditorSection>
         </div>
 
+        <div data-onboarding="record-format">
         <AccordionSection title="RECORD FORMAT">
           <RecordFormatPicker value={record.format ?? "standard"} onChange={onFormatChange} />
           <p className="mt-2 text-xs text-ink-soft/70">
             College sheet puts EX / DATE and the title in a block that runs edge to edge across the top of page 1, like a printed lab sheet.
           </p>
         </AccordionSection>
+        </div>
 
+        <div data-onboarding="page-border">
         <AccordionSection title="PAGE BORDER">
           <PageBorderControls
             idPrefix="record-page-border"
@@ -489,6 +507,7 @@ export function RecordEditorPanel({
             }}
           />
         </AccordionSection>
+        </div>
 
         <WatermarkOptionsSection watermark={watermark} onChange={onWatermarkChange} />
 

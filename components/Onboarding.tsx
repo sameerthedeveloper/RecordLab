@@ -5,6 +5,8 @@ import { X } from "lucide-react";
 import { ONBOARDING_STEPS, type OnboardingPanel, type OnboardingSide } from "@/lib/onboardingSteps";
 
 const STORAGE_KEY = "recordlab-onboarding-v1";
+/** Bump when steps with a higher `since` are added: people who finished an earlier tour see only the new ones. */
+const CURRENT_VERSION = 2;
 const SPOTLIGHT_PADDING = 8;
 const GAP = 14;
 const CARD_WIDTH = 300;
@@ -45,15 +47,23 @@ export function Onboarding({ activePanel, onRequestPanel }: OnboardingProps) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const reducedMotionRef = useRef(false);
 
-  const step = ONBOARDING_STEPS[stepIndex];
-  const total = ONBOARDING_STEPS.length;
+  const [steps, setSteps] = useState(ONBOARDING_STEPS);
+  const step = steps[Math.min(stepIndex, steps.length - 1)];
+  const total = steps.length;
 
   useEffect(() => {
+    let seen = 0;
     try {
-      if (localStorage.getItem(STORAGE_KEY)) return;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      seen = raw ? Number.parseInt(raw, 10) || 1 : 0;
     } catch {
       return;
     }
+    if (seen >= CURRENT_VERSION) return;
+    // First visit: the whole tour. Returning visitor: only what was added since they last saw it.
+    const fresh = ONBOARDING_STEPS.filter((s) => (s.since ?? 1) > seen);
+    if (fresh.length === 0) return;
+    setSteps(fresh);
     reducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(() => setStarted(true), 700);
     return () => window.clearTimeout(timer);
@@ -62,7 +72,7 @@ export function Onboarding({ activePanel, onRequestPanel }: OnboardingProps) {
   const finish = useCallback(() => {
     setStarted(false);
     try {
-      localStorage.setItem(STORAGE_KEY, "1");
+      localStorage.setItem(STORAGE_KEY, String(CURRENT_VERSION));
     } catch {
       // Private browsing / storage disabled — the tour just won't be
       // remembered next time, which is harmless.
