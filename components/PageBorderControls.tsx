@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 import {
   DEFAULT_PAGE_BORDER,
@@ -23,15 +22,6 @@ interface PageBorderControlsProps {
   idPrefix: string;
 }
 
-type Target = "all" | PageBorderSideName;
-
-const TARGETS: { id: Target; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "top", label: "Top" },
-  { id: "right", label: "Right" },
-  { id: "bottom", label: "Bottom" },
-  { id: "left", label: "Left" },
-];
 
 const STYLES: { id: HeaderBorderStyle; label: string }[] = [
   { id: "solid", label: "Solid" },
@@ -54,12 +44,11 @@ const seg = (active: boolean) =>
  * mirrors every change.
  */
 export function PageBorderControls({ value, onChange, idPrefix }: PageBorderControlsProps) {
-  const [target, setTarget] = useState<Target>("all");
   const pb = resolvePageBorder(value);
-  const sides = target === "all" ? PAGE_BORDER_SIDES : [target];
+  const sides = PAGE_BORDER_SIDES;
   const shown: PageBorderSide = pb[sides[0]];
-  const mixed = target === "all" && PAGE_BORDER_SIDES.some((s) => JSON.stringify(pb[s]) !== JSON.stringify(pb.top));
-  const insetMixed = target === "all" && PAGE_BORDER_SIDES.some((s) => pb.inset[s] !== pb.inset.top);
+  const mixed = PAGE_BORDER_SIDES.some((s) => JSON.stringify(pb[s]) !== JSON.stringify(pb.top));
+  const insetMixed = PAGE_BORDER_SIDES.some((s) => pb.inset[s] !== pb.inset.top);
   const off = shown.style === "none";
 
   function setSide(patch: Partial<PageBorderSide>) {
@@ -101,21 +90,10 @@ export function PageBorderControls({ value, onChange, idPrefix }: PageBorderCont
           </div>
         </div>
 
-        <div className="min-w-0 flex-1">
-          <span className="mb-1 block text-xs font-semibold text-ink-soft">Edit side</span>
-          <div className="grid grid-cols-5 gap-1 rounded-xl border border-line bg-paper p-1" role="group" aria-label="Border side">
-            {TARGETS.map((t) => (
-              <button key={t.id} type="button" aria-pressed={target === t.id} onClick={() => setTarget(t.id)} className={seg(target === t.id)}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <p className="mt-1.5 text-[11px] leading-snug text-ink-soft/70">
-            {target === "all"
-              ? mixed
-                ? "Sides differ now. Changes here set all four."
-                : "Changes apply to all four sides."
-              : `Changes apply to the ${target} side only.`}
+        <div className="min-w-0 flex-1 self-center">
+          <p className="text-xs font-semibold text-ink-soft">Border around every page</p>
+          <p className="mt-1 text-[11px] leading-snug text-ink-soft/70">
+            {mixed ? "Sides differ now. Changing anything here sets all four." : "Changes apply to all four sides."}
           </p>
         </div>
       </div>
