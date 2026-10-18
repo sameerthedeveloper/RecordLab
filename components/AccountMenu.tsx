@@ -69,6 +69,7 @@ export function AccountMenu({ onToast, menuAlign = "end" }: AccountMenuProps) {
         className="flex items-center gap-2 ui-chip py-1 pl-1 pr-3"
       >
         {user.photoURL ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a 24px Google avatar from an external host; next/image would add nothing
           <img src={user.photoURL} alt="" referrerPolicy="no-referrer" className="h-6 w-6 rounded-full" />
         ) : (
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent-soft text-[10px] font-bold text-accent-ink">

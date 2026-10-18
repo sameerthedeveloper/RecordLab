@@ -165,7 +165,8 @@ export default function Home() {
         showToast("Loaded from cloud.");
       }
     } catch {}
-  }, []);
+    // showToast is a stable callback, so this still runs once, on mount.
+  }, [showToast]);
 
   // Settings as of the latest render, for effects that must not re-run when they change.
   const settingsRef = useRef(settings);
