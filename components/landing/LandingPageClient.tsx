@@ -122,7 +122,7 @@ const lead: Person = {
   name: "Mohamed Sameer S",
   role: "Creator and lead developer",
   bio: "Frontend and full-stack developer from Chennai, building React and Next.js apps with a focus on offline-first PWAs, real-time sync and accessible interfaces.",
-  gave: ["Conceived, designed and built Record Lab from the first page to the last", "Pagination, exports, the editor, the app on your phone"],
+  gave: ["Conceived, designed and built Record Lab from the first page to the last", "Pagination, exports, the editor, the app on your phone", "Built the HTML, CSS and JavaScript output record from Imran's idea"],
   links: [
     { label: "Portfolio", href: "https://mohamedsameer.tech", icon: Globe },
     { label: "GitHub", href: "https://github.com/sameerthedeveloper", icon: ExternalLink },
@@ -140,9 +140,9 @@ const contributors: Person[] = [
   },
   {
     name: "Mohammed Imran A",
-    role: "Contributor",
-    bio: "Contributed to Record Lab. Reach out on LinkedIn or by email.",
-    gave: [],
+    role: "Idea contributor",
+    bio: "Suggested taking Record Lab beyond code listings to web work. Reach out on LinkedIn or by email.",
+    gave: ["The idea of records for HTML, CSS and JavaScript work, with the page itself as the output"],
     links: [
       { label: "Portfolio", href: "https://portfolio1-wheat-two.vercel.app", icon: Globe },
       { label: "Email", href: "mailto:mohammed2007imran@gmail.com", icon: Mail },

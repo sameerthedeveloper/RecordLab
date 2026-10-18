@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Activity, FileText, GraduationCap, LayoutDashboard, Loader2, RefreshCw, Search, ShieldAlert, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Activity, FileText, GraduationCap, LayoutDashboard, Loader2, Mail, RefreshCw, Search, ShieldAlert, UserPlus, Users } from "lucide-react";
 import { loadAdminData, useAdminAccess, type AdminData } from "@/lib/adminService";
 import { ago, DAY, domainCandidates, emailDomainOf, fmtDate } from "@/lib/adminFormat";
+import { getFirebaseAuth } from "@/lib/firebaseConfig";
 import { dayKey } from "@/lib/usageStats";
+import { AdminMail } from "./AdminMail";
 import { AdminRecords } from "./AdminRecords";
 import { AuthModal } from "./AuthModal";
 import { Avatar, BarChart, Card, Empty, Kpi } from "./admin/ui";
@@ -36,6 +38,7 @@ const TABS = [
   { id: "users", label: "Users", icon: Users },
   { id: "records", label: "Records", icon: FileText },
   { id: "colleges", label: "Colleges", icon: GraduationCap },
+  { id: "mail", label: "Send mail", icon: Mail },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -441,6 +444,8 @@ export function AdminClient() {
               )}
 
               {view && data && tab === "records" && <AdminRecords rows={data.records} error={data.recordsError} ownerName={view.ownerName} />}
+
+              {view && data && tab === "mail" && access.status === "admin" && <AdminMail profiles={data.usage.profiles} adminEmail={getFirebaseAuth().currentUser?.email ?? null} collegeOf={view.collegeOf} />}
 
               {view && data && tab === "colleges" && (
                 <Card title="Colleges" aside={`${view.collegesNamed} named · ${view.domainRows.filter((d) => !d.name).length} waiting for a name`}>

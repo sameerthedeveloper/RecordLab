@@ -22,7 +22,7 @@
 - Cost: free, supported by small ads.
 - Platforms: any modern browser; installable on Android, iOS and desktop as a PWA.
 - Data: unsaved work stays in the browser; saved records live in the student's own account (visible to the student and to Record Lab administrators).
-- Maker: Mohamed Sameer S (creator and lead developer), under Cogniheim (https://cogniheim.com). Ideas from Mohammed Ridhwan S Y.
+- Maker: Mohamed Sameer S (creator and lead developer), under Cogniheim (https://cogniheim.com). Ideas from Mohammed Ridhwan S Y (Manual Calculation, layouts for every department, running code for real output) and Mohammed Imran A (records for HTML, CSS and JavaScript output).
 
 ## Also known as / searched as
 
