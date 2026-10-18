@@ -5,14 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { Cloud, FilePlus2, Files, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
-import { WatermarkOptionsSection } from "./WatermarkOptionsSection";
-import { AccordionSection } from "./AccordionSection";
-import { RecordFormatPicker } from "./RecordFormatPicker";
-import { PageBorderControls } from "./PageBorderControls";
-import { collegeGeometry } from "@/lib/recordFormat";
+import { SheetSetup } from "./SheetSetup";
 import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
-import { describeHeaderBorders, HeaderBorderControls } from "./HeaderBorderControls";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { MANUAL_CALCULATION_LINES, type OutputImage, type RecordFormat, RecordState, WatermarkOptions } from "@/lib/types";
 
@@ -466,50 +461,17 @@ export function RecordEditorPanel({
                 </div>
               )}
 
-              <details className="ui-detail group transition-colors">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-soft">
-                  Title table border
-                  <span className="text-[11px] font-medium text-ink-soft/60">
-                    {describeHeaderBorders(record.headerLayout)}
-                  </span>
-                </summary>
-                <div className="pt-3">
-                  <HeaderBorderControls
-                    idPrefix="record"
-                    format={record.format}
-                    layout={record.headerLayout}
-                    onChange={(next) => onFieldChange("headerLayout", next)}
-                  />
-                </div>
-              </details>
             </div>
           </EditorSection>
         </div>
 
-        <div data-onboarding="record-format">
-        <AccordionSection title="RECORD FORMAT">
-          <RecordFormatPicker value={record.format ?? "standard"} onChange={onFormatChange} />
-          <p className="mt-2 text-xs text-ink-soft/70">
-            College sheet puts EX / DATE and the title in a block that runs edge to edge across the top of page 1, like a printed lab sheet.
-          </p>
-        </AccordionSection>
-        </div>
-
-        <div data-onboarding="page-border">
-        <AccordionSection title="PAGE BORDER">
-          <PageBorderControls
-            idPrefix="record-page-border"
-            value={record.pageBorder}
-            onChange={(next) => {
-              onFieldChange("pageBorder", next);
-              // College heading block hugs the border: move it with it.
-              if (record.format === "college") onFieldChange("headerLayout", { ...record.headerLayout, ...collegeGeometry(next) });
-            }}
-          />
-        </AccordionSection>
-        </div>
-
-        <WatermarkOptionsSection watermark={watermark} onChange={onWatermarkChange} />
+        <SheetSetup
+          record={record}
+          watermark={watermark}
+          onFieldChange={onFieldChange}
+          onFormatChange={onFormatChange}
+          onWatermarkChange={onWatermarkChange}
+        />
 
         <div data-onboarding="sections" className="space-y-3.5">
           <EditorSection id="aim" title="Aim" index="01" filled={filled.aim}>
