@@ -39,8 +39,22 @@ Rules:
 - The subject is under 60 characters, with no clickbait and no all caps.
 - If there is one clear action, give a button label (2 to 4 words) and a full https:// link, preferring ${SITE_URL}/editor. Otherwise leave both empty.
 
-Answer with ONLY a JSON object, no code fence and no other text:
-{"subject": "...", "message": "...", "buttonLabel": "...", "buttonUrl": "..."}`;
+Answer with ONE html code block and nothing else (no text before or after it). Use exactly these element ids, each once:
+
+\`\`\`html
+<div id="mail">
+  <h1 id="subject">Subject line here</h1>
+  <div id="message">
+    <p>Hi {{name}},</p>
+    <p>First short paragraph.</p>
+    <p>Second short paragraph.</p>
+    <p>Regards,<br>Sameer<br>Record Lab</p>
+  </div>
+  <a id="button" href="https://...">Button label</a>
+</div>
+\`\`\`
+
+Inside #message use only <p>, <br>, <ul> and <li>, with no styles, classes, images or scripts. Leave out the <a id="button"> element entirely when there is no single clear action.`;
 }
 
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -73,6 +87,47 @@ function parseLenientJson(raw: string): unknown {
   }
 }
 
+/** Text of an element as plain text: <br> is a line break, <li> becomes "- item", block children are separated. */
+function htmlToText(el: Element): string {
+  const walk = (n: Node): string => {
+    if (n.nodeType === 3) return (n.textContent ?? "").replace(/\s+/g, " ");
+    if (n.nodeType !== 1) return "";
+    const e = n as Element;
+    const tag = e.tagName.toLowerCase();
+    if (tag === "br") return "\n";
+    const inner = Array.from(e.childNodes).map(walk).join("");
+    if (tag === "li") return `- ${inner.trim()}\n`;
+    if (/^(p|div|h[1-6]|ul|ol|section|blockquote)$/.test(tag)) return `${inner.trim()}\n\n`;
+    return inner;
+  };
+  return Array.from(el.childNodes).map(walk).join("").replace(/[ \t]*\n[ \t]*/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** The html block the prompt asks for: #subject, #message and an optional #button link. */
+function fromHtml(text: string): DraftedMail | null {
+  if (typeof DOMParser === "undefined") return null;
+  const fence = text.match(/```html\s*([\s\S]*?)```/i);
+  const markup = fence ? fence[1] : /<\/?(div|p|h1|a)\b/i.test(text) ? text : "";
+  if (!markup) return null;
+  const doc = new DOMParser().parseFromString(markup, "text/html");
+  doc.querySelectorAll("script,style").forEach((n) => n.remove());
+  const subject = (doc.getElementById("subject")?.textContent ?? doc.querySelector("h1")?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 150);
+  const box = doc.getElementById("message");
+  let message: string;
+  if (box) message = htmlToText(box);
+  else {
+    // No #message: every paragraph that is not the subject or the button.
+    const skip = new Set([doc.getElementById("subject"), doc.getElementById("button")]);
+    message = Array.from(doc.body.querySelectorAll("p")).filter((p) => !skip.has(p)).map((p) => htmlToText(p)).filter(Boolean).join("\n\n");
+  }
+  message = normaliseName(message);
+  if (!subject || !message) return null;
+  const link = doc.getElementById("button") ?? doc.querySelector("a[href^='http']");
+  const url = link?.getAttribute("href")?.trim() ?? "";
+  const ok = /^https?:\/\//i.test(url);
+  return { subject, message, buttonLabel: ok ? (link?.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 60) : "", buttonUrl: ok ? url : "" };
+}
+
 function fromJson(text: string): DraftedMail | null {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -100,9 +155,9 @@ function fromPlain(text: string): DraftedMail | null {
   return message ? { subject: m[1].replace(/^["“]|["”]$/g, "").trim().slice(0, 150), message, buttonLabel: "", buttonUrl: "" } : null;
 }
 
-/** Strict reading, for the model we prompt ourselves: JSON, or plain text with a subject. Null when it is neither. */
+/** Strict reading, for the model we prompt ourselves: the html block, JSON, or plain text with a subject. Null when it is none of those. */
 export function parseMailDraft(text: string): DraftedMail | null {
-  return fromJson(text) ?? fromPlain(text);
+  return fromHtml(text) ?? fromJson(text) ?? fromPlain(text);
 }
 
 /**
