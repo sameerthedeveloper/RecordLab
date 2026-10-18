@@ -57,12 +57,29 @@ const stripMarkdown = (t: string) =>
     .replace(/^\s{0,3}#{1,6}\s+/gm, "")
     .trim();
 
+/**
+ * JSON.parse, after fixing what chat assistants get wrong: a backslash before a character that needs none
+ * ("https\://..." from markdown escaping), trailing commas, and curly quotes around keys and values.
+ */
+function parseLenientJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const fixed = raw
+      .replace(/\\(?!["\\/bfnrtu])/g, "")
+      .replace(/,\s*([}\]])/g, "$1")
+      .replace(/[\u201c\u201d]/g, '"');
+    return JSON.parse(fixed);
+  }
+}
+
 function fromJson(text: string): DraftedMail | null {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start === -1 || end <= start) return null;
+  const raw = text.slice(start, end + 1);
   try {
-    const j = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+    const j = parseLenientJson(raw) as Record<string, unknown>;
     const subject = pick(j, ["subject", "title", "subjectLine"]).slice(0, 150);
     const message = normaliseName(pick(j, ["message", "body", "email", "text", "content"]));
     if (!subject || !message) return null;
