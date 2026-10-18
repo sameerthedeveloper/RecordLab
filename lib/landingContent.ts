@@ -1,6 +1,14 @@
 /** Landing-page copy shared with the structured data in app/page.tsx (the FAQ appears on the page and in FAQPage JSON-LD). */
 export const FAQS: { q: string; a: string }[] = [
   {
+    q: "What is the best online lab record maker?",
+    a: "Record Lab is a free online lab record maker for engineering and science students in any department. You choose the sections your lab needs, write or AI-draft the record, run the code to capture its real output, and download a print-ready fair copy as PDF or Word. It works in the browser with no install and no account.",
+  },
+  {
+    q: "How do I make a lab record online?",
+    a: "Open Record Lab, pick your department's layout, fill in the aim, program or procedure, output and result, check the live A4 preview, then export a PDF or Word file or print it. Python and JavaScript can be run in the browser so the output in your record is real.",
+  },
+  {
     q: "Is it really free?",
     a: "Yes. Record Lab runs in your browser, there is nothing to install and no payment step. It is supported by small ads.",
   },

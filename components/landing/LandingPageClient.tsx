@@ -687,7 +687,7 @@ export function LandingPageClient() {
           titleComponent={
             <div data-hero-text className="relative mx-auto max-w-3xl px-2">
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b3261e]">
-                Lab records, done properly
+                Free online lab record maker
               </p>
               <h1 className="mt-4 text-balance font-serif text-[2.6rem] font-bold leading-[1.03] tracking-[-0.02em] text-ink sm:text-7xl">
                 Straight to the fair copy.
@@ -696,7 +696,7 @@ export function LandingPageClient() {
                 For every department, not just CSE
               </p>
               <p className="mx-auto mt-6 max-w-xl text-pretty text-[1.05rem] leading-relaxed text-ink-soft sm:text-xl">
-                Set up your department&apos;s sections once, write or generate the record, run the code for real output, and
+                Record Lab is the online lab record maker for every department. Set up your sections once, write or generate the record, run the code for real output, and
                 let Record Lab lay it out on true A4 pages with your register number watermarked. No rewriting it out by hand the night before.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
