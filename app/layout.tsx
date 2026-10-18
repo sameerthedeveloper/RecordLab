@@ -96,6 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Set the saved UI style before first paint so the app doesn't flash the wrong look. */}
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html:
               'try{var s=JSON.parse(localStorage.getItem("recordlab-settings-v1")||"{}");document.documentElement.dataset.ui=s.uiStyle==="classic"?"classic":"apple";var p=location.pathname.replace(/\\/+$/,"")||"/",t=s.theme,d=p!=="/"&&p!=="/sitemap"&&(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches));document.documentElement.dataset.theme=d?"dark":"light";document.documentElement.style.colorScheme=d?"dark":"light"}catch(e){document.documentElement.dataset.ui="apple"}',

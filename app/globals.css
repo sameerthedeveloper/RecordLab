@@ -1206,9 +1206,9 @@ html[data-theme="dark"] ::placeholder { color: rgb(var(--c-ink-soft) / 0.6); }
    APP LOADER (components/AppLoader.tsx)
 ===================================================== */
 .loader-sheet { fill: var(--surface); stroke: rgb(var(--c-line)); stroke-width: 1.5; }
-.loader-margin { stroke: rgb(var(--c-accent) / 0.55); stroke-width: 1.4; stroke-dasharray: 132; stroke-dashoffset: 132; animation: loader-draw 0.7s ease-out 0.1s forwards; }
+.loader-margin { stroke: rgb(var(--c-accent) / 0.55); stroke-width: 1.4; stroke-dasharray: 132; stroke-dashoffset: 132; animation: loader-draw 0.7s ease-out forwards; }
 .loader-rule { stroke: rgb(var(--c-ink) / 0.28); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 80; stroke-dashoffset: 80; animation: loader-draw 0.5s ease-out forwards; }
-.loader-stamp { fill: none; stroke: rgb(var(--c-accent)); stroke-width: 1.8; opacity: 0; transform-box: fill-box; transform-origin: center; animation: loader-stamp 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) 1.2s forwards; }
+.loader-stamp { fill: none; stroke: rgb(var(--c-accent)); stroke-width: 1.8; opacity: 0; transform-box: fill-box; transform-origin: center; animation: loader-stamp 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
 .loader-dots::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: loader-dots 1.4s steps(4, end) infinite; }
 @keyframes loader-draw { to { stroke-dashoffset: 0; } }
 @keyframes loader-stamp { from { opacity: 0; transform: scale(1.6) rotate(-8deg); } to { opacity: 1; transform: scale(1) rotate(-6deg); } }
