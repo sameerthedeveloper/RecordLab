@@ -45,18 +45,23 @@ export function AccountSettings({ onToast }: AccountSettingsProps) {
 
   if (!user) {
     return (
-      <section className="flex flex-col items-center gap-3 py-10 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-ink">
-          <UserIcon className="h-6 w-6" strokeWidth={1.75} />
-        </span>
-        <p className="font-serif text-lg font-bold text-ink">You&apos;re not signed in</p>
-        <p className="max-w-xs text-sm text-ink-soft/80">
-          Sign in to save records to the cloud, keep them in subject folders and carry your settings to every device.
-        </p>
-        <button type="button" onClick={() => setAuthOpen(true)} className={`${primary} mt-1 flex items-center gap-1.5 px-5 py-2.5`}>
-          <LogIn className="h-3.5 w-3.5" strokeWidth={2.5} />
-          Sign in or create account
-        </button>
+      <section>
+        <h3 className={heading}>Account</h3>
+        <div className="flex items-start gap-3.5 rounded-2xl border border-line bg-white p-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink">
+            <UserIcon className="h-5 w-5" strokeWidth={1.75} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">You&apos;re not signed in</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-soft/80">
+              Sign in to save records to the cloud, keep them in subject folders and carry your settings to every device.
+            </p>
+            <button type="button" onClick={() => setAuthOpen(true)} className={`${primary} mt-3 flex min-h-10 items-center gap-1.5 px-4 py-2`}>
+              <LogIn className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Sign in or create account
+            </button>
+          </div>
+        </div>
         <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onToast={onToast} />
       </section>
     );

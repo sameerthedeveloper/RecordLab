@@ -126,7 +126,7 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
                   className={inputClass}
                 />
                 <p className="mt-1.5 text-xs text-ink-soft/70">
-                  Fills in on every new record and prints as the faint watermark. You can still change it on a single record in Record details.
+                  Fills in on every new record and prints as the faint watermark. Saved with Save settings. You can still change it on a single record in Record details.
                 </p>
               </section>
               <div className="border-t border-line pt-6">
