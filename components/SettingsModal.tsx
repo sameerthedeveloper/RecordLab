@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
+import { CollegeInfo } from "./CollegeInfo";
 import { AccountSettings } from "./AccountSettings";
 import { RecordFormatPicker } from "./RecordFormatPicker";
 import { PageBorderControls } from "./PageBorderControls";
@@ -118,6 +119,7 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
               onToast={onToast}
               afterDetails={
                 <>
+                <CollegeInfo />
                 <section>
                   <h3 className="mb-3 font-serif text-sm font-bold text-ink">Department</h3>
                   <label htmlFor="settingsDepartment" className={labelClass}>
