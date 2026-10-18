@@ -57,12 +57,17 @@ export function AdSlot({ slot, shape = "banner", name, className = "" }: AdSlotP
       ) : (
         <div
           data-ad-placeholder={name}
-          className={`flex w-full flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-ink/20 bg-ink/[0.025] px-3 text-center ${
+          className={`relative flex w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl border border-line bg-gradient-to-b from-white/70 to-ink/[0.035] px-6 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] ${
             shape === "banner" ? "min-h-[90px]" : shape === "small" ? "h-[60px]" : "min-h-[250px]"
           }`}
         >
-          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/60">Advertisement</span>
-          <span className="text-[11px] font-medium text-ink-soft/70">Ads will be placed here</span>
+          <span aria-hidden className="absolute left-2.5 top-1.5 rounded-[4px] border border-ink/15 px-1 font-mono text-[8.5px] font-semibold uppercase leading-[1.4] tracking-[0.12em] text-ink-soft/55">
+            Ad
+          </span>
+          {shape !== "small" && (
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/55">Advertisement</span>
+          )}
+          <span className="text-[11.5px] font-medium text-ink-soft/70">Ads will be placed here</span>
           <span className="sr-only">{name}</span>
         </div>
       )}
