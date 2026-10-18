@@ -1,3 +1,4 @@
+import { runWeb } from "./web";
 import { languageInfo, type RunLanguage } from "./languages";
 
 export interface RunImage {
@@ -131,5 +132,6 @@ async function runRemote(opts: RunOptions): Promise<RunResult> {
 export function runCode(opts: RunOptions): Promise<RunResult> {
   const info = languageInfo(opts.language);
   if (info.where === "remote") return runRemote(opts);
+  if (opts.language === "web") return runWeb(opts);
   return runInWorker(opts.language === "python" ? "/runner/python-worker.js" : "/runner/js-worker.js", opts);
 }
