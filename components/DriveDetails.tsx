@@ -22,7 +22,7 @@ export function DriveDetails({ document, onClose, onOpen, onRename, onDownload, 
   const record = document.data?.record;
   const rows: [string, string][] = [
     ["Exercise", record?.exercise_number || "—"],
-    ["RRN", record?.rrn || "—"],
+    ["Register no.", record?.rrn || "—"],
     ["Record date", record?.date || "—"],
     ["Last edited", fullDate(document.updatedAt)],
     ["Created", fullDate(document.createdAt)],

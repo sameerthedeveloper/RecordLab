@@ -349,12 +349,12 @@ export function RecordEditorPanel({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="rrnInput" className={labelClass}>
-                    RRN
+                    Register number
                   </label>
                   <input
                     id="rrnInput"
                     type="text"
-                    placeholder="Your register number"
+                    placeholder="e.g. 24007160106"
                     className={inputClass}
                     value={record.rrn}
                     onChange={(e) => onFieldChange("rrn", e.target.value)}

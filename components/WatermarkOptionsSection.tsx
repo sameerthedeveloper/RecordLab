@@ -9,7 +9,7 @@ interface WatermarkOptionsSectionProps {
   onChange: (next: WatermarkOptions) => void;
 }
 
-/** The watermark controls on their own (no accordion), with a live sample of how the RRN will look on the page. */
+/** The watermark controls on their own (no accordion), with a live sample of how the register number will look on the page. */
 export function WatermarkControls({ watermark, onChange, rrn }: WatermarkOptionsSectionProps & { rrn?: string }) {
   const inputClass =
     "w-full rounded-xl border border-line p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all";

@@ -33,7 +33,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     panel: "inputs",
     side: "right",
     title: "Start with the basics",
-    body: "RRN, exercise number, date, and title anchor the header on every page.",
+    body: "Register number, exercise number, date, and title anchor the header on every page.",
   },
   {
     target: '[data-onboarding="ai-generate"]',
@@ -54,7 +54,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     panel: "inputs",
     side: "bottom",
     title: "Set your defaults",
-    body: "Register your RRN once, pick a document font, and size the title table — new records start with these, and you can still adjust any of it per record.",
+    body: "Save your register number once, pick a document font, and size the title table — new records start with these, and you can still adjust any of it per record.",
   },
   {
     target: '[data-onboarding="sections"]',

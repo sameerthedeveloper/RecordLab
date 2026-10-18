@@ -46,7 +46,7 @@ export function SheetSetup({ record, watermark, onFieldChange, onFormatChange, o
     { id: "format", label: "Format", value: record.format === "college" ? "College sheet" : "Standard", Icon: LayoutTemplate, anchor: "record-format" },
     { id: "heading", label: "Heading", value: `Borders: ${describeHeaderBorders(record.headerLayout)}`, Icon: Rows3 },
     { id: "border", label: "Border", value: describeBorder(record), Icon: Frame, anchor: "page-border" },
-    { id: "watermark", label: "Watermark", value: record.rrn.trim() ? `${watermark.size}px · ${watermark.opacity}%` : "No RRN yet", Icon: Stamp },
+    { id: "watermark", label: "Watermark", value: record.rrn.trim() ? `${watermark.size}px · ${watermark.opacity}%` : "No register no. yet", Icon: Stamp },
   ];
 
   function onKeyDown(e: React.KeyboardEvent, i: number) {

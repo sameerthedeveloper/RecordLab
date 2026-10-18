@@ -52,7 +52,7 @@ const index = [
   {
     icon: Stamp,
     title: "Register-number watermark",
-    body: "A faint, rotated watermark of your RRN sits behind every page. Set its font, size, angle and opacity.",
+    body: "A faint, rotated watermark of your register number sits behind every page. Set its font, size, angle and opacity.",
   },
   {
     icon: FileDown,
@@ -219,7 +219,7 @@ function TerminalDemo() {
         </div>
         <div className="space-y-0.5 overflow-x-auto px-3.5 py-3 whitespace-pre">
           <div><Prompt id={id} />python gen.py</div>
-          <div>Name: Sameer   RRN: 24CS118</div>
+          <div>Name: Sameer   Register no: 24CS118</div>
           <div>Password: Sam@8452kR!</div>
           <div>Strength: Strong</div>
           <div>
