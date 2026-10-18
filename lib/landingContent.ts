@@ -42,6 +42,6 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Where is my data stored?",
-    a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account and are visible only to you. A share link shows a copy only to people who have the link, until you revoke it.",
+    a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account. You can open them; Record Lab administrators can also read saved records to support users and keep the service healthy. A share link shows a copy only to people who have the link, until you revoke it.",
   },
 ];

@@ -22,7 +22,7 @@ service cloud.firestore {
 
     // One lightweight, content-free row per signed-in user, for the admin
     // usage panel (email, name, join date, last seen). Their records and
-    // settings stay private: admins can NOT read `documents` or `users`.
+    // settings stay private: admins can NOT read `users`. (They can read `documents`: see below.)
     match /profiles/{uid} {
       allow create, update: if request.auth != null && request.auth.uid == uid;
       allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
@@ -68,7 +68,9 @@ service cloud.firestore {
     }
 
     match /documents/{docId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Admins may READ every record (admin panel); only owners change or delete them.
+      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || isAdmin();
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.title is string
