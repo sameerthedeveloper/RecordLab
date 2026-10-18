@@ -22,8 +22,8 @@ interface TerminalImageModalProps {
 const STORE_KEY = "recordlab.terminal-image";
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-white px-2.5 py-2 font-mono text-xs text-ink outline-none transition-colors placeholder:text-ink-soft/50 focus:border-accent focus:ring-2 focus:ring-accent/15";
-const labelClass = "mb-1 block text-[11px] font-semibold text-ink-soft";
+  "w-full rounded-lg border border-line bg-white px-3 py-2.5 font-mono text-[13px] text-ink max-md:min-h-11 outline-none transition-colors placeholder:text-ink-soft/50 focus:border-accent focus:ring-2 focus:ring-accent/15";
+const labelClass = "mb-1.5 block text-xs font-semibold text-ink-soft";
 
 function loadIdentity(): Pick<TerminalImageOptions, "user" | "host" | "dir"> {
   const fallback = { user: "student", host: "lab-pc", dir: "record" };
@@ -99,9 +99,23 @@ export function TerminalImageModal({ open, onClose, initialOutput, editing, onAd
   }
 
   const seg = (active: boolean) =>
-    `flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+    `flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors max-md:min-h-11 ${
       active ? "bg-accent text-white shadow-sm" : "text-ink-soft hover:bg-ink/5"
     }`;
+
+  /** A labelled on/off switch, same look as the Review questions toggle. */
+  const toggle = (label: string, checked: boolean, onChange: (v: boolean) => void) => (
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-line bg-white px-3.5 py-2.5 text-xs font-semibold text-ink-soft max-md:min-h-12">
+      {label}
+      <span className="relative inline-flex shrink-0">
+        <input type="checkbox" className="peer sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+        <span className="h-5 w-9 rounded-full bg-gray-200 transition-colors peer-checked:bg-accent peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent" />
+        <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
+      </span>
+    </label>
+  );
+
+  const group = "text-[13px] font-bold text-ink";
 
   return (
     <Modal
@@ -111,6 +125,7 @@ export function TerminalImageModal({ open, onClose, initialOutput, editing, onAd
       description="Turn your output into a terminal-style image."
       icon={TerminalSquare}
       size="lg"
+      bodyClassName="p-5 pb-6 sm:p-7 sm:pb-8"
       footer={
         <>
           <button type="button" onClick={onClose} className={modalButton.secondary}>
@@ -123,72 +138,92 @@ export function TerminalImageModal({ open, onClose, initialOutput, editing, onAd
         </>
       }
     >
-      <div className="space-y-4">
-        {/* live preview */}
-        <div className="overflow-hidden rounded-xl border border-line bg-[repeating-conic-gradient(#f1ede0_0%_25%,#faf7f0_0%_50%)] bg-[length:16px_16px] p-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {preview && <img src={preview} alt="Terminal preview" className="mx-auto max-h-64 max-w-full rounded-md shadow-lg" />}
-        </div>
-
-        <div>
-          <span className={labelClass}>Terminal</span>
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-paper p-1 sm:grid-cols-4" role="group" aria-label="Terminal">
-            {PLATFORMS.map((p) => (
-              <button key={p.id} type="button" className={seg(platform === p.id)} onClick={() => pickPlatform(p.id)}>
-                {p.label}
-                <span className="ml-1 hidden font-mono text-[10px] font-medium opacity-70 lg:inline">{p.hint}</span>
-              </button>
-            ))}
+      <div className="space-y-6">
+        {/* live preview: stays in view while the fields below scroll */}
+        <div className="sticky -top-5 z-10 -mx-1 sm:-top-7">
+          <div className="overflow-hidden rounded-2xl border border-line bg-[repeating-conic-gradient(#f1ede0_0%_25%,#faf7f0_0%_50%)] bg-[length:16px_16px] p-3 shadow-[0_10px_24px_-14px_rgba(28,43,51,0.35)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {preview && <img src={preview} alt="Terminal preview" className="mx-auto max-h-48 max-w-full rounded-md shadow-lg sm:max-h-56" />}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          <label>
-            <span className={labelClass}>User</span>
-            <input className={inputClass} value={identity.user} onChange={(e) => setId("user", e.target.value)} />
-          </label>
-          {!isWindows && (
+        <section>
+          <h3 className={`${group} mb-2.5`}>Terminal</h3>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Terminal">
+            {PLATFORMS.map((p) => {
+              const on = platform === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => pickPlatform(p.id)}
+                  className={`flex flex-col items-start rounded-xl border px-3.5 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent max-md:min-h-14 ${
+                    on ? "border-accent bg-accent-soft/60 ring-1 ring-accent/30" : "border-line bg-white hover:border-accent/40"
+                  }`}
+                >
+                  <span className={`text-[13px] font-semibold ${on ? "text-accent-ink" : "text-ink"}`}>{p.label}</span>
+                  <span className="font-mono text-[10px] text-ink-soft/70">{p.hint}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section>
+          <h3 className={`${group} mb-2.5`}>Prompt</h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <label>
-              <span className={labelClass}>Host</span>
-              <input className={inputClass} value={identity.host} onChange={(e) => setId("host", e.target.value)} />
+              <span className={labelClass}>User</span>
+              <input className={inputClass} value={identity.user} onChange={(e) => setId("user", e.target.value)} />
             </label>
-          )}
-          <label>
-            <span className={labelClass}>Folder</span>
-            <input className={inputClass} value={identity.dir} onChange={(e) => setId("dir", e.target.value)} />
+            {!isWindows && (
+              <label>
+                <span className={labelClass}>Host</span>
+                <input className={inputClass} value={identity.host} onChange={(e) => setId("host", e.target.value)} />
+              </label>
+            )}
+            <label>
+              <span className={labelClass}>Folder</span>
+              <input className={inputClass} value={identity.dir} onChange={(e) => setId("dir", e.target.value)} />
+            </label>
+            <label>
+              <span className={labelClass}>Symbol</span>
+              <input className={inputClass} value={symbol} maxLength={2} onChange={(e) => setSymbol(e.target.value)} />
+            </label>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h3 className={group}>What it shows</h3>
+          <label className="block">
+            <span className={labelClass}>Commands (one per line)</span>
+            <textarea
+              rows={2}
+              className={`${inputClass} resize-y`}
+              placeholder={placeholderCmds}
+              value={commands}
+              onChange={(e) => setCommands(e.target.value)}
+              spellCheck={false}
+            />
           </label>
-          <label>
-            <span className={labelClass}>Prompt</span>
-            <input className={inputClass} value={symbol} maxLength={2} onChange={(e) => setSymbol(e.target.value)} />
+          <label className="block">
+            <span className={labelClass}>Program output</span>
+            <textarea
+              rows={5}
+              className={`${inputClass} resize-y`}
+              placeholder="Paste what the program printed."
+              value={output}
+              onChange={(e) => setOutput(e.target.value)}
+              spellCheck={false}
+            />
           </label>
-        </div>
+        </section>
 
-        <label className="block">
-          <span className={labelClass}>Commands (one per line)</span>
-          <textarea
-            rows={2}
-            className={`${inputClass} resize-y`}
-            placeholder={placeholderCmds}
-            value={commands}
-            onChange={(e) => setCommands(e.target.value)}
-            spellCheck={false}
-          />
-        </label>
-
-        <label className="block">
-          <span className={labelClass}>Program output</span>
-          <textarea
-            rows={5}
-            className={`${inputClass} resize-y`}
-            placeholder="Paste what the program printed."
-            value={output}
-            onChange={(e) => setOutput(e.target.value)}
-            spellCheck={false}
-          />
-        </label>
-
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
-          <div className="flex w-44 gap-1 rounded-xl border border-line bg-paper p-1" role="group" aria-label="Theme">
+        <section>
+          <h3 className={`${group} mb-2.5`}>Look</h3>
+          <div className="flex gap-1 rounded-xl border border-line bg-paper p-1" role="group" aria-label="Theme">
             <button type="button" className={seg(theme === "dark")} onClick={() => setTheme("dark")}>
               Dark
             </button>
@@ -196,21 +231,12 @@ export function TerminalImageModal({ open, onClose, initialOutput, editing, onAd
               Light
             </button>
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-soft">
-            <input type="checkbox" className="accent-[#c2410c]" checked={windowBar} onChange={(e) => setWindowBar(e.target.checked)} />
-            Window bar
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-soft">
-            <input type="checkbox" className="accent-[#c2410c]" checked={endPrompt} onChange={(e) => setEndPrompt(e.target.checked)} />
-            Ending prompt
-          </label>
-          {!editing && initialOutput.trim() && (
-            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-soft">
-              <input type="checkbox" className="accent-[#c2410c]" checked={clearText} onChange={(e) => setClearText(e.target.checked)} />
-              Replace output text with image
-            </label>
-          )}
-        </div>
+          <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+            {toggle("Window bar", windowBar, setWindowBar)}
+            {toggle("Ending prompt", endPrompt, setEndPrompt)}
+            {!editing && initialOutput.trim() && toggle("Replace output text with image", clearText, setClearText)}
+          </div>
+        </section>
       </div>
     </Modal>
   );
