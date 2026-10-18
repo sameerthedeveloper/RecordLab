@@ -805,6 +805,7 @@ export function RecordEditorPanel({
         description="Choose what this record contains, in print order."
         icon={LayoutList}
         size="md"
+        bodyClassName="p-5 pb-6 sm:p-7 sm:pb-8"
         footer={
           <>
             <button type="button" onClick={() => setLayoutOpen(false)} className={modalButton.secondary}>

@@ -696,6 +696,7 @@ export function DashboardModal({
         description="A folder for one subject's records, with its own record layout."
         icon={FolderPlus}
         size="md"
+        bodyClassName="p-5 pb-6 sm:p-7 sm:pb-8"
         footer={
           <>
             <button type="button" onClick={() => setNewFolderOpen(false)} className={modalButton.secondary}>
@@ -784,6 +785,7 @@ export function DashboardModal({
         description={editingSections ? `What every new record in "${editingSections.name}" contains.` : undefined}
         icon={LayoutList}
         size="md"
+        bodyClassName="p-5 pb-6 sm:p-7 sm:pb-8"
         footer={
           <>
             <button type="button" onClick={() => setEditingSections(null)} className={modalButton.secondary}>
