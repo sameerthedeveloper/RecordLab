@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { firstName } from "@/lib/adminFormat";
+import { buildMailHtml, safeUrl } from "@/lib/mailTemplate";
 import { verifyAdmin } from "@/lib/server/adminAuth";
 import { mailConfig, sendMail } from "@/lib/server/gmail";
 
@@ -9,21 +10,11 @@ export const dynamic = "force-dynamic";
 const MAX_RECIPIENTS = 100;
 const EMAIL = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]+$/;
 
-const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-/** Plain message -> simple, readable HTML: paragraphs on blank lines, line breaks inside, links kept clickable. */
-function toHtml(text: string): string {
-  const paragraphs = escapeHtml(text)
-    .split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 14px">${p.replace(/\n/g, "<br>").replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#c2410c">$1</a>')}</p>`)
-    .join("");
-  return `<!doctype html><html><body style="margin:0;background:#faf7f0;padding:24px"><div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5decb;border-radius:14px;padding:28px;font:15px/1.6 Arial,Helvetica,sans-serif;color:#1c2b33">${paragraphs}<hr style="border:none;border-top:1px solid #e5decb;margin:22px 0 12px"><p style="margin:0;font-size:12px;color:#6b7780">You are receiving this because you have a Record Lab account.</p></div></body></html>`;
-}
-
 interface Body {
   subject?: unknown;
   message?: unknown;
   recipients?: unknown;
+  cta?: { label?: unknown; url?: unknown } | null;
 }
 
 export async function POST(request: Request) {
@@ -38,6 +29,11 @@ export async function POST(request: Request) {
   const message = typeof body.message === "string" ? body.message.trim() : "";
   if (!subject || subject.length > 150) return NextResponse.json({ error: "Write a subject of up to 150 characters." }, { status: 400 });
   if (!message || message.length > 20_000) return NextResponse.json({ error: "Write a message of up to 20,000 characters." }, { status: 400 });
+
+  const ctaLabel = typeof body.cta?.label === "string" ? body.cta.label.trim().slice(0, 60) : "";
+  const ctaUrl = typeof body.cta?.url === "string" ? safeUrl(body.cta.url) : null;
+  if (ctaLabel && !ctaUrl) return NextResponse.json({ error: "The button link must start with https://." }, { status: 400 });
+  const cta = ctaLabel && ctaUrl ? { label: ctaLabel, url: ctaUrl } : null;
 
   const seen = new Set<string>();
   const recipients = (Array.isArray(body.recipients) ? body.recipients : [])
@@ -55,8 +51,9 @@ export async function POST(request: Request) {
         const first = firstName(r.name);
         const personalise = (s: string) => s.replace(/\{\{\s*name\s*\}\}/gi, first);
         const text = personalise(message);
+        const subj = personalise(subject);
         try {
-          await sendMail(cfg, { to: r.email, toName: r.name || undefined, subject: personalise(subject), text, html: toHtml(text) });
+          await sendMail(cfg, { to: r.email, toName: r.name || undefined, subject: subj, text: cta ? `${text}\n\n${cta.label}: ${cta.url}` : text, html: buildMailHtml({ subject: subj, text, cta }) });
           sent.push(r.email);
         } catch (e) {
           failed.push({ email: r.email, error: e instanceof Error ? e.message : "Couldn't send." });

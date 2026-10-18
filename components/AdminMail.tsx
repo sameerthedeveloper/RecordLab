@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, Loader2, Mail, Send } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebaseConfig";
 import type { ProfileRow } from "@/lib/adminService";
 import { DAY, emailDomainOf, firstName } from "@/lib/adminFormat";
+import { buildMailHtml } from "@/lib/mailTemplate";
 import { Card } from "./admin/ui";
 
 type Audience = "all" | "active7" | "new7" | "college" | "me";
@@ -39,6 +40,8 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   const [domain, setDomain] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("Hi {{name}},\n\n\n\nThanks,\nRecord Lab");
+  const [ctaLabel, setCtaLabel] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -79,8 +82,13 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
   }, [profiles, audience, domain, adminEmail]);
 
   const preview = firstName(recipients[0]?.name);
+  const previewHtml = useMemo(
+    () => buildMailHtml({ subject: (subject || "Your subject").replace(/\{\{\s*name\s*\}\}/gi, preview), text: message.replace(/\{\{\s*name\s*\}\}/gi, preview), cta: ctaLabel.trim() ? { label: ctaLabel, url: ctaUrl } : null }),
+    [subject, message, ctaLabel, ctaUrl, preview],
+  );
+  const ctaBad = ctaLabel.trim().length > 0 && !/^https?:\/\//i.test(ctaUrl.trim());
   const ready = status !== "loading" && status !== "error" && status.configured;
-  const canSend = ready && subject.trim().length > 0 && message.trim().length > 0 && recipients.length > 0 && !sending;
+  const canSend = ready && !ctaBad && subject.trim().length > 0 && message.trim().length > 0 && recipients.length > 0 && !sending;
 
   async function send() {
     setSending(true);
@@ -94,7 +102,7 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
         const res = await fetch("/api/admin/send-mail", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${await idToken()}` },
-          body: JSON.stringify({ subject, message, recipients: recipients.slice(i, i + CHUNK) }),
+          body: JSON.stringify({ subject, message, cta: ctaLabel.trim() ? { label: ctaLabel, url: ctaUrl } : null, recipients: recipients.slice(i, i + CHUNK) }),
         });
         const j = (await res.json().catch(() => ({}))) as { sent?: number; failed?: { email: string; error: string }[]; error?: string };
         if (!res.ok) {
@@ -139,8 +147,23 @@ export function AdminMail({ profiles, adminEmail, collegeOf }: Props) {
             <span className="mb-1 block text-xs font-semibold text-ink-soft">
               Message <span className="font-normal text-ink-soft/70">· use {"{{name}}"} for each person&apos;s first name</span>
             </span>
-            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={12} maxLength={20000} className={`${field} resize-y leading-relaxed`} />
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={10} maxLength={20000} className={`${field} resize-y leading-relaxed`} />
           </label>
+          <div className="grid gap-3 sm:grid-cols-[1fr_1.4fr]">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-ink-soft">Button text <span className="font-normal text-ink-soft/70">· optional</span></span>
+              <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} maxLength={60} placeholder="Open Record Lab" className={field} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-ink-soft">Button link</span>
+              <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://record-lab.vercel.app/editor" inputMode="url" className={field} aria-invalid={ctaBad} />
+              {ctaBad && <span className="mt-1 block text-xs text-red-700">The link must start with https://</span>}
+            </label>
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-ink-soft">How it looks <span className="font-normal text-ink-soft/70">· as {preview} would see it</span></p>
+            <iframe title="Email preview" sandbox="" srcDoc={previewHtml} className="h-[26rem] w-full rounded-xl border border-line bg-white" />
+          </div>
         </div>
       </Card>
 
