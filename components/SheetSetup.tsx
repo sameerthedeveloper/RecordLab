@@ -66,7 +66,7 @@ export function SheetSetup({ record, watermark, onFieldChange, onFormatChange, o
         <p className="mt-0.5 text-xs text-ink-soft/80">How the page looks when printed. Applies to this record.</p>
       </div>
 
-      <div role="tablist" aria-label="Sheet setup" className="grid grid-cols-4 gap-1.5 max-[420px]:grid-cols-2">
+      <div role="tablist" aria-label="Sheet setup" className="grid grid-cols-2 gap-2">
         {tabs.map((t, i) => {
           const on = tab === t.id;
           return (
