@@ -1,4 +1,5 @@
 import { DEFAULT_DOC_FONT } from "./fonts";
+import { sanitizeTemplate, type SectionTemplate } from "./sections";
 import {
   DEFAULT_HEADER_LAYOUT,
   DEFAULT_PAGE_BORDER,
@@ -42,6 +43,8 @@ export interface AppSettings {
   pageBorder: PageBorder;
   /** The student's department (free text), used to word AI prompts. */
   department: string;
+  /** Sections new records start with. null = the original programming-lab layout. Subjects can override it. */
+  defaultLayout: SectionTemplate | null;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -53,6 +56,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   recordFormat: "standard",
   pageBorder: DEFAULT_PAGE_BORDER,
   department: "",
+  defaultLayout: null,
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -69,6 +73,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     uiStyle: UI_STYLES.includes(parsed.uiStyle as UiStyle) ? (parsed.uiStyle as UiStyle) : "apple",
     recordFormat: RECORD_FORMATS.includes(parsed.recordFormat as RecordFormat) ? (parsed.recordFormat as RecordFormat) : "standard",
     pageBorder: resolvePageBorder(parsed.pageBorder),
+    defaultLayout: sanitizeTemplate(parsed.defaultLayout),
     department: typeof parsed.department === "string" ? parsed.department.trim().slice(0, 80) : "",
   };
 }

@@ -3,10 +3,10 @@
    - Pages: network-first, falling back to the last cached copy, then /offline.html.
    - html2pdf.js (cdnjs) and Google Fonts are cross-origin but needed to export / render offline: stale-while-revalidate.
    - Everything else cross-origin (Firebase, Puter) and non-GET requests go straight to the network. */
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC = `recordlab-static-${VERSION}`;
 const PAGES = `recordlab-pages-${VERSION}`;
-const CDN_HOSTS = ["cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+const CDN_HOSTS = ["cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net"];
 const HTML2PDF = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
 const SHELL = ["/", "/editor", "/dashboard", "/offline.html", "/icons/icon-192.png", "/icons/icon-512.png"];
 
@@ -36,6 +36,8 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) {
     if (!CDN_HOSTS.includes(url.hostname)) return;
+    // jsDelivr is only cached for the Python runtime (Pyodide), so Python runs work offline after the first run.
+    if (url.hostname === "cdn.jsdelivr.net" && !url.pathname.startsWith("/pyodide/")) return;
     event.respondWith(
       caches.open(STATIC).then(async (cache) => {
         const hit = await cache.match(req);

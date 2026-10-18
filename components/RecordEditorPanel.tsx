@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Cloud, FilePlus2, Files, LayoutList, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
+import { Cloud, FilePlus2, Files, LayoutList, Play, ShieldCheck, TriangleAlert, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { SheetSetup } from "./SheetSetup";
-import { Modal, modalButton } from "./Modal";
-import { SectionTemplateEditor } from "./SectionTemplateEditor";
-import { SECTION_PRESETS, isCustomLayout, type SectionTemplate } from "@/lib/sections";
+import { isCustomLayout } from "@/lib/sections";
+import { outputStatus, runnableSource } from "@/lib/runner/source";
 import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
@@ -41,8 +40,8 @@ interface RecordEditorPanelProps {
   /** Starts a clean record (asks first when the current one has unsaved edits). */
   onNewRecord: () => void;
   onOpenSettings: () => void;
-  /** Sets this record's section layout (null = original programming layout); optionally saves it as the subject's default. */
-  onApplyLayout: (template: SectionTemplate | null, saveToSubject: boolean) => void;
+  /** Opens the run-the-program dialog. */
+  onRunCode: () => void;
   isSavingCloud: boolean;
   /** Pages the record currently paginates to. */
   pageCount?: number;
@@ -89,7 +88,7 @@ export function RecordEditorPanel({
   onOpenDashboard,
   onNewRecord,
   onOpenSettings,
-  onApplyLayout,
+  onRunCode,
   isSavingCloud,
   pageCount,
   visible,
@@ -107,9 +106,6 @@ export function RecordEditorPanel({
   const customSections = record.sections ?? [];
   const sectionValue = (id: string) => record.section_values?.[id] ?? "";
   const setSectionValue = (id: string, v: string) => onFieldChange("section_values", { ...(record.section_values ?? {}), [id]: v });
-  const [layoutOpen, setLayoutOpen] = useState(false);
-  const [layoutDraft, setLayoutDraft] = useState<SectionTemplate | null>(null);
-  const [saveToSubject, setSaveToSubject] = useState(false);
 
   // Section rail: the original six, or this record's own sections, always bracketed by Details and the closing block.
   const SECTIONS: { id: SectionId; label: string }[] = custom
@@ -143,18 +139,59 @@ export function RecordEditorPanel({
   const doneCount = trackedIds.filter((s) => filled[s.id]).length;
   const layoutKey = SECTIONS.map((x) => x.id).join("|");
 
-  function openLayoutEditor() {
-    setLayoutDraft(custom ? { sections: customSections.map((c) => ({ ...c })), resultTitle: record.result_title ?? "Result" } : null);
-    setSaveToSubject(false);
-    setLayoutOpen(true);
-  }
-  const layoutName = custom
-    ? `Custom, ${customSections.length} sections`
-    : SECTION_PRESETS[0].name;
+
+  /** Run button and the verified / sample status line at the top of the output section. */
+  const renderRunBar = () => {
+    const status = outputStatus(record);
+    const hasCode = runnableSource(record).trim().length > 0;
+    const hasOutput = Boolean(record.output.trim() || Object.values(record.section_values ?? {}).some((v) => v.trim()) || record.output_images.length);
+    const run = record.output_run;
+    const when = run ? new Date(run.ranAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
+    const lang = run ? run.language[0].toUpperCase() + run.language.slice(1) : "";
+    return (
+      <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-paper/60 p-2.5">
+        <button
+          type="button"
+          onClick={onRunCode}
+          disabled={!hasCode}
+          title={hasCode ? "Run the program and capture its real output" : "Add code to the Source code section first"}
+          className="ui-primary flex min-h-10 shrink-0 items-center gap-1.5 px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
+        >
+          <Play className="h-3.5 w-3.5" strokeWidth={2.5} /> Run the code
+        </button>
+        <p
+          className={`min-w-0 flex-1 text-[11px] leading-snug ${
+            status === "verified" ? "font-semibold text-emerald-700" : status === "none" ? "text-ink-soft/75" : "font-semibold text-amber-800"
+          }`}
+        >
+          {status === "verified" && (
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+              Verified: output captured by running this code ({lang}, {run?.engine === "browser" ? "on this device" : "runner service"}, {when})
+            </span>
+          )}
+          {status === "stale" && (
+            <span className="flex items-center gap-1">
+              <TriangleAlert className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+              The code changed after this output was captured. Run it again to verify.
+            </span>
+          )}
+          {status === "failed" && (
+            <span className="flex items-center gap-1">
+              <TriangleAlert className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+              The last run ended with an error, so this output is not verified.
+            </span>
+          )}
+          {status === "none" && (hasOutput ? "Not run: this output is typed or sample text." : "Not run yet. Run the code to capture real output.")}
+        </p>
+      </div>
+    );
+  };
 
   /** The text + images section: the fixed Output of the programming layout, or any custom section of that kind. */
   const renderOutputSection = (o: { id: string; title: string; index: string; text: string; onText: (v: string) => void; textLabel: string; placeholder: string; inputId: string; imagesInputId: string }) => (
 <EditorSection id={o.id} title={o.title} index={o.index} filled={Boolean(o.text.trim() || record.output_images.length)}>
+            {renderRunBar()}
             <label htmlFor={o.inputId} className={labelClass}>
               {o.textLabel}
             </label>
@@ -592,22 +629,6 @@ export function RecordEditorPanel({
               )}
 
 
-              <div data-onboarding="record-layout" className="rounded-xl border border-line bg-paper/60 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-ink-soft">Record layout</p>
-                    <p className="truncate text-sm font-semibold text-ink">{layoutName}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={openLayoutEditor}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent max-md:min-h-11"
-                  >
-                    <LayoutList className="h-3.5 w-3.5" strokeWidth={2.1} />
-                    Edit sections
-                  </button>
-                </div>
-              </div>
             </div>
           </EditorSection>
         </div>
@@ -798,41 +819,6 @@ export function RecordEditorPanel({
         </div>
       </div>
 
-      <Modal
-        open={layoutOpen}
-        onClose={() => setLayoutOpen(false)}
-        title="Record sections"
-        description="Choose what this record contains, in print order."
-        icon={LayoutList}
-        size="md"
-        bodyClassName="p-5 pb-6 sm:p-7 sm:pb-8"
-        footer={
-          <>
-            <button type="button" onClick={() => setLayoutOpen(false)} className={modalButton.secondary}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onApplyLayout(layoutDraft, saveToSubject);
-                setLayoutOpen(false);
-              }}
-              className={modalButton.primary}
-            >
-              Use this layout
-            </button>
-          </>
-        }
-      >
-        <SectionTemplateEditor idPrefix="record-layout" value={layoutDraft} onChange={setLayoutDraft} />
-        {signedIn && folderId && (
-          <label className="mt-4 flex cursor-pointer items-start gap-2 text-xs text-ink-soft">
-            <input type="checkbox" checked={saveToSubject} onChange={(e) => setSaveToSubject(e.target.checked)} className="mt-0.5 accent-[#c2410c]" />
-            <span>Also use this layout for new records in {folders.find((f) => f.id === folderId)?.name ?? "this subject"}.</span>
-          </label>
-        )}
-        <p className="mt-3 text-[11px] text-ink-soft/70">Text you already typed stays with its section; sections you remove are hidden, not erased.</p>
-      </Modal>
     </div>
   );
 }

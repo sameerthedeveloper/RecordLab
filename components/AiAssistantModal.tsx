@@ -12,7 +12,7 @@ import type { AiContext, ParsedLabRecord } from "@/lib/aiAssistant";
 interface AiAssistantModalProps {
   open: boolean;
   onClose: () => void;
-  onImport: (parsed: ParsedLabRecord, experimentTitle: string) => void;
+  onImport: (parsed: ParsedLabRecord, experimentTitle: string, runAfter?: boolean) => void;
   /** Department and (custom) section layout the prompt is written for. */
   context?: AiContext;
 }
@@ -27,6 +27,7 @@ export function AiAssistantModal({ open, onClose, onImport, context }: AiAssista
   const [custom, setCustom] = useState("");
   const [importText, setImportText] = useState("");
   const [error, setError] = useState("");
+  const [runAfter, setRunAfter] = useState(false);
   const activeGenerationIdRef = useRef<string | null>(null);
 
   if (!open) return null;
@@ -38,7 +39,7 @@ export function AiAssistantModal({ open, onClose, onImport, context }: AiAssista
 
   function handleImported(parsed: ParsedLabRecord, generationId: string) {
     activeGenerationIdRef.current = generationId;
-    onImport(parsed, title);
+    onImport(parsed, title, runAfter);
   }
 
   function beginGeneration(): string {
@@ -49,7 +50,7 @@ export function AiAssistantModal({ open, onClose, onImport, context }: AiAssista
 
   function commitIfActive(generationId: string, parsed: ParsedLabRecord, experimentTitle: string): boolean {
     if (generationId !== activeGenerationIdRef.current) return false;
-    onImport(parsed, experimentTitle);
+    onImport(parsed, experimentTitle, runAfter);
     return true;
   }
 
@@ -90,6 +91,16 @@ export function AiAssistantModal({ open, onClose, onImport, context }: AiAssista
             <span>Direct LLM</span>
           </button>
         </div>
+
+        {!context?.layout && (
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line bg-white px-3.5 py-2.5 text-xs text-ink-soft">
+            <input type="checkbox" checked={runAfter} onChange={(e) => setRunAfter(e.target.checked)} className="mt-0.5 accent-[#c2410c]" />
+            <span>
+              <span className="font-semibold text-ink">Run the program after importing</span>
+              <span className="block text-ink-soft/80">Captures the real output (and graphs) instead of the AI&apos;s sample output. You review it before it goes in.</span>
+            </span>
+          </label>
+        )}
 
         {error && (
           <div className="flex rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 items-center gap-2">

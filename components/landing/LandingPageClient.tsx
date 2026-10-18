@@ -1,5 +1,6 @@
 "use client";
 
+import { AdSlot } from "@/components/AdSlot";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -566,6 +567,10 @@ export function LandingPageClient() {
         </div>
       </section>
 
+      <div className="px-5 py-6 sm:py-10">
+        <AdSlot name="Landing, after features" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LANDING_1} />
+      </div>
+
       {/* ============ INDEX ============ */}
       <section
         id="index"
@@ -720,6 +725,10 @@ export function LandingPageClient() {
           </div>
         </div>
       </section>
+
+      <div className="px-5 pb-8">
+        <AdSlot name="Landing, above footer" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LANDING_2} />
+      </div>
 
       <footer className="px-3 pb-3 sm:px-5 sm:pb-5">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-5 rounded-[2rem] bg-ink px-6 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-paper shadow-[0_24px_60px_-28px_rgba(28,43,51,0.7)] sm:flex-row sm:justify-between sm:px-9 sm:text-left">

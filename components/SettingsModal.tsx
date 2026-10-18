@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
+import { FileText, LayoutList, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
 import { AccountSettings } from "./AccountSettings";
@@ -10,6 +10,7 @@ import { PageBorderControls } from "./PageBorderControls";
 import { InstallAppSection } from "./InstallAppSection";
 import { WatermarkControls } from "./WatermarkOptionsSection";
 import { DEPARTMENTS } from "@/lib/sections";
+import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { applyUiStyle, type AppSettings, type UiStyle } from "@/lib/settings";
@@ -26,12 +27,13 @@ const inputClass =
   "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
-type Tab = "account" | "appearance" | "record" | "heading" | "watermark";
+type Tab = "account" | "appearance" | "record" | "sections" | "heading" | "watermark";
 
 const TABS: { id: Tab; label: string; icon: typeof Palette }[] = [
   { id: "account", label: "Account", icon: UserIcon },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "record", label: "Record", icon: FileText },
+  { id: "sections", label: "Record sections", icon: LayoutList },
   { id: "heading", label: "Heading table", icon: Rows3 },
   { id: "watermark", label: "Watermark", icon: Stamp },
 ];
@@ -248,6 +250,14 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
         />
         <p className="mt-1.5 text-xs text-ink-soft/70">The rule around each page, for new records.</p>
       </section>
+            </div>
+          )}
+          {tab === "sections" && (
+            <div className="space-y-4">
+              <p className="text-xs leading-relaxed text-ink-soft/80">
+                The sections every new record starts with. Pick your department, then rename, reorder or add sections. A subject can have its own layout (Files, open a subject, Edit record sections); picking that subject in the editor switches to it.
+              </p>
+              <SectionTemplateEditor idPrefix="settings-layout" value={draft.defaultLayout} onChange={(defaultLayout) => setDraft({ ...draft, defaultLayout })} />
             </div>
           )}
           {tab === "heading" && (

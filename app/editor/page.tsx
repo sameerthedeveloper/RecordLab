@@ -17,6 +17,9 @@ import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
 import { applyTemplate, isCustomLayout, type SectionTemplate } from "@/lib/sections";
 import type { AiContext } from "@/lib/aiAssistant";
+import { RunCodeModal } from "@/components/RunCodeModal";
+import { hashCode, outputTarget } from "@/lib/runner/source";
+import type { RunResult } from "@/lib/runner";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
@@ -68,6 +71,9 @@ export default function Home() {
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [runOpen, setRunOpen] = useState(false);
+  // True when the person ticked "run after importing": the dialog starts running by itself.
+  const [runAuto, setRunAuto] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
@@ -115,13 +121,18 @@ export default function Home() {
   useEffect(() => {
     const s = loadSettings();
     setSettings(s);
-    setRecord((prev) => ({
-      ...prev,
-      rrn: s.rrn,
-      headerLayout: s.headerLayout,
-      pageBorder: s.pageBorder,
-      ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout, s.pageBorder) : {}),
-    }));
+    setRecord((prev) =>
+      applyTemplate(
+        {
+          ...prev,
+          rrn: s.rrn,
+          headerLayout: s.headerLayout,
+          pageBorder: s.pageBorder,
+          ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout, s.pageBorder) : {}),
+        },
+        s.defaultLayout
+      )
+    );
     setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
 
     // Opened from a share link: load the shared snapshot as a fresh, unsaved copy.
@@ -189,6 +200,14 @@ export default function Home() {
     setWatermark((prev) =>
       JSON.stringify(prev) === JSON.stringify(prevSettings.watermark) ? next.watermark : prev
     );
+    // A changed default layout reaches the open record only if it is still on the old default layout.
+    if (JSON.stringify(next.defaultLayout) !== JSON.stringify(prevSettings.defaultLayout)) {
+      setRecord((prev) =>
+        JSON.stringify(prev.sections ?? null) === JSON.stringify(prevSettings.defaultLayout?.sections ?? null)
+          ? applyTemplate(prev, next.defaultLayout)
+          : prev
+      );
+    }
     // A changed default format reaches the open record only if it is still on the old default.
     if (next.recordFormat !== prevSettings.recordFormat) {
       setRecord((prev) =>
@@ -360,17 +379,6 @@ export default function Home() {
     }
   }
 
-  /** Applies a section layout to the open record; optionally keeps it as the subject's layout for new records. */
-  function handleApplyLayout(template: SectionTemplate | null, saveToSubject: boolean) {
-    setRecord((prev) => applyTemplate(prev, template));
-    showToast(template ? "Record layout updated." : "Back to the programming layout.");
-    if (saveToSubject && cloudFolderId && authUser) {
-      setFolderTemplate(authUser.uid, cloudFolderId, template)
-        .then(() => showToast("Saved as this subject's layout."))
-        .catch(() => showToast("Couldn't save the subject's layout."));
-    }
-  }
-
   /** Picking a subject also switches the record to that subject's layout. */
   function handleFolderChange(id: string | null) {
     setCloudFolderId(id);
@@ -380,16 +388,43 @@ export default function Home() {
     if (folder.template) showToast(`Using the ${folder.name} layout.`);
   }
 
+  /** Puts what a real run produced into the OUTPUT section and marks it as verified. */
+  function handleUseRun(result: RunResult, code: string, opts: { replace: boolean; text: boolean; images: boolean }) {
+    track("run_code_used", { language: result.language, engine: result.engine });
+    setRecord((prev) => {
+      const target = outputTarget(prev);
+      if (!target) return prev;
+      const text = opts.text ? result.stdout.replace(/\s+$/, "") : null;
+      const newImages: OutputImage[] = opts.images
+        ? result.images.map((img, i) => ({ id: Date.now() + i + Math.random(), src: img.dataUrl, name: img.name, captured: true }))
+        : [];
+      const run = { language: result.language, engine: result.engine, ranAt: Date.now(), codeHash: hashCode(code), ok: result.ok };
+      const merge = (old: string) => (text === null ? old : opts.replace || !old.trim() ? text : `${old.replace(/\s+$/, "")}\n${text}`);
+      const images = opts.replace ? newImages : [...prev.output_images, ...newImages];
+      if (target.kind === "legacy") return { ...prev, output: merge(prev.output), output_images: opts.images || opts.replace ? images : prev.output_images, output_run: run };
+      return {
+        ...prev,
+        section_values: { ...(prev.section_values ?? {}), [target.id]: merge(prev.section_values?.[target.id] ?? "") },
+        output_images: opts.images || opts.replace ? images : prev.output_images,
+        output_run: run,
+      };
+    });
+    showToast("Output captured from the real run.");
+  }
+
   /** A clean record seeded from the saved defaults, like a first visit. Confirms first when edits would be lost. */
   function handleNewRecord() {
     const s = settingsRef.current;
-    const fresh: RecordState = {
-      ...DEFAULT_RECORD,
-      rrn: s.rrn,
-      headerLayout: s.headerLayout,
-      pageBorder: s.pageBorder,
-      ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout, s.pageBorder) : {}),
-    };
+    const fresh: RecordState = applyTemplate(
+      {
+        ...DEFAULT_RECORD,
+        rrn: s.rrn,
+        headerLayout: s.headerLayout,
+        pageBorder: s.pageBorder,
+        ...(s.recordFormat !== "standard" ? formatPatch(s.recordFormat, s.headerLayout, s.pageBorder) : {}),
+      },
+      s.defaultLayout
+    );
     const dirty = JSON.stringify(record) !== JSON.stringify(fresh);
     if (dirty && !window.confirm("Start a new record? Changes you haven't saved to the cloud or downloaded will be lost.")) return;
     setRecord(fresh);
@@ -566,8 +601,12 @@ export default function Home() {
     resultTitle: record.result_title ?? "Result",
   };
 
-  function handleAiImport(parsed: ParsedLabRecord, experimentTitle: string) {
+  function handleAiImport(parsed: ParsedLabRecord, experimentTitle: string, runAfter?: boolean) {
     track("ai_assist_used");
+    if (runAfter && !parsed.custom) {
+      setRunAuto(true);
+      setRunOpen(true);
+    }
     setRecord((prev) => {
       const newTitle = experimentTitle.trim() || prev.title.trim();
       if (parsed.custom && isCustomLayout(prev)) {
@@ -612,7 +651,6 @@ export default function Home() {
           folders={folders ?? []}
           folderId={cloudFolderId}
           onFolderChange={handleFolderChange}
-          onApplyLayout={handleApplyLayout}
           onCreateFolder={async (name) => {
             if (!authUser) return null;
             try {
@@ -630,6 +668,10 @@ export default function Home() {
           onLoadWork={handleLoadWork}
           onSaveCloud={handleSaveCloud}
           onNewRecord={handleNewRecord}
+          onRunCode={() => {
+            setRunAuto(false);
+            setRunOpen(true);
+          }}
           onOpenDashboard={() => setDashboardOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
           isSavingCloud={isSavingCloud}
@@ -689,6 +731,8 @@ export default function Home() {
         onNewRecord={handleNewRecord}
         onToast={showToast}
       />
+
+      <RunCodeModal open={runOpen} onClose={() => setRunOpen(false)} record={record} autoRun={runAuto} onUse={handleUseRun} />
 
       <SettingsModal
         open={settingsOpen}

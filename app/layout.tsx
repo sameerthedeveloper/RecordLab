@@ -80,6 +80,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PwaRegister />
         <OfflineBadge />
         <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
+        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
         <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
           strategy="lazyOnload"

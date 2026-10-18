@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Download, FileDown, Files, FolderOpen, House, Pencil, Plus } from "lucide-react";
 import { AccountMenu } from "./AccountMenu";
+import { AdSlot } from "./AdSlot";
 import { DashboardModal } from "./DashboardModal";
 import { FileThumb, relativeTime, stripHtml } from "./CloudFileViews";
 import { useAuthUser } from "@/lib/authService";
@@ -245,6 +246,8 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
             </div>
           </section>
         )}
+
+        <AdSlot name="Home, between sections" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME} shape="rectangle" />
 
         {recent.length > 0 && (
           <section aria-label="Recent records">

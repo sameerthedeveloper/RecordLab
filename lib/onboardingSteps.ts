@@ -125,11 +125,11 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     body: "Open your files, download any of them as a PDF from its menu, or start a clean new record.",
   },
   {
-    target: '[data-onboarding="record-layout"]',
+    target: '[data-onboarding="open-settings"]',
     panel: "inputs",
-    side: "right",
+    side: "bottom",
     since: 2,
     title: "New: sections for every department",
-    body: "Not a programming lab? Pick Physics, Electronics, Mechanical or build your own sections. Give each subject its own layout from the Files screen.",
+    body: "Not a programming lab? In Settings, Record sections, pick Physics, Electronics or Mechanical, or build your own. Each subject can also have its own layout from the Files screen.",
   },
 ];

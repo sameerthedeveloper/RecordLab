@@ -1,10 +1,23 @@
 import type { SectionDef } from "./sections";
 import type { TerminalImageOptions } from "./terminalImage";
 
+/** Proof that the output was produced by running the program, and which program. */
+export interface OutputRun {
+  language: string;
+  engine: "browser" | "remote";
+  ranAt: number;
+  /** Hash of the code that was run, to notice when it has been edited since. */
+  codeHash: string;
+  /** False when the program ended with an error. */
+  ok: boolean;
+}
+
 export interface OutputImage {
   id: number;
   src: string;
   name: string;
+  /** True for graphs / images captured from a real run. */
+  captured?: boolean;
   /** Present on generated terminal screenshots; lets the user reopen and edit them. */
   terminal?: TerminalImageOptions;
 }
@@ -159,6 +172,8 @@ export interface RecordState {
   section_values?: Record<string, string>;
   /** Heading of the closing block in a custom layout ("Result", "Conclusion"...). */
   result_title?: string;
+  /** Set when the OUTPUT came from actually running the code (see lib/runner). Absent = typed or sample output. */
+  output_run?: OutputRun;
   result: string;
   headerLayout: HeaderLayout;
   /** Optional so older records open as "standard". */
