@@ -629,7 +629,32 @@ export function RecordEditorPanel({
                 </div>
               )}
 
-
+              <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
+                {[
+                  ...(!custom
+                    ? [{ id: "detailsReviewToggle", label: "Review questions", hint: "Questions and answers after the output", key: "review_questions_enabled" as const, on: record.review_questions_enabled }]
+                    : []),
+                  { id: "detailsManualToggle", label: "Manual calculation", hint: `${MANUAL_CALCULATION_LINES} blank lines before Result`, key: "manual_calculation_enabled" as const, on: Boolean(record.manual_calculation_enabled) },
+                ].map((t) => (
+                  <label key={t.id} htmlFor={t.id} className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5">
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-ink">{t.label}</span>
+                      <span className="block text-xs text-ink-soft/70">{t.hint}</span>
+                    </span>
+                    <span className="relative inline-flex shrink-0">
+                      <input
+                        id={t.id}
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={t.on}
+                        onChange={(e) => onFieldChange(t.key, e.target.checked)}
+                      />
+                      <span className="h-5 w-9 rounded-full bg-gray-200 transition-colors peer-checked:bg-accent peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent" />
+                      <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </EditorSection>
         </div>
