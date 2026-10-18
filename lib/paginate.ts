@@ -24,8 +24,8 @@ const RESULT_BLOCK_BUFFER = 24;
 // printed record still has room to fill in by hand.
 // ~5 lines at the record-body line-height (16px font-size * 1.5 line-height).
 const FIVE_LINE_MIN_HEIGHT = 120;
-// Half a page of writing space for the (usually longer) algorithm section.
-const HALF_PAGE_MIN_HEIGHT = Math.round(PAGE_HEIGHT / 2);
+// An empty ALGORITHM leaves 26 ruled-out lines (24px each) of room to write the steps by hand.
+const HALF_PAGE_MIN_HEIGHT = 26 * 24;
 
 const EMPTY_SECTION_MIN_HEIGHT: Record<string, number> = {
   aim: FIVE_LINE_MIN_HEIGHT,
