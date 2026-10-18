@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BarChart3, Building2, FileText, Mail, ShieldCheck, ShieldPlus, Users, type LucideIcon } from "lucide-react";
+import { BarChart3, Building2, FileText, ShieldCheck, ShieldPlus, Users, type LucideIcon } from "lucide-react";
 import { collection, getCountFromServer, query, Timestamp, where } from "firebase/firestore";
 import { getDb } from "@/lib/firebaseConfig";
+import { useAuthUser } from "@/lib/authService";
+import { QuickMail } from "./QuickMail";
 
 interface Counts {
   users: number;
@@ -28,13 +30,13 @@ const LINKS: { href: string; label: string; hint: string; icon: LucideIcon }[] =
   { href: "/admin/users", label: "Users", hint: "Who signed up and was seen lately", icon: Users },
   { href: "/admin/records", label: "Records", hint: "Read what people made", icon: FileText },
   { href: "/admin/colleges", label: "Colleges", hint: "Names students entered", icon: Building2 },
-  { href: "/admin/mail", label: "Send mail", hint: "Write to everyone or one college", icon: Mail },
   { href: "/admin/admins", label: "Admins", hint: "Add or hand over access", icon: ShieldPlus },
 ];
 
 /** Settings → Admin: only admins ever see this tab. The real protection is the Firestore rules. */
 export function AdminSettings({ onNavigate }: { onNavigate: () => void }) {
   const [counts, setCounts] = useState<Counts | null>(null);
+  const email = useAuthUser()?.email ?? null;
 
   useEffect(() => {
     let live = true;
@@ -80,6 +82,8 @@ export function AdminSettings({ onNavigate }: { onNavigate: () => void }) {
           ))}
         </dl>
       )}
+
+      <QuickMail adminEmail={email} onNavigate={onNavigate} />
 
       <section>
         <h3 className="mb-3 font-serif text-sm font-bold text-ink">Jump to</h3>
