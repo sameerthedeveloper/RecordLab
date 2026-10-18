@@ -3,7 +3,7 @@ import { LandingPageClient } from "@/components/landing/LandingPageClient";
 
 const title = "Record Lab — Straight to the fair copy";
 const description =
-  "Specially curated for Crescent CSE students — type your lab record once, get a print-ready fair copy.";
+  "Lab records for every department — pick your sections, run your code for real output, and get a print-ready fair copy.";
 
 export const metadata: Metadata = {
   title,

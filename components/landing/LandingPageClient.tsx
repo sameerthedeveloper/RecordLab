@@ -888,7 +888,7 @@ export function LandingPageClient() {
           </a>
           <div className="max-w-md text-xs leading-relaxed text-paper/60">
             <p className="font-semibold text-paper/85">Record Lab is a {BRAND.name} product.</p>
-            <p className="mt-1">Specially curated for Crescent CSE students, built for lab-record season.</p>
+            <p className="mt-1">Built for lab-record season, in every department.</p>
           </div>
         </div>
       </footer>
