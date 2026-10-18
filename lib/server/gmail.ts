@@ -52,18 +52,21 @@ export interface OutgoingMail {
   html: string;
 }
 
-function buildMessage(cfg: MailConfig, mail: OutgoingMail): string {
+export function buildMessage(cfg: MailConfig, mail: OutgoingMail): string {
   const boundary = `rl_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
   const from = `${header(oneLine(cfg.senderName))} <${cfg.sender}>`;
   const to = mail.toName ? `${header(oneLine(mail.toName))} <${mail.to}>` : mail.to;
-  return [
+  // Headers first, with no blank line among them (an empty Reply-To must not leave one: the first blank
+  // line ends the headers and everything after it would show up as text in the message body).
+  const headers = [
     `From: ${from}`,
     `To: ${to}`,
-    cfg.replyTo ? `Reply-To: ${cfg.replyTo}` : "",
+    cfg.replyTo ? `Reply-To: ${cfg.replyTo}` : null,
     `Subject: ${header(oneLine(mail.subject))}`,
     "MIME-Version: 1.0",
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    "",
+  ].filter((l): l is string => l !== null);
+  const body = [
     `--${boundary}`,
     'Content-Type: text/plain; charset="UTF-8"',
     "Content-Transfer-Encoding: base64",
@@ -76,7 +79,8 @@ function buildMessage(cfg: MailConfig, mail: OutgoingMail): string {
     wrap76(b64(mail.html)),
     `--${boundary}--`,
     "",
-  ].join("\r\n");
+  ];
+  return [...headers, "", ...body].join("\r\n");
 }
 
 export async function sendMail(cfg: MailConfig, mail: OutgoingMail): Promise<void> {
