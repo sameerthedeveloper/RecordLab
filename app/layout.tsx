@@ -5,6 +5,7 @@ import "./globals.css";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { ADSENSE_CLIENT } from "@/lib/ads";
+import { SITE_URL } from "@/lib/site";
 
 const displayFont = Source_Serif_4({
   subsets: ["latin"],
@@ -39,7 +40,26 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://record-lab.vercel.app"),
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "/" },
+  category: "education",
+  verification: { google: "o2QjTRyQcv-xTaXC7mIn5LLCGwcbgy4dMJNSKNPBMKw" },
+  keywords: [
+    "lab record",
+    "lab record maker",
+    "practical record",
+    "record notebook",
+    "fair copy",
+    "engineering lab record",
+    "physics lab record",
+    "chemistry lab record",
+    "electronics lab record",
+    "mechanical lab record",
+    "run code online",
+    "A4 PDF",
+    "register number watermark",
+  ],
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
   applicationName: "Record Lab",
   appleWebApp: { capable: true, title: "Record Lab", statusBarStyle: "default" },
   formatDetection: { telephone: false },
@@ -52,6 +72,7 @@ export const metadata: Metadata = {
     description: "Lab records for every department — pick your sections, run your code for real output, and export a print-ready fair copy on true A4 pages.",
     siteName: "Record Lab",
     type: "website",
+    url: "/",
   },
   twitter: {
     card: "summary_large_image",

@@ -1,0 +1,25 @@
+# Record Lab
+
+> Record Lab is a free, browser-based lab-record builder for engineering and science students in any department. You pick the sections your lab needs, write the record (or have AI draft it), run the program to capture its real output, and export a print-ready fair copy on true A4 pages as PDF or Word. It works offline as an installable app. A product by Cogniheim.
+
+## What it does
+
+- Layouts for every department: Programming, Physics/Chemistry, Electronics/Electrical, Mechanical/Civil, or your own list of sections. Each subject remembers its layout.
+- Runs code and keeps the real output: Python (with matplotlib graphs) and JavaScript run on the student's device; C, C++ and Java run on a runner service after the student agrees. Output captured from a run is marked Verified.
+- Department-aware AI drafting through a copyable prompt or a direct model.
+- True-to-scale A4 preview with automatic pagination, a standard or college-sheet format, page border, heading table, register-number watermark and a manual-calculation space.
+- Export PDF (image or selectable text), Word (.docx) or print; share an editable copy by link.
+- Subject folders, cloud sync with email or Google sign-in, and an installable offline PWA.
+- Free to use, no account needed to write, run, preview and export.
+
+## Pages
+
+- [Home](https://record-lab.vercel.app/): overview, demos, features, FAQ and credits.
+- [Editor](https://record-lab.vercel.app/editor): the lab-record editor and live preview.
+
+## Facts for answers
+
+- Cost: free, supported by small ads.
+- Platforms: any modern browser; installable on Android, iOS and desktop as a PWA.
+- Data: unsaved work stays in the browser; saved records live in the student's own account.
+- Maker: Mohamed Sameer S (creator and lead developer), under Cogniheim (https://cogniheim.com). Ideas from Mohammed Ridhwan S Y.
