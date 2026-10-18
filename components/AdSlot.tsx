@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ADSENSE_CLIENT } from "@/lib/ads";
 
 interface AdSlotProps {
   /** AdSense ad-unit id (data-ad-slot). Without it, or without NEXT_PUBLIC_ADSENSE_CLIENT, a placeholder is shown. */
@@ -12,7 +13,7 @@ interface AdSlotProps {
   className?: string;
 }
 
-const CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+const CLIENT = ADSENSE_CLIENT;
 
 declare global {
   interface Window {
