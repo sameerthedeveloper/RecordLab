@@ -14,12 +14,17 @@ export const ago = (d: Date | null) => {
   return fmtDate(d);
 };
 
-/** Change from a previous period: "+12%", "-4%", or "new" when there was nothing before. */
+/**
+ * Change from a previous period. Small counts show the plain difference ("+3"), because "+200%" of 1 is noise;
+ * larger ones show a percentage. "new" when there was nothing before.
+ */
 export function delta(current: number, previous: number): { label: string; tone: "up" | "down" | "flat" } {
-  if (previous === 0) return current === 0 ? { label: "no change", tone: "flat" } : { label: "new", tone: "up" };
-  const pct = Math.round(((current - previous) / previous) * 100);
-  if (pct === 0) return { label: "no change", tone: "flat" };
-  return { label: `${pct > 0 ? "+" : ""}${pct}%`, tone: pct > 0 ? "up" : "down" };
+  const diff = current - previous;
+  if (diff === 0) return { label: "no change", tone: "flat" };
+  if (previous === 0 && current >= 10) return { label: "new", tone: "up" };
+  if (Math.max(current, previous) < 10) return { label: `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`, tone: diff > 0 ? "up" : "down" };
+  const pct = Math.round((diff / previous) * 100);
+  return { label: `${pct > 0 ? "+" : "−"}${Math.abs(pct)}%`, tone: pct > 0 ? "up" : "down" };
 }
 
 export const emailDomainOf = (email: string | null | undefined) => email?.split("@")[1]?.toLowerCase() ?? null;

@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useAdmin } from "./AdminProvider";
 
 /** Shows the load error or spinner until the dashboard data is ready; renders children (with the data) once it is. */
@@ -15,9 +14,19 @@ export function WhenLoaded({ children }: { children: (ctx: NonNullable<ReturnTyp
     );
   }
   if (!ready) {
+    const block = "rounded-2xl border border-line bg-white motion-safe:animate-pulse";
     return (
-      <div className="flex justify-center py-24" role="status">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+      <div role="status" aria-label="Loading the dashboard" className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={`${block} h-[8.5rem]`} />
+          ))}
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className={`${block} h-72`} />
+          <div className={`${block} h-72`} />
+        </div>
+        <span className="sr-only">Loading…</span>
       </div>
     );
   }

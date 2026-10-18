@@ -1109,3 +1109,12 @@ html:not([data-ui="classic"]) :is(input, select, textarea).rounded-lg:not([type=
   .loader-stamp { animation: none; opacity: 1; transform: rotate(-6deg); }
   .loader-dots::after { animation: none; content: "..."; }
 }
+
+/* Admin area: every link and button shows where keyboard focus is. */
+.admin-area :is(a, button, summary):focus-visible {
+  outline: 2px solid rgb(var(--c-accent));
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-area * { animation: none !important; transition-duration: 0.01ms !important; }
+}

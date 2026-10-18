@@ -11,7 +11,7 @@ import { AuthModal } from "../AuthModal";
 export const RANGES = [7, 30, 90] as const;
 export type Range = (typeof RANGES)[number];
 
-interface AdminContextValue {
+export interface AdminContextValue {
   /** The signed-in admin. */
   me: { uid: string; email: string | null; name: string };
   range: Range;
@@ -24,7 +24,8 @@ interface AdminContextValue {
   refresh: () => Promise<void>;
 }
 
-const Ctx = createContext<AdminContextValue | null>(null);
+export const AdminContext = createContext<AdminContextValue | null>(null);
+const Ctx = AdminContext;
 
 export function useAdmin(): AdminContextValue {
   const v = useContext(Ctx);

@@ -46,15 +46,15 @@ function UsersTable({ view, profiles, q, setQ, shown, setShown }: { view: import
         {filtered.length} of {view.users} users{unnamed > 0 ? ` · ${unnamed} haven't given a name yet (they are asked when they next open the app)` : ""}
       </p>
       <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[44rem] text-left text-[13px]">
+        <table className="w-full min-w-[46rem] text-left text-[13px]">
           <thead className="border-y border-line bg-black/[0.02] text-xs text-ink-soft/80">
             <tr>
-              <th className="px-5 py-2.5 font-semibold sm:px-6">User</th>
-              <th className="px-3 py-2.5 font-semibold">College</th>
-              <th className="px-3 py-2.5 text-right font-semibold">Records</th>
-              <th className="px-3 py-2.5 font-semibold">Joined</th>
-              <th className="px-3 py-2.5 font-semibold">Last seen</th>
-              <th className="px-5 py-2.5 font-semibold sm:px-6">Sign-in</th>
+              <th scope="col" className="px-5 py-2.5 font-semibold sm:px-6">User</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2.5 font-semibold">College</th>
+              <th scope="col" className="px-3 py-2.5 text-right font-semibold">Records</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2.5 font-semibold">Joined</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2.5 font-semibold">Last seen</th>
+              <th scope="col" className="whitespace-nowrap px-5 py-2.5 font-semibold sm:px-6">Sign-in</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line/70">
@@ -66,13 +66,14 @@ function UsersTable({ view, profiles, q, setQ, shown, setShown }: { view: import
                     <span className="min-w-0">
                       <span className="block truncate font-semibold text-ink">{p.displayName || p.email || "Unnamed"}</span>
                       {p.displayName && p.email && <span className="block truncate text-xs text-ink-soft">{p.email}</span>}
+                      {!p.displayName?.trim() && <span className="mt-0.5 inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">No name yet</span>}
                     </span>
                   </span>
                 </td>
                 <td className="px-3 py-3 text-ink-soft">{view.collegeOf(p.email) ?? <span className="text-ink-soft/50">—</span>}</td>
                 <td className="px-3 py-3 text-right font-mono text-ink">{view.records === null ? "—" : view.recordsByUser.get(p.uid) ?? 0}</td>
-                <td className="px-3 py-3 text-ink-soft">{fmtDate(p.createdAt)}</td>
-                <td className="px-3 py-3 text-ink-soft">{ago(p.lastSeenAt)}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-ink-soft">{fmtDate(p.createdAt)}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-ink-soft">{ago(p.lastSeenAt)}</td>
                 <td className="px-5 py-3 text-xs text-ink-soft sm:px-6">{p.providers.map((x) => (x === "google.com" ? "Google" : x === "password" ? "Email" : x)).join(", ") || "—"}</td>
               </tr>
             ))}

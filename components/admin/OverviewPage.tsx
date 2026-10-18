@@ -31,7 +31,7 @@ export function OverviewPage() {
         <>
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             <Kpi label="Users" icon={Users} value={view.users} current={view.newNow} previous={view.newPrev} note={`${view.newNow} joined in ${range} days`} />
-            <Kpi label="Active this week" icon={Activity} value={view.active7} current={view.active7} previous={view.activePrevWeek} note={`${view.users ? Math.round((view.active7 / view.users) * 100) : 0}% of users`} />
+            <Kpi label="Active · 7 days" icon={Activity} value={view.active7} current={view.active7} previous={view.activePrevWeek} note={`${view.users ? Math.round((view.active7 / view.users) * 100) : 0}% of users`} />
             <Kpi label="Saved records" icon={FileText} value={view.records ?? "—"} current={view.records === null ? undefined : view.recordsNow} previous={view.records === null ? undefined : view.recordsPrev} note={view.records === null ? "Deploy rules to see" : `${view.recordsNow} new in ${range} days`} />
             <Kpi label="Actions" icon={UserPlus} value={view.actionsNow} current={view.actionsNow} previous={view.actionsPrev} note={view.lifetime !== null ? `${view.lifetime} all time` : `last ${range} days`} />
           </div>
@@ -45,7 +45,7 @@ export function OverviewPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid items-start gap-4 xl:grid-cols-2">
             <Card title="What people use" aside={`${view.featureTotal} actions`}>
               {view.featureRows.length === 0 ? (
                 <Empty>No actions recorded in this range yet.</Empty>
@@ -89,7 +89,7 @@ export function OverviewPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid items-start gap-4 xl:grid-cols-2">
             <Card title="Latest records" aside={<Link href="/admin/records" className="font-semibold text-accent hover:underline">View all</Link>}>
               {view.recent.length === 0 ? (
                 <Empty>{view.records === null ? "Deploy the latest firestore.rules to see records." : "No saved records yet."}</Empty>
@@ -109,7 +109,7 @@ export function OverviewPage() {
               )}
             </Card>
 
-            <Card title="Colleges" aside={`${view.domainRows.length} email domains`}>
+            <Card title="Colleges" aside={`${view.domainRows.length} ${view.domainRows.length === 1 ? "email domain" : "email domains"}`}>
               {view.domainRows.length === 0 ? (
                 <Empty>No users yet.</Empty>
               ) : (

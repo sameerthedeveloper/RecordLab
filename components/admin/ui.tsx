@@ -84,7 +84,7 @@ export function BarChart({ series, label, tone = "accent" }: { series: { day: st
               <button
                 key={s.day}
                 type="button"
-                className="group relative flex h-full min-w-0 flex-1 items-end outline-none"
+                className="group relative flex h-full min-w-0 flex-1 items-end rounded-sm"
                 aria-label={`${s.day}: ${s.value}`}
               >
                 <span className={`w-full rounded-t-[4px] transition-colors ${s.value ? bar : "bg-ink/[0.07]"}`} style={{ height: `${Math.max(2, (s.value / top) * 100)}%` }} />
