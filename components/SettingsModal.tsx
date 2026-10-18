@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { FileText, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
-import { MAX_HEIGHT_MM, MIN_HEIGHT_MM, MIN_WIDTH_MM } from "./DraggableHeaderTable";
+import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
 import { AccountSettings } from "./AccountSettings";
 import { RecordFormatPicker } from "./RecordFormatPicker";
 import { PageBorderControls } from "./PageBorderControls";
 import { InstallAppSection } from "./InstallAppSection";
+import { WatermarkControls } from "./WatermarkOptionsSection";
 import { HeaderBorderControls } from "./HeaderBorderControls";
 import { FONT_OPTIONS } from "@/lib/fonts";
-import { CONTENT_WIDTH_MM } from "@/lib/types";
 import { applyUiStyle, type AppSettings, type UiStyle } from "@/lib/settings";
 
 interface SettingsModalProps {
@@ -161,19 +161,6 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
           {tab === "record" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
       <section>
-        <h3 className="mb-3 font-serif text-sm font-bold text-ink">Record format</h3>
-        <RecordFormatPicker value={draft.recordFormat} onChange={(recordFormat) => setDraft({ ...draft, recordFormat })} />
-        <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold text-ink">Page border</p>
-          <PageBorderControls
-            idPrefix="settings-page-border"
-            value={draft.pageBorder}
-            onChange={(pageBorder) => setDraft({ ...draft, pageBorder })}
-          />
-        </div>
-        <p className="mt-1.5 text-xs text-ink-soft/70">What new records start in. You can change it per record in the editor.</p>
-      </section>
-      <section>
             <h3 className="mb-3 font-serif text-sm font-bold text-ink">Your RRN</h3>
             <label htmlFor="settingsRrn" className={labelClass}>
               Register number
@@ -212,61 +199,41 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
               The vector PDF engine (canvas2pdf) uses the closest built-in match rather than this exact font file.
             </p>
           </section>
+      <section>
+        <h3 className="mb-3 font-serif text-sm font-bold text-ink">Record format</h3>
+        <RecordFormatPicker value={draft.recordFormat} onChange={(recordFormat) => setDraft({ ...draft, recordFormat })} />
+        <p className="mt-1.5 text-xs text-ink-soft/70">What new records start in. You can change it per record in the editor.</p>
+      </section>
+      <section>
+        <h3 className="mb-3 font-serif text-sm font-bold text-ink">Page border</h3>
+        <PageBorderControls
+          idPrefix="settings-page-border"
+          value={draft.pageBorder}
+          onChange={(pageBorder) => setDraft({ ...draft, pageBorder })}
+        />
+        <p className="mt-1.5 text-xs text-ink-soft/70">The rule around each page, for new records.</p>
+      </section>
             </div>
           )}
           {tab === "heading" && (
             <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
       <section>
-            <h3 className="mb-3 font-serif text-sm font-bold text-ink">Title table size</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="settingsHeaderWidth" className={labelClass}>
-                  Width (mm)
-                </label>
-                <input
-                  id="settingsHeaderWidth"
-                  type="number"
-                  min={MIN_WIDTH_MM}
-                  max={CONTENT_WIDTH_MM}
-                  value={draft.headerLayout.width}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      headerLayout: {
-                        ...draft.headerLayout,
-                        width: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label htmlFor="settingsHeaderHeight" className={labelClass}>
-                  Height (mm)
-                </label>
-                <input
-                  id="settingsHeaderHeight"
-                  type="number"
-                  min={MIN_HEIGHT_MM}
-                  max={MAX_HEIGHT_MM}
-                  value={draft.headerLayout.height}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      headerLayout: {
-                        ...draft.headerLayout,
-                        height: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className={inputClass}
-                />
-              </div>
-            </div>
+            <h3 className="mb-3 font-serif text-sm font-bold text-ink">Title table height</h3>
+            <label htmlFor="settingsHeaderHeight" className="mb-1 flex justify-between text-xs font-semibold text-ink-soft">
+              Height <span className="font-mono font-medium">{draft.headerLayout.height}mm</span>
+            </label>
+            <input
+              id="settingsHeaderHeight"
+              type="range"
+              min={MIN_HEIGHT_MM}
+              max={MAX_HEIGHT_MM}
+              step={0.5}
+              value={draft.headerLayout.height}
+              onChange={(e) => setDraft({ ...draft, headerLayout: { ...draft.headerLayout, height: Number(e.target.value) } })}
+              className="w-full accent-[#c2410c]"
+            />
             <p className="mt-1.5 text-xs text-ink-soft/70">
-              Default size for new records — drag the table&apos;s corner in canvas2pdf mode to resize just one
-              record.
+              Default for new records. Width and position are under Move heading below.
             </p>
           </section>
           <section>
@@ -281,62 +248,11 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
             </div>
           )}
           {tab === "watermark" && (
-            <div className="space-y-6 [&>section+section]:border-t [&>section+section]:border-line [&>section+section]:pt-6">
-      <section>
-            <h3 className="mb-3 font-serif text-sm font-bold text-ink">RRN watermark style</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <label htmlFor="settingsWatermarkOpacity" className="text-xs font-semibold text-ink-soft">
-                    Opacity
-                  </label>
-                  <span className="font-mono text-xs text-ink-soft/80">{draft.watermark.opacity}%</span>
-                </div>
-                <input
-                  id="settingsWatermarkOpacity"
-                  type="range"
-                  min={1}
-                  max={50}
-                  value={draft.watermark.opacity}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      watermark: {
-                        ...draft.watermark,
-                        opacity: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className="mt-2 w-full cursor-pointer accent-accent"
-                />
-              </div>
-              <div>
-                <label htmlFor="settingsWatermarkSize" className={labelClass}>
-                  Size (px)
-                </label>
-                <input
-                  id="settingsWatermarkSize"
-                  type="number"
-                  min={20}
-                  max={200}
-                  value={draft.watermark.size}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      watermark: {
-                        ...draft.watermark,
-                        size: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className={inputClass}
-                />
-              </div>
-            </div>
-            <p className="mt-1.5 text-xs text-ink-soft/70">
-              Rotation and color are still per record, in Watermark Options.
-            </p>
-          </section>
+            <div className="space-y-4">
+              <p className="text-xs text-ink-soft/70">
+                Default for new records. Each record can still change it under Sheet setup, Watermark.
+              </p>
+              <WatermarkControls watermark={draft.watermark} onChange={(watermark) => setDraft({ ...draft, watermark })} rrn={draft.rrn} />
             </div>
           )}
         </div>
