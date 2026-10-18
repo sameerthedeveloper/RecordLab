@@ -159,10 +159,10 @@ export function PreviewPanel({
 
         {/* Phones: account sits beside the title, the actions get their own full-width row. */}
         {/* Ad space in the header's empty stretches: only on screens wide enough that nothing is squeezed. */}
-        <div className="hidden min-w-0 flex-1 justify-center px-2 md:order-2 min-[1750px]:flex">
+        <div className="hidden w-[234px] shrink-0 md:order-2 min-[1750px]:block">
           <AdSlot shape="small" name="Preview header, left" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_LEFT} />
         </div>
-        <div className="hidden min-w-0 flex-1 justify-center px-2 md:order-4 min-[1450px]:flex">
+        <div className="hidden w-[234px] shrink-0 md:order-4 min-[1450px]:block">
           <AdSlot shape="small" name="Preview header, right" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_RIGHT} />
         </div>
 
