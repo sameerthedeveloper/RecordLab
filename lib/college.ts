@@ -25,8 +25,8 @@ export const emailDomain = (email: string | null | undefined): string | null => 
 
 export const isPersonalDomain = (domain: string) => PERSONAL.has(domain);
 
-/** Educational domains carry an "edu" or "ac" label: psgtech.edu, college.ac.in, uni.edu.au, school.ac.uk. */
-export const isEducationalDomain = (domain: string) => !isPersonalDomain(domain) && /(^|\.)(edu|ac)(\.|$)/.test(domain);
+/** Educational domains carry an "edu" or "ac" label, or end in .education: psgtech.edu, college.ac.in, uni.edu.au, school.ac.uk, school.education. */
+export const isEducationalDomain = (domain: string) => !isPersonalDomain(domain) && (/(^|\.)(edu|ac)(\.|$)/.test(domain) || /\.education$/.test(domain));
 
 function readCache(domain: string): College | null {
   try {
