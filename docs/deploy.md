@@ -1,6 +1,6 @@
 # Deploying Record Lab (Vercel + Firebase)
 
-The app is a Next.js 14 project. A production build from a clean checkout passes (`npm ci && npx next build`).
+The app is a Next.js 16 project (React 18, Turbopack builds, Node 20.9 or newer). A production build from a clean checkout passes (`npm ci && npx next build`).
 
 ## 1. Environment variables (Vercel → Settings → Environment Variables)
 
@@ -46,7 +46,7 @@ the `GMAIL_*` and `MAIL_*` ones stay on the server. Redeploy after changing any 
 ```bash
 npm ci
 npx tsc --noEmit
-npx next lint
+npm run lint        # ESLint 9 flat config (eslint.config.mjs); `next lint` no longer exists in Next 16
 npx next build
 ```
 

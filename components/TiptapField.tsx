@@ -66,7 +66,6 @@ export function TiptapField({ value, onChange, className }: TiptapFieldProps) {
       editor.commands.setContent(textToDoc(value), { emitUpdate: false });
     }
     // Only re-sync when the external value changes, not on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
 
   return <EditorContent editor={editor} />;

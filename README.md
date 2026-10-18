@@ -1,6 +1,6 @@
 # Record Lab
 
-A Next.js 14 (App Router) + TypeScript + Tailwind port of the original single-file
+A Next.js 16 (App Router) + TypeScript + Tailwind port of the original single-file
 `index.html` lab-record builder. Behavior, layout, and UX are preserved 1:1; the
 codebase has been split into typed components and modules.
 
