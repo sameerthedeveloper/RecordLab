@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { AppLoader } from "./AppLoader";
 
 /** How long the opening loader stays up. */
 export const SPLASH_SECONDS = 5;
+
+/** Set once the loader has been shown, so reloads and other screens in the same session skip it. */
+const SEEN_KEY = "recordlab.splash-seen";
 
 let splashDone = false;
 const SPLASH_DONE_EVENT = "recordlab:splash-done";
@@ -21,14 +24,24 @@ export function afterSplash(fn: () => void): () => void {
 }
 
 /**
- * Shows the loader over the page for a few seconds each time the app is opened or reloaded
- * (moving between screens inside the app does not remount it). Click, tap or Escape skips it.
+ * Shows the loader over the page once per browser session: the first time the app is opened in a
+ * tab, not on reloads or when moving between screens. Click, tap or Escape skips it.
  */
 export function BootSplash({ label = "Setting up your sheet" }: { label?: string }) {
   const [phase, setPhase] = useState<"show" | "fade" | "gone">(() => {
     splashDone = false; // a new splash, so anything waiting on it (the tour) waits again
     return "show";
   });
+
+  // Runs before the first paint, so a session that has already seen the loader never flashes it.
+  useLayoutEffect(() => {
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(SEEN_KEY) === "1";
+      if (!seen) sessionStorage.setItem(SEEN_KEY, "1");
+    } catch {}
+    if (seen) setPhase("gone");
+  }, []);
 
   useEffect(() => {
     if (phase !== "gone") return;

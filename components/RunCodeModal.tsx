@@ -20,8 +20,8 @@ interface RunCodeModalProps {
   onUse: (result: RunResult, code: string, opts: { replace: boolean; text: boolean; images: boolean }) => void;
 }
 
-const CONSENT_KEY = "recordlab.runner-consent";
-const REMOTE_KEY = "recordlab.runner-url";
+export const CONSENT_KEY = "recordlab.runner-consent";
+export const REMOTE_KEY = "recordlab.runner-url";
 
 type Phase = "idle" | "running" | "done";
 

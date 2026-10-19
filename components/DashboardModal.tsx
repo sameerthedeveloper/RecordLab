@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownAZ,
+  CloudUpload,
   Clock,
   Cloud,
+  ExternalLink,
+  Hash,
+  Unlink,
   FilePlus2,
   FileText,
   Folder as FolderIcon,
@@ -20,7 +24,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Modal, modalButton } from "./Modal";
-import { downloadCloudDocumentPdf } from "@/lib/downloadCloudPdf";
+import { cloudDocumentPdfBlob, downloadCloudDocumentPdf } from "@/lib/downloadCloudPdf";
+import {
+  connectDrive,
+  DriveAuthError,
+  hasDriveToken,
+  isDriveLinked,
+  openDriveFolder,
+  unlinkDrive,
+  uploadPdfToDrive,
+} from "@/lib/googleDrive";
 import { FILE_DRAG_TYPE, FileCard, FileRow, FileThumb, relativeTime } from "./CloudFileViews";
 import { MoveToSubjectModal } from "./MoveToSubjectModal";
 import { DriveDetails } from "./DriveDetails";
@@ -49,7 +62,22 @@ interface DashboardModalProps {
 }
 
 type View = "grid" | "list";
-type Sort = "modified" | "name";
+type Sort = "modified" | "exercise" | "name";
+const SORT_ORDER: Sort[] = ["modified", "exercise", "name"];
+const SORT_LABEL: Record<Sort, string> = { modified: "Last edited", exercise: "Exercise no.", name: "Name" };
+
+/** Leading number of an exercise label ("12", "Ex. 3b", "4.2"); null when there is none. */
+function exerciseKey(doc: CloudDocument): string | null {
+  const n = (doc.data?.record?.exercise_number ?? "").trim();
+  return /\d/.test(n) ? n : null;
+}
+
+function byExercise(a: CloudDocument, b: CloudDocument): number {
+  const x = exerciseKey(a);
+  const y = exerciseKey(b);
+  if (x === null || y === null) return x === y ? a.title.localeCompare(b.title, undefined, { numeric: true }) : x === null ? 1 : -1;
+  return x.localeCompare(y, undefined, { numeric: true }) || a.title.localeCompare(b.title, undefined, { numeric: true });
+}
 /** "all", "recent", or `f:<folderId>` for one subject. */
 type Section = string;
 
@@ -97,6 +125,13 @@ export function DashboardModal({
   const [folderRenameValue, setFolderRenameValue] = useState("");
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [driveLinked, setDriveLinked] = useState(false);
+  const [driveBusy, setDriveBusy] = useState<{ done: number; total: number } | null>(null);
+  const [driveConnecting, setDriveConnecting] = useState(false);
+
+  useEffect(() => {
+    setDriveLinked(user ? isDriveLinked(user.uid) : false);
+  }, [user]);
 
   const folderId = section.startsWith("f:") ? section.slice(2) : null;
   const activeFolder = folderId ? (folders ?? []).find((f) => f.id === folderId) ?? null : null;
@@ -156,12 +191,16 @@ export function DashboardModal({
       return [d.title, r?.exercise_number, r?.rrn, r?.aim].some((v) => (v ?? "").toLowerCase().includes(q));
     });
     return [...list].sort((a, b) =>
-      sort === "name" ? a.title.localeCompare(b.title, undefined, { numeric: true }) : time(b) - time(a),
+      sort === "name"
+        ? a.title.localeCompare(b.title, undefined, { numeric: true })
+        : sort === "exercise"
+          ? byExercise(a, b)
+          : time(b) - time(a),
     );
   }, [documents, query, section, folderId, sort]);
 
   const groups = useMemo(() => {
-    if (sort === "name") return [{ label: "", docs: visible }];
+    if (sort !== "modified") return [{ label: "", docs: visible }];
     const map = new Map<string, CloudDocument[]>();
     for (const d of visible) {
       const label = groupLabel(d);
@@ -305,6 +344,72 @@ export function DashboardModal({
       },
     };
   }
+
+  async function linkDrive(): Promise<boolean> {
+    if (!user) return false;
+    setDriveConnecting(true);
+    try {
+      await connectDrive(user);
+      setDriveLinked(true);
+      track("link_google_drive");
+      return true;
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        console.error("Drive link failed:", err);
+        onToast(code === "auth/credential-already-in-use" ? "That Google account belongs to another RecordLab account." : "Unable to link Google Drive.");
+      }
+      return false;
+    } finally {
+      setDriveConnecting(false);
+    }
+  }
+
+  function unlinkGoogleDrive() {
+    if (!user) return;
+    unlinkDrive(user.uid);
+    setDriveLinked(false);
+    onToast("Google Drive unlinked. Files already in Drive stay there.");
+  }
+
+  /** Renders each file to PDF and puts it in RecordLab/<subject> on Drive, in exercise order. */
+  async function backUpToDrive(docs: CloudDocument[]) {
+    if (!user || docs.length === 0 || driveBusy) return;
+    if (!hasDriveToken() && !(await linkDrive())) return;
+    const ordered = [...docs].sort(byExercise);
+    setDriveBusy({ done: 0, total: ordered.length });
+    let saved = 0;
+    try {
+      for (const doc of ordered) {
+        const { blob, filename } = await cloudDocumentPdfBlob(doc);
+        const subject = (folders ?? []).find((f) => f.id === doc.folderId)?.name ?? null;
+        await uploadPdfToDrive(blob, filename, subject);
+        saved += 1;
+        setDriveBusy({ done: saved, total: ordered.length });
+      }
+      track("drive_backup");
+      onToast(saved === 1 ? `Saved "${ordered[0].title}" to Google Drive.` : `Saved ${saved} files to Google Drive.`);
+    } catch (err) {
+      console.error("Drive backup failed:", err);
+      if (err instanceof DriveAuthError) onToast(`Drive access expired after ${saved} of ${ordered.length}. Reconnect and retry.`);
+      else onToast(err instanceof Error ? err.message : "Unable to save to Google Drive.");
+    } finally {
+      setDriveBusy(null);
+    }
+  }
+
+  async function showDriveFolder() {
+    try {
+      if (!hasDriveToken() && !(await linkDrive())) return;
+      window.open(await openDriveFolder(), "_blank", "noopener");
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Unable to open Google Drive.");
+    }
+  }
+
+  const driveButton =
+    "flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink disabled:cursor-default disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+
   const navItem = (id: Section, label: string, Icon: typeof Cloud) => (
     <button
       type="button"
@@ -398,9 +503,53 @@ export function DashboardModal({
             </>
           )}
           {user && (
-            <p className="mt-auto hidden px-3.5 pt-4 text-xs text-ink-soft/70 md:block">
-              {total} {total === 1 ? "file" : "files"} in the cloud
-            </p>
+            <div className="mt-auto hidden flex-col gap-2 pt-4 md:flex">
+              <section aria-label="Google Drive" className="rounded-2xl border border-line bg-paper p-2">
+                <p className="flex items-center gap-2 px-2.5 pb-1 pt-1 text-xs font-semibold text-ink">
+                  <span
+                    aria-hidden
+                    className={`h-2 w-2 rounded-full ${driveLinked ? "bg-emerald-500" : "bg-ink-soft/30"}`}
+                  />
+                  {driveLinked ? "Google Drive linked" : "Google Drive"}
+                </p>
+                {!driveLinked ? (
+                  <>
+                    <p className="px-2.5 pb-1.5 text-[11px] leading-snug text-ink-soft/80">
+                      Keep a PDF copy of every record in your own Drive.
+                    </p>
+                    <button type="button" onClick={linkDrive} disabled={driveConnecting} className={driveButton}>
+                      <Cloud className="h-3.5 w-3.5" strokeWidth={2} />
+                      {driveConnecting ? "Connecting…" : "Link Google Drive"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => backUpToDrive(visible)}
+                      disabled={!!driveBusy || visible.length === 0}
+                      className={driveButton}
+                    >
+                      <CloudUpload className="h-3.5 w-3.5" strokeWidth={2} />
+                      {driveBusy
+                        ? `Saving ${driveBusy.done} of ${driveBusy.total}…`
+                        : `Save ${visible.length} ${visible.length === 1 ? "file" : "files"} to Drive`}
+                    </button>
+                    <button type="button" onClick={showDriveFolder} className={driveButton}>
+                      <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
+                      Open RecordLab folder
+                    </button>
+                    <button type="button" onClick={unlinkGoogleDrive} className={driveButton}>
+                      <Unlink className="h-3.5 w-3.5" strokeWidth={2} />
+                      Unlink
+                    </button>
+                  </>
+                )}
+              </section>
+              <p className="px-3.5 text-xs text-ink-soft/70">
+                {total} {total === 1 ? "file" : "files"} in the cloud
+              </p>
+            </div>
           )}
         </nav>
 
@@ -462,15 +611,19 @@ export function DashboardModal({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setSort(sort === "modified" ? "name" : "modified")}
+                  title="Change sort order"
+                  aria-label={`Sorted by ${SORT_LABEL[sort]}. Change sort order`}
+                  onClick={() => setSort(SORT_ORDER[(SORT_ORDER.indexOf(sort) + 1) % SORT_ORDER.length])}
                   className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent"
                 >
                   {sort === "modified" ? (
                     <Clock className="h-3.5 w-3.5" strokeWidth={2} />
+                  ) : sort === "exercise" ? (
+                    <Hash className="h-3.5 w-3.5" strokeWidth={2} />
                   ) : (
                     <ArrowDownAZ className="h-3.5 w-3.5" strokeWidth={2} />
                   )}
-                  {sort === "modified" ? "Last edited" : "Name"}
+                  {SORT_LABEL[sort]}
                 </button>
                 <div
                   className="flex overflow-hidden rounded-full border border-line"
@@ -646,6 +799,8 @@ export function DashboardModal({
               onRename={() => startRename(selected)}
               onDownload={() => handleDownloadPdf(selected)}
               onDelete={() => setDeleting(selected)}
+              onSaveToDrive={driveLinked ? () => backUpToDrive([selected]) : undefined}
+              driveBusy={!!driveBusy}
             />
           </div>
         )}

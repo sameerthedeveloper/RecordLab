@@ -273,6 +273,9 @@ export function RecordEditorPanel({
               editing={editingImage}
               onAdd={onAddOutputImage}
               onUpdate={onUpdateOutputImage}
+              code={runnableSource(record)}
+              stdin={record.program_input ?? ""}
+              onInputChange={(v) => onFieldChange("program_input", v)}
             />
           </EditorSection>
   );

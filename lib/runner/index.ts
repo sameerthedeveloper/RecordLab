@@ -86,6 +86,32 @@ const unb64 = (s: string | null | undefined) => {
 
 export const DEFAULT_REMOTE_URL = "https://ce.judge0.com";
 
+/**
+ * The runner compiles Java as Main.java and runs `java Main`, so a program whose entry class has
+ * another name ("class SDESKeyGeneration is public, should be declared in a file named ...") fails.
+ * Rename the class that holds main() to Main, and drop `public` from other top-level types,
+ * which would otherwise also demand their own file.
+ */
+/** Name of the class that holds main(), as the student wrote it (for the `javac` / `java` lines of a screenshot). */
+export function javaMainClass(code: string): string | null {
+  const mainAt = code.search(/\bstatic\s+void\s+main\s*\(/);
+  if (mainAt < 0) return null;
+  return [...code.slice(0, mainAt).matchAll(/\b(?:class|enum|record)\s+([A-Za-z_$][\w$]*)/g)].at(-1)?.[1] ?? null;
+}
+
+export function prepareJava(code: string): string {
+  const mainAt = code.search(/\bstatic\s+void\s+main\s*\(/);
+  let out = code;
+  if (mainAt >= 0) {
+    const before = [...code.slice(0, mainAt).matchAll(/\b(?:class|enum|record)\s+([A-Za-z_$][\w$]*)/g)];
+    const name = before.at(-1)?.[1];
+    if (name && name !== "Main" && !/\bMain\b/.test(code)) {
+      out = out.replace(new RegExp(`(?<![\\w$])${name.replace(/\$/g, "\\$")}(?![\\w$])`, "g"), "Main");
+    }
+  }
+  return out.replace(/^public\s+((?:(?:final|abstract|strictfp|sealed)\s+)*(?:class|interface|enum|record)\s+(?!Main\b))/gm, "$1");
+}
+
 /** C, C++ and Java need a compiler: the code is sent to a Judge0-compatible runner and the result comes back. */
 async function runRemote(opts: RunOptions): Promise<RunResult> {
   const started = performance.now();
@@ -97,7 +123,7 @@ async function runRemote(opts: RunOptions): Promise<RunResult> {
     res = await fetch(`${base}/submissions?base64_encoded=true&wait=true&fields=stdout,stderr,compile_output,message,status,time`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language_id: info.judge0, source_code: b64(opts.code), stdin: b64(opts.stdin ?? "") }),
+      body: JSON.stringify({ language_id: info.judge0, source_code: b64(opts.language === "java" ? prepareJava(opts.code) : opts.code), stdin: b64(opts.stdin ?? "") }),
       signal: opts.signal,
     });
   } catch (err) {

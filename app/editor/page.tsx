@@ -23,6 +23,7 @@ import type { RunResult } from "@/lib/runner";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
+import { hasDriveToken, isDriveLinked, uploadPdfToDrive } from "@/lib/googleDrive";
 import { getUserSettings, saveUserSettings } from "@/lib/userProfile";
 import { collegeGeometry, formatPatch } from "@/lib/recordFormat";
 import { createShareLink, loadSharedRecord } from "@/lib/shareLink";
@@ -491,6 +492,23 @@ export default function Home() {
     track("print_record");
   }
 
+  /** With Drive linked, the PDF just downloaded also goes to Drive: same blob, same filename. */
+  async function copyToDrive(blob: Blob, filename: string) {
+    if (!authUser || !isDriveLinked(authUser.uid)) return;
+    if (!hasDriveToken()) {
+      showToast("PDF saved. Reconnect Google Drive in your files to copy it there.");
+      return;
+    }
+    try {
+      const subject = (folders ?? []).find((f) => f.id === cloudFolderId)?.name ?? null;
+      await uploadPdfToDrive(blob, filename, subject);
+      showToast("PDF saved, and copied to Google Drive.");
+    } catch (error) {
+      console.error("Drive copy failed:", error);
+      showToast("PDF saved, but the Google Drive copy failed.");
+    }
+  }
+
   async function handleSaveCanvasPdf() {
     setIsSavingPdf(true);
     try {
@@ -499,8 +517,10 @@ export default function Home() {
       // initial page load for users who never pick this engine.
       const { buildCanvasPdf } = await import("@/lib/buildCanvasPdf");
       const blob = await buildCanvasPdf(record, watermark, settings.font);
-      downloadBlob(blob, buildFilename(record, "pdf"));
+      const filename = buildFilename(record, "pdf");
+      downloadBlob(blob, filename);
       track("export_pdf", { engine: "canvas2pdf" });
+      await copyToDrive(blob, filename);
     } catch (error) {
       console.error("Canvas PDF generation failed:", error);
       alert("Unable to generate the PDF.");
@@ -526,7 +546,7 @@ export default function Home() {
         throw new Error("PDF engine failed to load.");
       }
 
-      await window
+      const blob = await window
         .html2pdf()
         .set({
           margin: 0,
@@ -563,8 +583,10 @@ export default function Home() {
             pdf.deletePage(pdf.internal.getNumberOfPages());
           }
         })
-        .save();
+        .outputPdf("blob");
+      downloadBlob(blob, filename);
       track("export_pdf", { engine: "html2pdf" });
+      await copyToDrive(blob, filename);
     } catch (error) {
       console.error("PDF generation failed:", error);
       alert("Unable to generate the PDF.");

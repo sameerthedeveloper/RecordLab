@@ -31,6 +31,7 @@ export interface Html2PdfInstance {
   /** Documented html2pdf chain step: `.get("pdf").then((pdf) => ...)` runs before `.save()`. */
   then: (fn: (pdf: Html2PdfJsPdf) => void) => Html2PdfInstance;
   save: () => Promise<void>;
+  outputPdf: (type: "blob") => Promise<Blob>;
 }
 
 declare global {

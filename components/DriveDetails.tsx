@@ -1,6 +1,6 @@
 "use client";
 
-import { FileDown, FolderOpen, Pencil, Trash2, X } from "lucide-react";
+import { CloudUpload, FileDown, FolderOpen, Pencil, Trash2, X } from "lucide-react";
 import type { CloudDocument } from "@/lib/firestoreService";
 import { FileThumb, stripHtml } from "./CloudFileViews";
 
@@ -16,9 +16,12 @@ interface DriveDetailsProps {
   onRename: () => void;
   onDownload: () => void;
   onDelete: () => void;
+  /** Present only while Google Drive is linked. */
+  onSaveToDrive?: () => void;
+  driveBusy?: boolean;
 }
 
-export function DriveDetails({ document, onClose, onOpen, onRename, onDownload, onDelete }: DriveDetailsProps) {
+export function DriveDetails({ document, onClose, onOpen, onRename, onDownload, onDelete, onSaveToDrive, driveBusy }: DriveDetailsProps) {
   const record = document.data?.record;
   const rows: [string, string][] = [
     ["Exercise", record?.exercise_number || "—"],
@@ -87,6 +90,20 @@ export function DriveDetails({ document, onClose, onOpen, onRename, onDownload, 
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
         </button>
       </div>
+
+      {onSaveToDrive && (
+        <div className="px-4 pb-4">
+          <button
+            type="button"
+            onClick={onSaveToDrive}
+            disabled={driveBusy}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent disabled:cursor-default disabled:opacity-60"
+          >
+            <CloudUpload className="h-3.5 w-3.5" strokeWidth={2} />
+            {driveBusy ? "Saving to Drive…" : "Save to Google Drive"}
+          </button>
+        </div>
+      )}
 
       <dl className="space-y-2.5 border-t border-line p-4 text-xs">
         {rows.map(([label, value]) => (

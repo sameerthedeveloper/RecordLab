@@ -20,8 +20,10 @@ export async function exportRecordPdf(
   record: RecordState,
   watermark: WatermarkOptions,
   font: string,
-  filename: string
-): Promise<void> {
+  filename: string,
+  /** "blob" returns the PDF instead of downloading it (used for the Drive upload). */
+  output: "save" | "blob" = "save"
+): Promise<Blob | void> {
   await waitForHtml2Pdf();
 
   const iframe = document.createElement("iframe");
@@ -41,7 +43,7 @@ export async function exportRecordPdf(
     const content = doc.querySelector(".print-document") as HTMLElement | null;
     if (!content) throw new Error("PDF content not found.");
 
-    await window
+    const job = window
       .html2pdf!()
       .set({
         margin: 0,
@@ -58,8 +60,9 @@ export async function exportRecordPdf(
         // Rounding in the tall-canvas slicing can spill a blank trailing page: drop it.
         const real = content.querySelectorAll(".a4-page").length;
         while (real > 0 && pdf.internal.getNumberOfPages() > real) pdf.deletePage(pdf.internal.getNumberOfPages());
-      })
-      .save();
+      });
+    if (output === "blob") return await job.outputPdf("blob");
+    await job.save();
   } finally {
     iframe.remove();
   }
