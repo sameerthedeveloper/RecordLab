@@ -11,6 +11,7 @@ import {
   updateDisplayName,
   useAuthUser,
 } from "@/lib/authService";
+import { AccountDanger } from "./AccountDanger";
 import { AuthModal } from "./AuthModal";
 import { PuterLinkButton } from "./PuterLinkButton";
 import { SharedLinks } from "./SharedLinks";
@@ -239,6 +240,8 @@ export function AccountSettings({ onToast, afterDetails }: AccountSettingsProps)
           Sign out
         </button>
       </section>
+
+      <AccountDanger user={user} onToast={onToast} />
     </div>
   );
 }

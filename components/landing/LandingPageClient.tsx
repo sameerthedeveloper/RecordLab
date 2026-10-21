@@ -11,6 +11,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowRight,
+  BadgeCheck,
   Check,
   ChevronDown,
   Cloud,
@@ -34,6 +35,7 @@ import {
   Sparkles,
   Stamp,
   TerminalSquare,
+  UserCheck,
 } from "lucide-react";
 
 const index = [
@@ -565,7 +567,7 @@ const DEPARTMENTS_STRIP = [
   "Mathematics",
 ];
 
-const MARQUEE = ["Every department", "Run the code", "Real output", "Graphs", "College sheet", "Page border", "Heading table", "Manual calculation", "Share a link", "Works offline", "A4 pagination"];
+const MARQUEE = ["Every department", "Faculty verification", "Run the code", "Real output", "Graphs", "College sheet", "Page border", "Heading table", "Manual calculation", "Share a link", "Works offline", "A4 pagination"];
 
 
 /** Small "PAGE 0N / 06" mono label — the landing page's own section counter,
@@ -654,6 +656,7 @@ export function LandingPageClient() {
             <a href="#see-it" className="transition-colors hover:text-accent">See it</a>
             <a href="#index" className="transition-colors hover:text-accent">Features</a>
             <a href="#how" className="transition-colors hover:text-accent">How it works</a>
+            <a href="#faculty" className="transition-colors hover:text-accent">Faculty</a>
             <a href="#faq" className="transition-colors hover:text-accent">FAQ</a>
           </nav>
           <div className="flex items-center gap-1.5">
@@ -667,6 +670,11 @@ export function LandingPageClient() {
                 Install
               </button>
             )}
+            <Link href="/faculty" className="ui-chip flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-ink-soft hover:text-accent-ink">
+              <UserCheck className="h-3.5 w-3.5" strokeWidth={2.25} />
+              <span className="sm:hidden">Faculty</span>
+              <span className="hidden sm:inline">For faculty</span>
+            </Link>
             <Link
               href="/editor"
               className="ui-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
@@ -933,6 +941,78 @@ export function LandingPageClient() {
         </div>
       </section>
 
+      {/* ============ FACULTY ============ */}
+      <section id="faculty" aria-labelledby="faculty-heading" data-reveal-group className="px-5 py-20 sm:py-28">
+        <div className="mx-auto grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
+          <div>
+            <p data-reveal className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft/60">
+              For students and faculty
+            </p>
+            <h2 id="faculty-heading" data-reveal className="mt-3 text-balance font-serif text-4xl font-bold tracking-[-0.02em] sm:text-5xl">
+              Hand it in. Get it signed off.
+            </h2>
+            <p data-reveal className="mt-4 max-w-md text-pretty text-[15px] leading-relaxed text-ink-soft sm:text-base">
+              Faculty make a class for each subject and share its code or link. Students hand in a subject, the faculty read every record exactly as it prints, and
+              verify it or send it back with a note. A verified record carries a tick and the faculty&apos;s name on its last page.
+            </p>
+            <ul data-reveal className="mt-5 space-y-2 text-sm text-ink-soft">
+              {["Faculty see only what you hand in, and you can take it back", "Verified, waiting or sent back, with the faculty's note", "Records written with the AI assistant are flagged for the reviewer"].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={3} />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div data-reveal className="mt-7 flex flex-wrap items-center gap-3">
+              <Link href="/faculty" className="ui-primary flex min-h-11 items-center gap-2 px-6 text-sm font-semibold">
+                <UserCheck className="h-4 w-4" strokeWidth={2.25} />
+                Faculty sign in
+              </Link>
+              <Link href="/join" className="ui-btn ui-btn-secondary flex min-h-11 items-center gap-2 px-5 text-sm font-semibold">
+                I have a class code
+                <ArrowRight className="h-4 w-4" strokeWidth={2.25} />
+              </Link>
+            </div>
+          </div>
+
+          <div data-reveal aria-hidden className="ui-card overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-line/70 px-5 py-4">
+              <div>
+                <p className="font-serif text-base font-bold text-ink">Data Structures Lab</p>
+                <p className="text-xs text-ink-soft">CSE-B, 2nd year</p>
+              </div>
+              <span className="rounded-full border border-dashed border-ink/30 px-3 py-1 font-mono text-xs font-semibold tracking-[0.12em] text-ink">K7M2QX</span>
+            </div>
+            <ul className="divide-y divide-line/70">
+              {[
+                ["Priya R", "8 records", "Verified", "bg-emerald-500"],
+                ["Arjun K", "6 records", "Waiting", "bg-amber-400"],
+                ["Meena S", "8 records", "Sent back", "bg-red-500"],
+              ].map(([n, r, s, dot]) => (
+                <li key={n} className="flex items-center gap-3 px-5 py-3.5">
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-ink">{n}</span>
+                    <span className="block text-xs text-ink-soft">{r}</span>
+                  </span>
+                  <span className="text-xs font-semibold text-ink-soft">{s}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex items-center gap-3 border-t border-line/70 bg-black/[0.025] px-5 py-4">
+              <span className="flex items-center gap-2 rounded-lg border-[1.4px] border-[#1b7f5c] bg-white px-2.5 py-1.5 text-[11px] leading-tight text-[#14633f]">
+                <BadgeCheck className="h-4 w-4 shrink-0 text-[#1b7f5c]" strokeWidth={2.4} />
+                <span>
+                  <b className="block">Verified by Dr. Anitha</b>
+                  <span className="text-[10px] opacity-80">21 Oct 2026</span>
+                </span>
+              </span>
+              <p className="text-xs text-ink-soft">Printed bottom right of the last page.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ============ FAQ ============ */}
       <section id="faq" data-reveal-group className="px-5 py-20 sm:py-28">
         <div className="mx-auto w-full max-w-3xl">
@@ -978,6 +1058,12 @@ export function LandingPageClient() {
             Open Record Lab
             <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
           </Link>
+          <p data-reveal className="relative mt-5 text-sm text-paper/60">
+            Teach a lab?{" "}
+            <Link href="/faculty" className="font-semibold text-paper underline decoration-paper/30 underline-offset-4 hover:decoration-paper">
+              Sign in as faculty
+            </Link>
+          </p>
         </div>
       </section>
 

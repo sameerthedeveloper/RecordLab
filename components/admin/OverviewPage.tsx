@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Activity, AlertCircle, ChevronRight, FileText, UserPlus, Users } from "lucide-react";
 import { ago } from "@/lib/adminFormat";
+import { loadFacultyRequests } from "@/lib/facultyService";
 import { Avatar, BarChart, Card, Empty, Kpi } from "./ui";
 import { WhenLoaded } from "./LoadState";
 import type { AdminData } from "@/lib/adminService";
 import type { AdminView } from "@/lib/adminView";
 
 /** Things an admin can act on right now, each linking to where it is fixed. */
-function attention(view: AdminView, data: AdminData): { text: string; href?: string }[] {
+function attention(view: AdminView, data: AdminData, facultyWaiting = 0): { text: string; href?: string }[] {
   const out: { text: string; href?: string }[] = [];
+  if (facultyWaiting > 0) out.push({ text: `${facultyWaiting} faculty ${facultyWaiting === 1 ? "request is" : "requests are"} waiting for approval`, href: "/admin/faculty" });
   const unnamed = data.usage.profiles.filter((p) => !p.displayName?.trim()).length;
   if (unnamed > 0) out.push({ text: `${unnamed} ${unnamed === 1 ? "user hasn't" : "users haven't"} given a name yet`, href: "/admin/users?filter=noname" });
   const colleges = view.domainRows.filter((d) => !d.name).length;
@@ -40,14 +43,19 @@ const LABELS: Record<string, string> = {
 };
 
 export function OverviewPage() {
+  // Optional: if the faculty rules are not deployed yet this stays at 0 and the rest of the page is unaffected.
+  const [facultyWaiting, setFacultyWaiting] = useState(0);
+  useEffect(() => {
+    loadFacultyRequests().then((r) => setFacultyWaiting(r.length)).catch(() => {});
+  }, []);
   return (
     <WhenLoaded>
       {({ view, range, data }) => (
         <>
-          {attention(view, data).length > 0 && (
-            <Card title="Needs attention" aside={`${attention(view, data).length} to look at`}>
+          {attention(view, data, facultyWaiting).length > 0 && (
+            <Card title="Needs attention" aside={`${attention(view, data, facultyWaiting).length} to look at`}>
               <ul className="divide-y divide-line/70 px-2 pb-3 pt-2">
-                {attention(view, data).map((a) => {
+                {attention(view, data, facultyWaiting).map((a) => {
                   const inner = (
                     <>
                       <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" strokeWidth={2.1} />

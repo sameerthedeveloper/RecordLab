@@ -6,7 +6,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, FileDown, Loader2, Maximize2, M
 import { A4Page } from "./A4Page";
 import { AccountMenu } from "./AccountMenu";
 import { AdSlot } from "./AdSlot";
-import type { DownloadFormat, PageObject, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
+import type { DownloadFormat, PageObject, PdfEngine, RecordState, Verification, WatermarkOptions } from "@/lib/types";
 
 // Tiptap (react + core + starter-kit) adds ~130KB — load it only once
 // canvas2pdf mode is actually selected, not on every page visit.
@@ -31,6 +31,8 @@ interface PreviewPanelProps {
   visible: boolean;
   onShare: () => void;
   isSharing: boolean;
+  /** Faculty verification for this record's subject; drawn on the last page. */
+  verified?: Verification | null;
 }
 
 const FORMAT_LABELS: Record<DownloadFormat, string> = {
@@ -55,6 +57,7 @@ export function PreviewPanel({
   visible,
   onShare,
   isSharing,
+  verified,
 }: PreviewPanelProps) {
   const isCanvasEditMode = downloadFormat === "pdf" && pdfEngine === "canvas2pdf";
   const areaRef = useRef<HTMLDivElement>(null);
@@ -237,7 +240,7 @@ export function PreviewPanel({
           ) : (
             pages.map((page, idx) => (
               <div className="preview-page-group" key={idx}>
-                <A4Page page={page} rrn={rrn} watermark={watermark} format={record.format} pageBorder={record.pageBorder} />
+                <A4Page page={page} rrn={rrn} watermark={watermark} format={record.format} pageBorder={record.pageBorder} verified={idx === pages.length - 1 ? verified : null} />
                 <span className="preview-page-caption">
                   PAGE {String(idx + 1).padStart(2, "0")} / {String(pages.length).padStart(2, "0")}
                 </span>

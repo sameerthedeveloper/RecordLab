@@ -24,6 +24,7 @@ import {
   Search,
   Trash2,
   LayoutList,
+  UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { Modal, modalButton } from "./Modal";
@@ -45,6 +46,7 @@ import { deleteDocument, moveDocument, renameDocument, watchUserDocuments } from
 import { createFolder, deleteFolder, renameFolder, setFolderTemplate, useFolders, type Folder } from "@/lib/folderService";
 import { effectiveLayout, type SectionTemplate } from "@/lib/sections";
 import { loadSettings } from "@/lib/settings";
+import { FacultyReviewModal } from "./FacultyReviewModal";
 import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
 import { useAuthUser } from "@/lib/authService";
@@ -120,6 +122,7 @@ export function DashboardModal({
   const [deleting, setDeleting] = useState<CloudDocument | null>(null);
   const folders = useFolders();
   const [moving, setMoving] = useState<CloudDocument | null>(null);
+  const [facultyOpen, setFacultyOpen] = useState(false);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderTemplate, setNewFolderTemplate] = useState<SectionTemplate | null>(null);
@@ -559,6 +562,13 @@ export function DashboardModal({
                 <FolderPlus className="h-4 w-4" strokeWidth={2} />
                 Subject
               </button>
+              <Link
+                href="/join"
+                className="flex shrink-0 items-center gap-2.5 rounded-full px-3.5 py-2 text-[13px] font-semibold text-ink-soft transition-colors hover:bg-ink/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent md:mt-2"
+              >
+                <UserCheck className="h-4 w-4 shrink-0" strokeWidth={2} />
+                Join with class code
+              </Link>
             </>
           )}
           {user && (
@@ -642,6 +652,15 @@ export function DashboardModal({
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"
                     >
                       <LayoutList className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Hand in to faculty"
+                      title="Hand in to faculty"
+                      onClick={() => setFacultyOpen(true)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
                     <button
                       type="button"
@@ -1101,6 +1120,18 @@ export function DashboardModal({
           to All files.
         </p>
       </Modal>
+
+      {user && activeFolder && (
+        <FacultyReviewModal
+          open={facultyOpen}
+          onClose={() => setFacultyOpen(false)}
+          user={user}
+          subjectId={activeFolder.id}
+          subjectName={activeFolder.name}
+          documents={(documents ?? []).filter((d) => d.folderId === activeFolder.id)}
+          onToast={onToast}
+        />
+      )}
 
       <MoveToSubjectModal
         open={moving !== null}

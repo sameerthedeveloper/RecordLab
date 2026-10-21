@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Copy, Sparkles, Upload, Zap } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { CopyPromptTab } from "./ai/CopyPromptTab";
 import { PasteImportTab } from "./ai/PasteImportTab";
 import { DirectLlmTab } from "./ai/DirectLlmTab";
 import { createNewGenerationId } from "@/lib/aiAssistant";
+import { useAiConfig } from "@/lib/aiConfig";
+import type { AiStart } from "@/lib/settings";
 import type { AiContext, ParsedLabRecord } from "@/lib/aiAssistant";
 
 interface AiAssistantModalProps {
@@ -15,11 +17,14 @@ interface AiAssistantModalProps {
   onImport: (parsed: ParsedLabRecord, experimentTitle: string, runAfter?: boolean) => void;
   /** Department and (custom) section layout the prompt is written for. */
   context?: AiContext;
+  /** The tab the person chose in Settings. */
+  start?: AiStart;
 }
 
 type AiTab = "prompt" | "import" | "direct";
 
-export function AiAssistantModal({ open, onClose, onImport, context }: AiAssistantModalProps) {
+export function AiAssistantModal({ open, onClose, onImport, context, start = "prompt" }: AiAssistantModalProps) {
+  const directOn = useAiConfig()?.enabled !== false;
   const [activeTab, setActiveTab] = useState<AiTab>("prompt");
   const [title, setTitle] = useState("");
   const [lang, setLang] = useState("");
@@ -29,6 +34,11 @@ export function AiAssistantModal({ open, onClose, onImport, context }: AiAssista
   const [error, setError] = useState("");
   const [runAfter, setRunAfter] = useState(false);
   const activeGenerationIdRef = useRef<string | null>(null);
+
+  // Each time it opens, start on the tab chosen in Settings (Direct LLM only while an admin has it on).
+  useEffect(() => {
+    if (open) setActiveTab(start === "direct" && !directOn ? "prompt" : start);
+  }, [open, start, directOn]);
 
   if (!open) return null;
 
@@ -86,10 +96,12 @@ export function AiAssistantModal({ open, onClose, onImport, context }: AiAssista
             <Upload className="h-4 w-4" strokeWidth={2} />
             <span>Paste &amp; Import</span>
           </button>
-          <button type="button" className={tabButtonClass("direct")} onClick={() => switchTab("direct")}>
-            <Zap className="h-4 w-4" strokeWidth={2} />
-            <span>Direct LLM</span>
-          </button>
+          {directOn && (
+            <button type="button" className={tabButtonClass("direct")} onClick={() => switchTab("direct")}>
+              <Zap className="h-4 w-4" strokeWidth={2} />
+              <span>Direct LLM</span>
+            </button>
+          )}
         </div>
 
         {!context?.layout && (
@@ -137,7 +149,7 @@ export function AiAssistantModal({ open, onClose, onImport, context }: AiAssista
           />
         )}
 
-        {activeTab === "direct" && (
+        {activeTab === "direct" && directOn && (
           <DirectLlmTab
             title={title}
             lang={lang}

@@ -28,7 +28,7 @@ import { CONTENT_WIDTH_MM, MANUAL_CALCULATION_LINES, resolvePageBorder, resolveT
 import { collegeGeometry } from "./recordFormat";
 import { resolveSections, resultHeading } from "./sections";
 import { resolveHeaderBorders, resolveHeaderUnderline, type HeaderLine } from "./types";
-import type { OutputImage, RecordState, WatermarkOptions } from "./types";
+import type { OutputImage, RecordState, Verification, WatermarkOptions } from "./types";
 
 /**
  * Builds a .docx rendition of the record. Unlike the PDF/print path, this
@@ -315,7 +315,7 @@ function headerTable(record: RecordState, font: string): Table {
   });
 }
 
-export async function buildRecordDocx(record: RecordState, watermark: WatermarkOptions, docFont: string): Promise<Blob> {
+export async function buildRecordDocx(record: RecordState, watermark: WatermarkOptions, docFont: string, verified?: Verification | null): Promise<Blob> {
   const font = toDocxFontName(docFont);
   const underline = resolveHeaderUnderline(record.headerLayout);
   // The rule is the bottom border of the paragraph right after the table; `space` (pt) is its gap from the text above.
@@ -352,6 +352,20 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
   }
   if (record.result.trim()) {
     children.push(headingParagraph(resultHeading(record), font, college, college ? 28 : undefined), bodyParagraph(record.result, font, college));
+  }
+
+  if (verified) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 360 },
+        keepLines: true,
+        children: [
+          new TextRun({ text: "\u2713 ", bold: true, color: "1B7F5C", size: 22, font }),
+          new TextRun({ text: `Verified by ${verified.by}${verified.on ? `, ${verified.on}` : ""}`, bold: true, color: "14633F", size: 20, font }),
+        ],
+      })
+    );
   }
 
   const watermarkBytes = await buildWatermarkImage(record.rrn, watermark);

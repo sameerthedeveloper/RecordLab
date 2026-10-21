@@ -1,6 +1,7 @@
 import { exportRecordPdf } from "./exportHtml2Pdf";
 import type { CloudDocument } from "./firestoreService";
 import { loadSettings } from "./settings";
+import { loadVerification } from "./verification";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "./types";
 
 /** Renders a cloud file to PDF exactly like the editor's Save PDF, without opening it. */
@@ -16,7 +17,8 @@ async function renderCloudDocumentPdf(document: CloudDocument, output: "save" | 
   if (record.title.trim()) filename += "-" + part(record.title);
   if (record.rrn.trim()) filename += "-" + part(record.rrn);
 
-  const result = await exportRecordPdf(record, watermark, loadSettings().font, `${filename}.pdf`, output);
+  const verified = await loadVerification(document.userId, document.folderId);
+  const result = await exportRecordPdf(record, watermark, loadSettings().font, `${filename}.pdf`, output, verified);
   return { blob: result instanceof Blob ? result : null, filename: `${filename}.pdf` };
 }
 

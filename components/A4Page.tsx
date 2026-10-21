@@ -1,4 +1,5 @@
-import { pageBorderStyle, type PageBorder, type PageObject, type RecordFormat, type WatermarkOptions } from "@/lib/types";
+import { Check } from "lucide-react";
+import { pageBorderStyle, type PageBorder, type PageObject, type RecordFormat, type Verification, type WatermarkOptions } from "@/lib/types";
 
 interface A4PageProps {
   page: PageObject;
@@ -6,6 +7,8 @@ interface A4PageProps {
   watermark: WatermarkOptions;
   format?: RecordFormat;
   pageBorder?: PageBorder;
+  /** Faculty verification, drawn bottom-right. Pass it for the last page only. */
+  verified?: Verification | null;
 }
 
 /**
@@ -16,7 +19,7 @@ interface A4PageProps {
  * rather than JSX. All user text within those fragments is escaped via
  * escapeHTML before this point.
  */
-export function A4Page({ page, rrn, watermark, format, pageBorder }: A4PageProps) {
+export function A4Page({ page, rrn, watermark, format, pageBorder, verified }: A4PageProps) {
   const watermarkStyle: React.CSSProperties = {
     fontFamily: watermark.font,
     fontSize: `${watermark.size}px`,
@@ -37,6 +40,17 @@ export function A4Page({ page, rrn, watermark, format, pageBorder }: A4PageProps
           <div className="a4-bottom-result" dangerouslySetInnerHTML={{ __html: page.result }} />
         )}
       </div>
+      {verified && (
+        <div className="a4-verified">
+          <span aria-hidden className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full bg-[#1b7f5c]">
+            <Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />
+          </span>
+          <div>
+            <b>Verified by {verified.by}</b>
+            {verified.on && <small>{verified.on}</small>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -41,6 +41,14 @@ export const FAQS: { q: string; a: string }[] = [
     a: "Choose the standard sheet or the college sheet, then adjust the heading table, page border, watermark, font and sections until it matches your department's format.",
   },
   {
+    q: "Can my faculty check and sign off my record?",
+    a: "Yes. Your faculty create a class for the subject and share its code or link. You hand in a subject, they read each record as it prints, and verify it or send it back with a note. A verified record shows a tick and the faculty's name bottom right of its last page. They see only what you hand in, and you can take it back at any time.",
+  },
+  {
+    q: "How do faculty get access?",
+    a: "Faculty sign up on the faculty page and send a short request. An admin approves it, and then they can create classes, review hand-ins and verify subjects. Students never need a faculty account.",
+  },
+  {
     q: "Where is my data stored?",
     a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account. You can open them; Record Lab administrators can also read saved records to support users and keep the service healthy. A share link shows a copy only to people who have the link, until you revoke it.",
   },

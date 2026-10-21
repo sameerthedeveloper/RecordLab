@@ -1,6 +1,6 @@
 import { buildPrintDocumentHTML } from "./buildPrintHtml";
 import { paginateRecord } from "./paginate";
-import type { RecordState, WatermarkOptions } from "./types";
+import type { RecordState, Verification, WatermarkOptions } from "./types";
 
 /** Waits for the html2pdf.js script (loaded from layout.tsx) to be ready. */
 async function waitForHtml2Pdf(timeoutMs = 8000): Promise<void> {
@@ -22,7 +22,8 @@ export async function exportRecordPdf(
   font: string,
   filename: string,
   /** "blob" returns the PDF instead of downloading it (used for the Drive upload). */
-  output: "save" | "blob" = "save"
+  output: "save" | "blob" = "save",
+  verified?: Verification | null
 ): Promise<Blob | void> {
   await waitForHtml2Pdf();
 
@@ -36,7 +37,7 @@ export async function exportRecordPdf(
     const doc = iframe.contentDocument;
     if (!doc) throw new Error("Unable to prepare the PDF.");
     doc.open();
-    doc.write(buildPrintDocumentHTML(paginateRecord(record), record.rrn, watermark, font, record.format, record.pageBorder));
+    doc.write(buildPrintDocumentHTML(paginateRecord(record), record.rrn, watermark, font, record.format, record.pageBorder, verified));
     doc.close();
     await new Promise((r) => window.setTimeout(r, 600));
 

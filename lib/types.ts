@@ -174,6 +174,8 @@ export interface RecordState {
   result_title?: string;
   /** Set when the OUTPUT came from actually running the code (see lib/runner). Absent = typed or sample output. */
   output_run?: OutputRun;
+  /** Set when the AI assistant filled this record in (when, and which sections). Read by the faculty review; see lib/aiMark.ts. */
+  ai_generated?: { at: number; fields: string[] };
   /** Standard input for the program when it is run (from the AI answer or typed in the run dialog). */
   program_input?: string;
   result: string;
@@ -287,6 +289,12 @@ export type DownloadFormat = "pdf" | "docx";
 
 /** Which engine renders the PDF: html2pdf.js (rasterized snapshot) or canvas2pdf (vector/selectable text). */
 export type PdfEngine = "html2pdf" | "canvas2pdf";
+
+/** Set when the faculty verified the subject this record belongs to: drawn bottom-right of the last page. */
+export interface Verification {
+  by: string;
+  on: string;
+}
 
 export interface PageObject {
   main: string;

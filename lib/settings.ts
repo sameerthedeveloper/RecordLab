@@ -32,6 +32,10 @@ export function applyUiStyle(style: UiStyle): void {
   if (typeof document !== "undefined") document.documentElement.dataset.ui = style;
 }
 
+/** How the AI assistant opens: copy a prompt, paste an answer back, or generate directly. */
+export type AiStart = "prompt" | "import" | "direct";
+export const AI_STARTS: AiStart[] = ["prompt", "import", "direct"];
+
 export interface AppSettings {
   rrn: string;
   watermark: WatermarkOptions;
@@ -46,6 +50,8 @@ export interface AppSettings {
   department: string;
   /** Sections new records start with. null = the original programming-lab layout. Subjects can override it. */
   defaultLayout: SectionTemplate | null;
+  /** Which AI assistant tab opens first. "direct" falls back to "prompt" while an admin has Direct LLM switched off. */
+  aiStart: AiStart;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -58,6 +64,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pageBorder: DEFAULT_PAGE_BORDER,
   department: "",
   defaultLayout: null,
+  aiStart: "prompt",
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -75,6 +82,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     recordFormat: RECORD_FORMATS.includes(parsed.recordFormat as RecordFormat) ? (parsed.recordFormat as RecordFormat) : "standard",
     pageBorder: resolvePageBorder(parsed.pageBorder),
     defaultLayout: sanitizeTemplate(parsed.defaultLayout),
+    aiStart: AI_STARTS.includes(parsed.aiStart as AiStart) ? (parsed.aiStart as AiStart) : "prompt",
     department: typeof parsed.department === "string" ? parsed.department.trim().slice(0, 80) : "",
   };
 }

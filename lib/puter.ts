@@ -4,6 +4,9 @@
  * app/layout.tsx.
  */
 
+import { AiUserError, generateViaServer, ServerAiError, serverAiUnavailable } from "./aiServer";
+import { loadAiConfig } from "./aiConfig";
+
 export interface PuterChatOptions {
   model?: string;
   stream?: boolean;
@@ -63,7 +66,7 @@ function extractText(result: Awaited<ReturnType<PuterGlobal["ai"]["chat"]>>): st
  * PUTER_MODEL_FALLBACK_CHAIN) and falling back to the next model in the
  * chain once on failure.
  */
-export async function generateContent(prompt: string, options: { model?: string } = {}): Promise<string> {
+async function puterGenerate(prompt: string, options: { model?: string } = {}): Promise<string> {
   const chain = options.model ? [options.model] : PUTER_MODEL_FALLBACK_CHAIN;
 
   let lastError: unknown;
@@ -79,6 +82,44 @@ export async function generateContent(prompt: string, options: { model?: string 
     }
   }
 
+  throw lastError instanceof Error ? lastError : new Error("AI generation failed. Please try again.");
+}
+
+/** True when a Puter account is already linked in this browser (so using it will not open a sign-in popup). */
+function puterLinked(): boolean {
+  try {
+    return !!window.puter?.auth.isSignedIn();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Generates text. One Record Lab sign-in is enough: unless a Puter account is already linked, the server's own
+ * AI key answers first (no popup, no second login) and Puter.js is the fallback; with Puter linked, Puter goes
+ * first and the server key backs it up. With no server key configured it is Puter only, as before.
+ */
+export async function generateContent(prompt: string, options: { model?: string } = {}): Promise<string> {
+  const config = await loadAiConfig();
+  if (!config.enabled) throw new AiUserError("The AI assistant is turned off right now.");
+  const viaServer = () => generateViaServer(prompt);
+  const viaPuter = () => puterGenerate(prompt, options);
+  const order =
+    config.mode === "puter" || serverAiUnavailable() ? [viaPuter] : puterLinked() ? [viaPuter, viaServer] : [viaServer, viaPuter];
+
+  let lastError: unknown;
+  let serverError: ServerAiError | null = null;
+  for (const attempt of order) {
+    try {
+      return await attempt();
+    } catch (err) {
+      if (err instanceof ServerAiError) serverError = err;
+      lastError = err;
+    }
+  }
+  if (serverError?.code === "disabled") throw new AiUserError("The AI assistant is turned off right now.");
+  if (serverError?.code === "daily_limit") throw new AiUserError("You've used today's AI allowance. Try again tomorrow, or link a Puter account in Settings.");
+  if (serverError?.code === "rate_limit") throw new AiUserError("Too many requests for a moment. Wait a minute and try again.");
   throw lastError instanceof Error ? lastError : new Error("AI generation failed. Please try again.");
 }
 

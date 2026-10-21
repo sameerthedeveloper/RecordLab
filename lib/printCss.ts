@@ -59,6 +59,37 @@ export const PRINT_CSS = `
     padding-top: 8px;
     flex-shrink: 0;
   }
+  .a4-verified {
+    position: absolute;
+    right: 13mm;
+    bottom: 11mm;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px 3px 5px;
+    border: 1.4px solid #1b7f5c;
+    border-radius: 5px;
+    color: #14633f;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    line-height: 1.2;
+    background: rgba(255, 255, 255, 0.9);
+  }
+  .a4-verified svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+  .a4-verified b {
+    display: block;
+    font-weight: 700;
+  }
+  .a4-verified small {
+    display: block;
+    font-size: 8.5px;
+    opacity: 0.85;
+  }
   .watermark {
     position: absolute;
     top: 50%;

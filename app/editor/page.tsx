@@ -10,6 +10,7 @@ import { SettingsModal } from "@/components/SettingsModal";
 import { Onboarding } from "@/components/Onboarding";
 import { ToastViewport, useToast } from "@/components/Toast";
 import { usePaginatedPages } from "@/lib/usePaginatedPages";
+import { useVerification } from "@/lib/verification";
 import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
@@ -32,6 +33,8 @@ import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_PAGE_BORDER, DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
 import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
 import type { ParsedLabRecord } from "@/lib/aiAssistant";
+import { stampAiText } from "@/lib/aiMark";
+import { clearDraft, hasContent, loadDraft, saveDraft } from "@/lib/editorDraft";
 
 function buildFilename(record: RecordState, extension: string): string {
   const title = record.title.trim();
@@ -93,6 +96,12 @@ export default function Home() {
   const printFrameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = usePaginatedPages(record);
+  // True once the mount effect has had its chance to restore a draft; autosave waits for it so it never overwrites one.
+  const [draftArmed, setDraftArmed] = useState(false);
+  const recordRef = useRef(record);
+  recordRef.current = record;
+  // Set once the faculty has verified this record's subject; drawn bottom-right of the last page in every output.
+  const verified = useVerification(cloudFolderId);
 
   // Keep <html data-ui> in step with the saved interface style.
   useEffect(() => {
@@ -138,6 +147,7 @@ export default function Home() {
 
     // Opened from a share link: load the shared snapshot as a fresh, unsaved copy.
     const shareId = new URLSearchParams(window.location.search).get("share");
+    let restoring = !shareId;
     if (shareId) {
       window.history.replaceState(null, "", window.location.pathname);
       loadSharedRecord(shareId)
@@ -164,10 +174,46 @@ export default function Home() {
         setRecord({ ...DEFAULT_RECORD, ...payload.record });
         if (payload.watermark) setWatermark({ ...DEFAULT_WATERMARK, ...payload.watermark });
         showToast("Loaded from cloud.");
+        restoring = false;
       }
     } catch {}
+
+    // Nothing was opened on purpose: bring back what was being edited when the page last closed.
+    if (restoring) {
+      const draft = loadDraft();
+      if (draft) {
+        setRecord({ ...DEFAULT_RECORD, ...draft.record });
+        setWatermark({ ...DEFAULT_WATERMARK, ...draft.watermark });
+        setCloudDocId(draft.cloudDocId);
+        setCloudFolderId(draft.cloudFolderId);
+        showToast("Restored your unsaved work from this device.");
+      }
+    }
+    setDraftArmed(true);
     // showToast is a stable callback, so this still runs once, on mount.
   }, [showToast]);
+
+  // Copy the open record to this device a moment after the last change, so closing the tab never loses it.
+  const draftFailedRef = useRef(false);
+  useEffect(() => {
+    if (!draftArmed) return;
+    const t = window.setTimeout(() => {
+      draftFailedRef.current = !saveDraft({ record, watermark, cloudDocId, cloudFolderId });
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [draftArmed, record, watermark, cloudDocId, cloudFolderId]);
+
+  // Only when the device refused the copy (storage full) does leaving risk the work: then ask first.
+  useEffect(() => {
+    const onLeave = (e: BeforeUnloadEvent) => {
+      if (draftFailedRef.current && hasContent(recordRef.current)) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onLeave);
+    return () => window.removeEventListener("beforeunload", onLeave);
+  }, []);
 
   // Settings as of the latest render, for effects that must not re-run when they change.
   const settingsRef = useRef(settings);
@@ -430,6 +476,7 @@ export default function Home() {
     );
     const dirty = JSON.stringify(record) !== JSON.stringify(fresh);
     if (dirty && !window.confirm("Start a new record? Changes you haven't saved to the cloud or downloaded will be lost.")) return;
+    clearDraft();
     setRecord(fresh);
     setWatermark({ ...DEFAULT_WATERMARK, ...s.watermark });
     setCloudDocId(null);
@@ -469,6 +516,27 @@ export default function Home() {
     }
   }
 
+  // Ctrl/Cmd+S saves instead of opening the browser's "save page" dialog: to the cloud when signed in, else as a .rlab file.
+  const saveShortcutRef = useRef<() => void>(() => {});
+  saveShortcutRef.current = () => {
+    if (authUser) {
+      if (!isSavingCloud) void handleSaveCloud();
+    } else {
+      handleSaveWork();
+      showToast("Downloaded your work file. Sign in to save to the cloud with Ctrl+S.");
+    }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveShortcutRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function writePrintDocument(): Document | null {
     const iframe = printFrameRef.current;
     if (!iframe) return null;
@@ -476,7 +544,7 @@ export default function Home() {
     if (!iframeDocument) return null;
 
     iframeDocument.open();
-    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font, record.format, record.pageBorder));
+    iframeDocument.write(buildPrintDocumentHTML(pages, record.rrn, watermark, settings.font, record.format, record.pageBorder, verified));
     iframeDocument.close();
     return iframeDocument;
   }
@@ -598,7 +666,7 @@ export default function Home() {
   async function handleSaveDocx() {
     setIsSavingPdf(true);
     try {
-      const blob = await buildRecordDocx(record, watermark, settings.font);
+      const blob = await buildRecordDocx(record, watermark, settings.font, verified);
       downloadBlob(blob, buildFilename(record, "docx"));
       track("export_docx");
     } catch (error) {
@@ -636,26 +704,31 @@ export default function Home() {
       if (parsed.custom && isCustomLayout(prev)) {
         // Custom layout: fill each section by id; sections not in the answer (blank-line ones) are left alone.
         const { result, ...bySection } = parsed.custom;
+        // Prose sections get the hidden AI mark; code and output sections are left exactly as written.
+        const kindOf = (id: string) => prev.sections?.find((s) => s.id === id)?.kind;
+        const mark = (id: string, v: string) => (kindOf(id) === "text" ? stampAiText(v) : v);
         return {
           ...prev,
           title: newTitle ? newTitle.toUpperCase() : prev.title,
-          section_values: { ...(prev.section_values ?? {}), ...Object.fromEntries(Object.entries(bySection).map(([k, v]) => [k, (v || "").trim()])) },
-          result: (result || "").trim(),
+          section_values: { ...(prev.section_values ?? {}), ...Object.fromEntries(Object.entries(bySection).map(([k, v]) => [k, mark(k, (v || "").trim())])) },
+          result: stampAiText((result || "").trim()),
           output_images: [],
+          ai_generated: { at: Date.now(), fields: [...Object.keys(bySection), "result"] },
         };
       }
       return {
         ...prev,
         title: newTitle ? newTitle.toUpperCase() : prev.title,
-        aim: (parsed.aim || "").trim(),
-        algorithm: (parsed.algorithm || "").trim(),
+        aim: stampAiText((parsed.aim || "").trim()),
+        algorithm: stampAiText((parsed.algorithm || "").trim()),
         source_code: (parsed.sourceCode || "").trim(),
         output: (parsed.output || "").trim(),
-        review_questions: (parsed.viva || "").trim(),
+        review_questions: stampAiText((parsed.viva || "").trim()),
         review_questions_enabled: true,
-        result: (parsed.result || "").trim(),
+        result: stampAiText((parsed.result || "").trim()),
         output_images: [],
         program_input: (parsed.input || "").replace(/\s+$/, ""),
+        ai_generated: { at: Date.now(), fields: ["aim", "algorithm", "source_code", "output", "review_questions", "result"] },
       };
     });
   }
@@ -708,6 +781,7 @@ export default function Home() {
           key={`preview-${editorKey}`}
           onShare={handleShare}
           isSharing={isSharing}
+          verified={verified}
           record={record}
           pages={pages}
           rrn={record.rrn}
@@ -747,6 +821,7 @@ export default function Home() {
         onClose={() => setAiModalOpen(false)}
         onImport={handleAiImport}
         context={aiContext}
+        start={settings.aiStart}
       />
 
       <DashboardModal
