@@ -13,7 +13,7 @@ tsconfig.tsbuildinfo
 FLUTE.md
 app/flute/
 firebase.json
-lib/downloadZip.ts
+
 mobile/
 record-lab-video-kit.zip
 src/
