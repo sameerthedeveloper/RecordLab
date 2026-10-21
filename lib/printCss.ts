@@ -80,6 +80,9 @@ export const PRINT_CSS = `
     border-right: var(--hb-right, 1px solid #111827);
     font-family: Arial, sans-serif;
   }
+  .record-header:not(.record-header--college) {
+    table-layout: fixed;
+  }
   .record-header td {
     border: none;
     border-top: var(--hb-top, 1px solid #111827);
@@ -117,6 +120,7 @@ export const PRINT_CSS = `
     font-size: 14pt;
     font-weight: 700;
     line-height: 1.5;
+    overflow-wrap: anywhere;
   }
   .record-block {
     margin-top: 18px;

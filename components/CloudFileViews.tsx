@@ -80,6 +80,26 @@ interface ItemActions {
   onMove: () => void;
   onDownload: () => void;
   onDelete: () => void;
+  /** Multi-select mode: show a checkbox; `checked` is whether this file is ticked. */
+  selectMode?: boolean;
+  checked?: boolean;
+}
+
+function CheckMark({ checked, className = "" }: { checked: boolean; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+        checked ? "border-accent bg-accent text-white" : "border-ink-soft/40 bg-white"
+      } ${className}`}
+    >
+      {checked && (
+        <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2.5 6.2 5 8.7l4.5-5.4" />
+        </svg>
+      )}
+    </span>
+  );
 }
 
 const MENU_W = 160;
@@ -193,6 +213,8 @@ function RowMenu({ onOpen, onRename, onMove, onDownload, onDelete }: Pick<ItemAc
 export function FileCard({
   document,
   selected,
+  selectMode,
+  checked,
   ...actions
 }: { document: CloudDocument; selected: boolean } & ItemActions) {
   return (
@@ -204,22 +226,23 @@ export function FileCard({
       }}
       role="button"
       tabIndex={0}
-      aria-pressed={selected}
+      aria-pressed={selectMode ? !!checked : selected}
       onClick={actions.onSelect}
-      onDoubleClick={actions.onOpen}
+      onDoubleClick={selectMode ? undefined : actions.onOpen}
       onKeyDown={(e) => {
-        if (e.key === "Enter") actions.onOpen();
+        if (e.key === "Enter" && !selectMode) actions.onOpen();
         else if (e.key === " ") {
           e.preventDefault();
           actions.onSelect();
         }
       }}
       className={`group flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
-        selected ? "border-accent bg-accent-soft/40 ring-1 ring-accent" : "border-line hover:border-accent/40"
+        selected || checked ? "border-accent bg-accent-soft/40 ring-1 ring-accent" : "border-line hover:border-accent/40"
       }`}
     >
-      <div className="h-40 border-b border-line">
+      <div className="relative h-40 border-b border-line">
         <FileThumb document={document} />
+        {selectMode && <CheckMark checked={!!checked} className="absolute left-2 top-2 shadow-sm" />}
       </div>
       <div className="flex items-center gap-2 py-2 pl-3 pr-1.5">
         <FileText className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
@@ -227,7 +250,9 @@ export function FileCard({
           <p className="truncate text-[13px] font-semibold text-ink">{document.title}</p>
           <p className="truncate text-[11px] text-ink-soft/70">Edited {relativeTime(document.updatedAt)}</p>
         </div>
-        <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDownload={actions.onDownload} onDelete={actions.onDelete} />
+        {!selectMode && (
+          <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDownload={actions.onDownload} onDelete={actions.onDelete} />
+        )}
       </div>
     </div>
   );
@@ -236,6 +261,8 @@ export function FileCard({
 export function FileRow({
   document,
   selected,
+  selectMode,
+  checked,
   ...actions
 }: { document: CloudDocument; selected: boolean } & ItemActions) {
   const record = document.data?.record;
@@ -248,21 +275,22 @@ export function FileRow({
       }}
       role="button"
       tabIndex={0}
-      aria-pressed={selected}
+      aria-pressed={selectMode ? !!checked : selected}
       onClick={actions.onSelect}
-      onDoubleClick={actions.onOpen}
+      onDoubleClick={selectMode ? undefined : actions.onOpen}
       onKeyDown={(e) => {
-        if (e.key === "Enter") actions.onOpen();
+        if (e.key === "Enter" && !selectMode) actions.onOpen();
         else if (e.key === " ") {
           e.preventDefault();
           actions.onSelect();
         }
       }}
       className={`grid cursor-pointer grid-cols-[1fr_auto] items-center gap-3 border-b border-line px-3 py-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent sm:grid-cols-[minmax(0,1fr)_90px_150px_auto] ${
-        selected ? "bg-accent-soft/50" : "hover:bg-paper"
+        selected || checked ? "bg-accent-soft/50" : "hover:bg-paper"
       }`}
     >
       <div className="flex min-w-0 items-center gap-3">
+        {selectMode && <CheckMark checked={!!checked} />}
         <FileText className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
         <p className="truncate text-[13px] font-semibold text-ink">{document.title}</p>
       </div>
@@ -270,7 +298,11 @@ export function FileRow({
         {record?.exercise_number ? `Ex. ${record.exercise_number}` : "—"}
       </p>
       <p className="hidden text-xs text-ink-soft sm:block">{relativeTime(document.updatedAt)}</p>
-      <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDownload={actions.onDownload} onDelete={actions.onDelete} />
+      {selectMode ? (
+        <span className="w-7" />
+      ) : (
+        <RowMenu onOpen={actions.onOpen} onRename={actions.onRename} onMove={actions.onMove} onDownload={actions.onDownload} onDelete={actions.onDelete} />
+      )}
     </div>
   );
 }

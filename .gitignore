@@ -7,3 +7,15 @@ npm-debug.log*
 next-env.d.ts
 .env*.local
 tsconfig.tsbuildinfo
+
+# local-only
+.flute/
+FLUTE.md
+app/flute/
+firebase.json
+lib/downloadZip.ts
+mobile/
+record-lab-video-kit.zip
+src/
+video-kit/
+video/

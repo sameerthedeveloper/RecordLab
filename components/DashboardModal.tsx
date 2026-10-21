@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownAZ,
+  Download,
+  ListChecks,
+  X,
   CloudUpload,
   Clock,
   Cloud,
@@ -25,6 +28,7 @@ import {
 import Link from "next/link";
 import { Modal, modalButton } from "./Modal";
 import { cloudDocumentPdfBlob, downloadCloudDocumentPdf } from "@/lib/downloadCloudPdf";
+import { downloadCloudZip } from "@/lib/downloadZip";
 import {
   connectDrive,
   DriveAuthError,
@@ -128,6 +132,9 @@ export function DashboardModal({
   const [driveLinked, setDriveLinked] = useState(false);
   const [driveBusy, setDriveBusy] = useState<{ done: number; total: number } | null>(null);
   const [driveConnecting, setDriveConnecting] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [zipBusy, setZipBusy] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     setDriveLinked(user ? isDriveLinked(user.uid) : false);
@@ -214,6 +221,13 @@ export function DashboardModal({
     [documents],
   );
   const selected = documents?.find((d) => d.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!open) {
+      setSelectMode(false);
+      setChecked(new Set());
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -435,8 +449,53 @@ export function DashboardModal({
     }
   }
 
+  function toggleChecked(ids: string[], on?: boolean) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      const allOn = ids.every((id) => next.has(id));
+      for (const id of ids) (on ?? !allOn) ? next.add(id) : next.delete(id);
+      return next;
+    });
+  }
+
+  function endSelect() {
+    setSelectMode(false);
+    setChecked(new Set());
+  }
+
+  /** Zips the ticked files, one folder per subject, rendered like the editor's Save PDF. */
+  async function downloadZip() {
+    if (zipBusy || !documents) return;
+    const docs = documents.filter((d) => checked.has(d.id)).sort(byExercise);
+    if (docs.length === 0) return;
+    const subjectOf = (d: CloudDocument) => (folders ?? []).find((f) => f.id === d.folderId)?.name ?? null;
+    const subjects = new Set(docs.map(subjectOf));
+    const zipName = subjects.size === 1 && [...subjects][0] ? [...subjects][0]! : "record-lab-files";
+    setZipBusy({ done: 0, total: docs.length });
+    try {
+      const n = await downloadCloudZip(
+        docs.map((doc) => ({ doc, subject: subjectOf(doc) })),
+        zipName,
+        (done, total) => setZipBusy({ done, total }),
+      );
+      track("zip_download");
+      onToast(`Downloaded ${n} ${n === 1 ? "PDF" : "PDFs"} as ${zipName}.zip.`);
+      endSelect();
+    } catch (err) {
+      console.error("Zip download failed:", err);
+      onToast(err instanceof Error ? err.message : "Unable to create the zip.");
+    } finally {
+      setZipBusy(null);
+    }
+  }
+
+  const visibleIds = visible.map((d) => d.id);
+  const allVisibleChecked = visibleIds.length > 0 && visibleIds.every((id) => checked.has(id));
+
   const actions = (doc: CloudDocument) => ({
-    onSelect: () => setSelectedId(doc.id),
+    selectMode,
+    checked: checked.has(doc.id),
+    onSelect: () => (selectMode ? toggleChecked([doc.id]) : setSelectedId(doc.id)),
     onOpen: () => handleLoad(doc),
     onRename: () => startRename(doc),
     onMove: () => setMoving(doc),
@@ -609,6 +668,22 @@ export function DashboardModal({
                 )}
               </div>
               <div className="flex items-center gap-1.5">
+                {total > 0 && (
+                  <button
+                    type="button"
+                    aria-pressed={selectMode}
+                    title="Select files to download as a zip"
+                    onClick={() => (selectMode ? endSelect() : (setSelectMode(true), setSelectedId(null)))}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      selectMode
+                        ? "border-accent bg-accent-soft text-accent-ink"
+                        : "border-line text-ink-soft hover:border-accent/40 hover:text-accent"
+                    }`}
+                  >
+                    <ListChecks className="h-3.5 w-3.5" strokeWidth={2} />
+                    Select
+                  </button>
+                )}
                 <button
                   type="button"
                   title="Change sort order"
@@ -746,10 +821,18 @@ export function DashboardModal({
                     <button
                       key={f.id}
                       type="button"
-                      onClick={() => setSection(`f:${f.id}`)}
+                      onClick={() =>
+                        selectMode
+                          ? toggleChecked((documents ?? []).filter((d) => d.folderId === f.id).map((d) => d.id))
+                          : setSection(`f:${f.id}`)
+                      }
                       {...dropProps(f.id, `card:${f.id}`)}
                       className={`group flex items-center gap-3 rounded-2xl border bg-paper px-3.5 py-3 text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
-                        dropTarget === `card:${f.id}` ? "border-accent bg-accent-soft/60 ring-2 ring-accent" : "border-line"
+                        dropTarget === `card:${f.id}`
+                          ? "border-accent bg-accent-soft/60 ring-2 ring-accent"
+                          : selectMode && countIn(f.id) > 0 && (documents ?? []).filter((d) => d.folderId === f.id).every((d) => checked.has(d.id))
+                            ? "border-accent bg-accent-soft/40 ring-1 ring-accent"
+                            : "border-line"
                       }`}
                     >
                       <FolderIcon className="h-7 w-7 shrink-0 fill-accent-soft text-accent" strokeWidth={1.75} />
@@ -790,7 +873,7 @@ export function DashboardModal({
           </div>
         </main>
 
-        {selected && (
+        {selected && !selectMode && (
           <div className="hidden lg:flex">
             <DriveDetails
               document={selected}
@@ -806,8 +889,47 @@ export function DashboardModal({
         )}
       </div>
 
+      {selectMode && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-line bg-paper px-4 py-2.5">
+          <p className="min-w-0 flex-1 text-xs font-semibold text-ink" aria-live="polite">
+            {zipBusy
+              ? `Making PDF ${Math.min(zipBusy.done + 1, zipBusy.total)} of ${zipBusy.total}…`
+              : checked.size === 0
+                ? "Tick files or subjects to download"
+                : `${checked.size} ${checked.size === 1 ? "file" : "files"} selected`}
+          </p>
+          <button
+            type="button"
+            disabled={!!zipBusy || visibleIds.length === 0}
+            onClick={() => toggleChecked(visibleIds, !allVisibleChecked)}
+            className="rounded-xl border border-line bg-white px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent disabled:opacity-60"
+          >
+            {allVisibleChecked ? "Clear" : activeFolder ? "Select subject" : query ? "Select results" : "Select all"}
+          </button>
+          <button
+            type="button"
+            disabled={!!zipBusy || checked.size === 0}
+            onClick={downloadZip}
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-60"
+          >
+            <Download className="h-3.5 w-3.5" strokeWidth={2.25} />
+            {zipBusy ? "Zipping…" : "Download zip"}
+          </button>
+          <button
+            type="button"
+            disabled={!!zipBusy}
+            aria-label="Done selecting"
+            title="Done"
+            onClick={endSelect}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 disabled:opacity-60"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </div>
+      )}
+
       {/* Small screens: action bar for the selected file (no side panel) */}
-      {selected && (
+      {selected && !selectMode && (
         <div className="flex shrink-0 items-center gap-2 border-t border-line bg-paper px-4 py-2.5 lg:hidden">
           <p className="min-w-0 flex-1 truncate text-xs font-semibold text-ink">{selected.title}</p>
           <button

@@ -266,6 +266,14 @@ html {
   font-family: var(--doc-font, Arial, sans-serif);
 }
 
+/* Fixed columns so a long title wraps inside its cell instead of running off the page. */
+.record-header:not(.record-header--college) {
+  table-layout: fixed;
+}
+.record-title {
+  overflow-wrap: anywhere;
+}
+
 /* Cell edges: outer edges follow the box lines, the shared edge is the inside vertical line. */
 .record-header td {
   border: none;
