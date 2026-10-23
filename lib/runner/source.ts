@@ -1,5 +1,5 @@
 import type { RecordState } from "../types";
-import { isCustomLayout } from "../sections";
+import { isCustomLayout, outputIdOf } from "../sections";
 
 /** FNV-1a: small, stable fingerprint of the code that was run. */
 export function hashCode(code: string): string {
@@ -14,7 +14,7 @@ export function hashCode(code: string): string {
 /** The program to run: the Source code field, or the first code section of a custom layout. */
 export function runnableSource(record: RecordState): string {
   if (!isCustomLayout(record)) return record.source_code;
-  const codes = (record.sections ?? []).filter((s) => s.kind === "code");
+  const codes = (record.sections ?? []).filter((s) => s.kind === "code" || s.kind === "codeoutput");
   const preferred = codes.find((s) => /code|program|script/i.test(s.title)) ?? codes[0];
   return preferred ? record.section_values?.[preferred.id] ?? "" : "";
 }
@@ -22,8 +22,9 @@ export function runnableSource(record: RecordState): string {
 /** Where captured output goes: the Output field, or the first text+images section of a custom layout. */
 export function outputTarget(record: RecordState): { kind: "legacy" } | { kind: "section"; id: string } | null {
   if (!isCustomLayout(record)) return { kind: "legacy" };
-  const out = (record.sections ?? []).find((s) => s.kind === "output");
-  return out ? { kind: "section", id: out.id } : null;
+  const out = (record.sections ?? []).find((s) => s.kind === "output" || s.kind === "codeoutput");
+  if (!out) return null;
+  return { kind: "section", id: out.kind === "codeoutput" ? outputIdOf(out.id) : out.id };
 }
 
 export type OutputStatus = "none" | "verified" | "stale" | "failed";

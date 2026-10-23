@@ -46,6 +46,9 @@ const BODY_LINE_PX = 24;
 /** Fewest manual-calculation lines worth leaving at the bottom of a page before moving the rest on. */
 const MANUAL_MIN_LINES_ON_PAGE = 3;
 
+/** A section heading, or nothing for a block that continues the heading above it (code + output pairs share one). */
+const headingTag = (heading: string): string => (heading ? `<h2 class="record-heading">${heading}</h2>` : "");
+
 /** Blank hand-writing space; `cont` is the carry-over onto the next page (no second heading). */
 function manualBlockHTML(heading: string, lines: number, cont: boolean): string {
   return `
@@ -225,7 +228,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
       }
       return `
         <section class="record-block">
-          <h2 class="record-heading">${sec.heading}</h2>
+          ${headingTag(sec.heading)}
           <${tag} class="${cls}">${contentEscaped}</${tag}>
         </section>
       `;
@@ -233,7 +236,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
       const textVal = (sec.textVal || "").trim();
       const images = sec.images || [];
       if (!textVal && images.length === 0) return "";
-      let html = `<section class="record-block"><h2 class="record-heading">${sec.heading}</h2>`;
+      let html = `<section class="record-block">${headingTag(sec.heading)}`;
       if (textVal !== "") {
         html += `<div class="output-text">${textVal
           .split("\n")
@@ -315,7 +318,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
       if (rawText.trim() === "") {
         const emptyBlockHTML = `
           <section class="record-block">
-            <h2 class="record-heading">${sec.heading}</h2>
+            ${headingTag(sec.heading)}
             <${tag} class="${cls}"${emptyBlockStyleAttr(sec.id)}></${tag}>
           </section>
         `;
@@ -329,7 +332,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
         } else {
           const compactEmptyBlockHTML = `
             <section class="record-block">
-              <h2 class="record-heading">${sec.heading}</h2>
+              ${headingTag(sec.heading)}
               <${tag} class="${cls}"></${tag}>
             </section>
           `;
@@ -357,7 +360,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
 
         const testLines = [...currentSectionLines, ...chunkLines];
         const lineContentEscaped = testLines.map((l) => escapeHTML(l)).join("\n");
-        const headingHTML = isFirstLineOfSection ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+        const headingHTML = isFirstLineOfSection ? headingTag(sec.heading) : "";
 
         const testBlockHTML = `
           <section class="record-block ${isFirstLineOfSection ? "" : "record-block-cont"}">
@@ -375,7 +378,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
           } else {
             const committedContent = currentSectionLines.map((l) => escapeHTML(l)).join("\n");
             const committedHeadingHTML = isFirstLineOfSection
-              ? `<h2 class="record-heading">${sec.heading}</h2>`
+              ? headingTag(sec.heading)
               : "";
             const committedBlockHTML = `
               <section class="record-block ${isFirstLineOfSection ? "" : "record-block-cont"}">
@@ -394,7 +397,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
 
       if (currentSectionLines.length > 0) {
         const remainingContent = currentSectionLines.map((l) => escapeHTML(l)).join("\n");
-        const remainingHeadingHTML = isFirstLineOfSection ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+        const remainingHeadingHTML = isFirstLineOfSection ? headingTag(sec.heading) : "";
         const remainingBlockHTML = `
           <section class="record-block ${isFirstLineOfSection ? "" : "record-block-cont"}">
             ${remainingHeadingHTML}
@@ -410,7 +413,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
       if (textVal.trim() === "" && images.length === 0) {
         const emptyBlockHTML = `
           <section class="record-block">
-            <h2 class="record-heading">${sec.heading}</h2>
+            ${headingTag(sec.heading)}
             <div class="output-text"></div>
           </section>
         `;
@@ -430,7 +433,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
           const line = lines[i];
           const testLines = [...currentTextLines, line];
           const lineContentEscaped = testLines.map((l) => escapeHTML(l)).join("\n");
-          const headingHTML = isFirstPartOfOutput ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+          const headingHTML = isFirstPartOfOutput ? headingTag(sec.heading) : "";
           const testBlockHTML = `
             <section class="record-block ${isFirstPartOfOutput ? "" : "record-block-cont"}">
               ${headingHTML}
@@ -447,7 +450,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
             } else {
               const committedContent = currentTextLines.map((l) => escapeHTML(l)).join("\n");
               const committedHeadingHTML = isFirstPartOfOutput
-                ? `<h2 class="record-heading">${sec.heading}</h2>`
+                ? headingTag(sec.heading)
                 : "";
               const committedBlockHTML = `
                 <section class="record-block ${isFirstPartOfOutput ? "" : "record-block-cont"}">
@@ -465,7 +468,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
 
         if (currentTextLines.length > 0) {
           const remainingContent = currentTextLines.map((l) => escapeHTML(l)).join("\n");
-          const remainingHeadingHTML = isFirstPartOfOutput ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+          const remainingHeadingHTML = isFirstPartOfOutput ? headingTag(sec.heading) : "";
           const remainingBlockHTML = `
             <section class="record-block ${isFirstPartOfOutput ? "" : "record-block-cont"}">
               ${remainingHeadingHTML}
@@ -490,7 +493,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
           // Use the section's real heading ("OUTPUT:"), not a hardcoded
           // label — and keep it if this image gets bumped to a fresh page
           // below, since it's still the first thing in the section there.
-          const headingHTML = showHeading ? `<h2 class="record-heading">${sec.heading}</h2>` : "";
+          const headingHTML = showHeading ? headingTag(sec.heading) : "";
           const imageBlockHTML = `
             <section class="record-block ${showHeading ? "" : "record-block-cont"}">
               ${headingHTML}

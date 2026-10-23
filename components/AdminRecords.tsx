@@ -151,7 +151,7 @@ export function AdminRecords({ rows, error, ownerName }: AdminRecordsProps) {
             </dl>
             {sections.map((s) => (
               <div key={s.id}>
-                <h3 className="mb-1.5 font-serif text-sm font-bold text-ink">{s.heading.replace(/:$/, "")}</h3>
+                {s.heading && <h3 className="mb-1.5 font-serif text-sm font-bold text-ink">{s.heading.replace(/:$/, "")}</h3>}
                 {s.kind === "lines" ? (
                   <p className="text-xs text-ink-soft">{s.lines} blank lines for hand-written working.</p>
                 ) : s.value.trim() ? (

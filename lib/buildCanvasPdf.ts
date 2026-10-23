@@ -239,11 +239,13 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
         doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
         const bodyHeight = text ? doc.heightOfString(text, { width: CONTENT_WIDTH }) : BODY_FONT_SIZE * 1.5;
 
-        ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + bodyHeight + SECTION_GAP);
+        ensureSpace((heading ? HEADING_FONT_SIZE + HEADING_GAP : 0) + bodyHeight + SECTION_GAP);
 
-        doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
-        doc.text(heading, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
-        y = doc.y + HEADING_GAP;
+        if (heading) {
+          doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
+          doc.text(heading, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
+          y = doc.y + HEADING_GAP;
+        }
 
         doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE).fillColor(INK);
         if (text) {
@@ -260,11 +262,13 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
 
         doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE);
         const bodyHeight = text ? doc.heightOfString(text, { width: CONTENT_WIDTH }) : 0;
-        ensureSpace(HEADING_FONT_SIZE + HEADING_GAP + bodyHeight + SECTION_GAP);
+        ensureSpace((heading ? HEADING_FONT_SIZE + HEADING_GAP : 0) + bodyHeight + SECTION_GAP);
 
-        doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
-        doc.text(heading, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
-        y = doc.y + HEADING_GAP;
+        if (heading) {
+          doc.font(BOLD_FONT).fontSize(HEADING_FONT_SIZE).fillColor(INK);
+          doc.text(heading, MARGIN_LEFT, y, { width: CONTENT_WIDTH });
+          y = doc.y + HEADING_GAP;
+        }
 
         if (text) {
           doc.font(BODY_FONT).fontSize(BODY_FONT_SIZE).fillColor(INK);

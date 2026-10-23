@@ -16,7 +16,7 @@ import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
-import { applyTemplate, effectiveLayout, isCustomLayout } from "@/lib/sections";
+import { applyTemplate, effectiveLayout, isCustomLayout, pairCount, pairIds, pairTitles } from "@/lib/sections";
 import type { AiContext } from "@/lib/aiAssistant";
 import { RunCodeModal } from "@/components/RunCodeModal";
 import { hashCode, outputTarget } from "@/lib/runner/source";
@@ -129,6 +129,18 @@ export default function Home() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cloudFolderId, subjectLayoutKey]);
+
+  // A record opened or restored without a layout (loaded from cloud, draft, or before the subject's folders arrived)
+  // takes its subject's template, as long as nothing is typed into the original fields yet.
+  useEffect(() => {
+    if (!cloudFolderId || !folders || !subjectLayout) return;
+    setRecord((r) => {
+      if (isCustomLayout(r)) return r;
+      const untouched = ![r.aim, r.algorithm, r.source_code, r.output, r.review_questions].some((v) => v.trim()) && r.output_images.length === 0;
+      return untouched ? applyTemplate(r, subjectLayout) : r;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudFolderId, folders, subjectLayoutKey]);
 
   // A cloud file belongs to one account: forget it if the user signs out or switches accounts.
   const lastUidRef = useRef<string | null>(null);
@@ -706,7 +718,20 @@ export default function Home() {
 
   const aiContext: AiContext = {
     department: settings.department,
-    layout: isCustomLayout(record) ? (record.sections ?? []).map((s) => ({ id: s.id, title: s.title, kind: s.kind })) : null,
+    layout: isCustomLayout(record)
+      ? (record.sections ?? []).flatMap((s) =>
+          s.kind === "codeoutput"
+            ? Array.from({ length: pairCount(s) }, (_, i) => {
+                const ids = pairIds(s.id, i);
+                const t = pairTitles(s.title, pairCount(s), i);
+                return [
+                  { id: ids.code, title: t.code, kind: "code" as const },
+                  { id: ids.out, title: t.out, kind: "output" as const },
+                ];
+              }).flat()
+            : [{ id: s.id, title: s.title, kind: s.kind }]
+        )
+      : null,
     resultTitle: record.result_title ?? "Result",
   };
 

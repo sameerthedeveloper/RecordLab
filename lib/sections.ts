@@ -7,14 +7,33 @@ import { MANUAL_CALCULATION_LINES } from "./types";
  * - code: monospaced-style block, whitespace kept (source code, a table typed out, a circuit netlist)
  * - output: text plus attached images / screenshots (output, circuit diagram, graph)
  * - lines: blank hand-written space of a fixed number of lines (manual calculation, rough work)
+ * - codeoutput: a program with its output straight after, as one section (code under the title, then OUTPUT)
  */
-export type SectionKind = "text" | "code" | "output" | "lines";
-export const SECTION_KINDS: SectionKind[] = ["text", "code", "output", "lines"];
+export type SectionKind = "text" | "code" | "output" | "lines" | "codeoutput";
+export const SECTION_KINDS: SectionKind[] = ["text", "code", "output", "codeoutput", "lines"];
+
+/** A "codeoutput" section keeps its code under its own id and its output text under this suffixed one. */
+export const OUTPUT_SUFFIX = "__out";
+export const outputIdOf = (id: string): string => `${id}${OUTPUT_SUFFIX}`;
+
+export const MAX_PAIRS = 10;
+
+/** How many code + output pairs a "codeoutput" section holds (1 when unset). */
+export const pairCount = (s: { pairs?: number }): number => Math.min(MAX_PAIRS, Math.max(1, Math.round(Number(s.pairs) || 1)));
+
+/** Value ids of pair i: the first pair keeps the plain ids, so a single pair stores exactly as before. */
+export const pairIds = (id: string, i: number): { code: string; out: string } =>
+  i === 0 ? { code: id, out: outputIdOf(id) } : { code: `${id}__c${i}`, out: `${id}__o${i}` };
+
+/** Titles of pair i: "Program" / "Output" for one pair, "Program 2" / "Output 2" for several. */
+export const pairTitles = (title: string, count: number, i: number): { code: string; out: string } =>
+  count === 1 ? { code: title, out: "Output" } : { code: `${title} ${i + 1}`, out: `Output ${i + 1}` };
 
 export const SECTION_KIND_LABEL: Record<SectionKind, string> = {
   text: "Text",
   code: "Code / table",
   output: "Text + images",
+  codeoutput: "Code + output",
   lines: "Blank lines",
 };
 
@@ -24,6 +43,8 @@ export interface SectionDef {
   kind: SectionKind;
   /** Only for kind "lines". */
   lines?: number;
+  /** Only for kind "codeoutput": how many program + output pairs (1 to MAX_PAIRS). */
+  pairs?: number;
 }
 
 /** A subject's record layout: the sections between the heading and the closing block. */
@@ -40,7 +61,7 @@ export const MAX_LINES = 80;
 export interface ResolvedSection {
   id: string;
   heading: string;
-  kind: SectionKind;
+  kind: Exclude<SectionKind, "codeoutput">;
   value: string;
   images: OutputImage[];
   lines: number;
@@ -71,17 +92,30 @@ export function resultHeading(record: Pick<RecordState, "format" | "sections" | 
 export function resolveSections(record: RecordState, forPrint = false): ResolvedSection[] {
   if (isCustomLayout(record)) {
     let imagesGiven = false;
-    return record.sections!.map((s) => {
+    return record.sections!.flatMap((s): ResolvedSection[] => {
+      if (s.kind === "codeoutput") {
+        const count = pairCount(s);
+        return Array.from({ length: count }, (_, i) => {
+          const ids = pairIds(s.id, i);
+          // One heading for the whole section; the programs and outputs run on under it.
+          const gives = !imagesGiven;
+          imagesGiven = true;
+          return [
+            { id: ids.code, heading: i === 0 ? headingFor(s.title) : "", kind: "code" as const, value: record.section_values?.[ids.code] ?? "", images: [], lines: 0 },
+            { id: ids.out, heading: "", kind: "output" as const, value: record.section_values?.[ids.out] ?? "", images: gives ? record.output_images : [], lines: 0 },
+          ];
+        }).flat();
+      }
       const gives = s.kind === "output" && !imagesGiven;
       if (gives) imagesGiven = true;
-      return {
+      return [{
         id: s.id,
         heading: headingFor(s.title),
         kind: s.kind,
         value: s.kind === "lines" ? "" : record.section_values?.[s.id] ?? "",
         images: gives ? record.output_images : [],
         lines: Math.min(MAX_LINES, Math.max(1, s.lines ?? MANUAL_CALCULATION_LINES)),
-      };
+      }];
     });
   }
   const college = record.format === "college";
@@ -197,7 +231,8 @@ export function sanitizeTemplate(raw: unknown): SectionTemplate | null {
     seen.add(id);
     const title = String((s as SectionDef).title ?? "").trim().slice(0, 60) || "Section";
     const lines = kind === "lines" ? Math.min(MAX_LINES, Math.max(1, Math.round(Number((s as SectionDef).lines) || MANUAL_CALCULATION_LINES))) : undefined;
-    sections.push({ id, title, kind, ...(lines ? { lines } : {}) });
+    const pairs = kind === "codeoutput" ? pairCount(s as SectionDef) : undefined;
+    sections.push({ id, title, kind, ...(lines ? { lines } : {}), ...(pairs && pairs > 1 ? { pairs } : {}) });
   }
   return { sections, resultTitle: String(r.resultTitle ?? "").trim().slice(0, 40) || "Result" };
 }
