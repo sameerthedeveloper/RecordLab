@@ -1,6 +1,6 @@
 import { buildPrintDocumentHTML } from "./buildPrintHtml";
 import { paginateRecord } from "./paginate";
-import type { RecordState, WatermarkOptions } from "./types";
+import type { RecordState, Verification, WatermarkOptions } from "./types";
 
 /** Waits for the html2pdf.js script (loaded from layout.tsx) to be ready. */
 async function waitForHtml2Pdf(timeoutMs = 8000): Promise<void> {
@@ -20,8 +20,11 @@ export async function exportRecordPdf(
   record: RecordState,
   watermark: WatermarkOptions,
   font: string,
-  filename: string
-): Promise<void> {
+  filename: string,
+  /** "blob" returns the PDF instead of downloading it (used for the Drive upload). */
+  output: "save" | "blob" = "save",
+  verified?: Verification | null
+): Promise<Blob | void> {
   await waitForHtml2Pdf();
 
   const iframe = document.createElement("iframe");
@@ -34,14 +37,14 @@ export async function exportRecordPdf(
     const doc = iframe.contentDocument;
     if (!doc) throw new Error("Unable to prepare the PDF.");
     doc.open();
-    doc.write(buildPrintDocumentHTML(paginateRecord(record), record.rrn, watermark, font, record.format, record.pageBorder));
+    doc.write(buildPrintDocumentHTML(paginateRecord(record), record.rrn, watermark, font, record.format, record.pageBorder, verified));
     doc.close();
     await new Promise((r) => window.setTimeout(r, 600));
 
     const content = doc.querySelector(".print-document") as HTMLElement | null;
     if (!content) throw new Error("PDF content not found.");
 
-    await window
+    const job = window
       .html2pdf!()
       .set({
         margin: 0,
@@ -58,8 +61,9 @@ export async function exportRecordPdf(
         // Rounding in the tall-canvas slicing can spill a blank trailing page: drop it.
         const real = content.querySelectorAll(".a4-page").length;
         while (real > 0 && pdf.internal.getNumberOfPages() > real) pdf.deletePage(pdf.internal.getNumberOfPages());
-      })
-      .save();
+      });
+    if (output === "blob") return await job.outputPdf("blob");
+    await job.save();
   } finally {
     iframe.remove();
   }

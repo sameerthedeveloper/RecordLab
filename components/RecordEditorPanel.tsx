@@ -148,7 +148,7 @@ export function RecordEditorPanel({
     const hasOutput = Boolean(record.output.trim() || Object.values(record.section_values ?? {}).some((v) => v.trim()) || record.output_images.length);
     const run = record.output_run;
     const when = run ? new Date(run.ranAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
-    const lang = run ? run.language[0].toUpperCase() + run.language.slice(1) : "";
+    const lang = run ? (run.language === "web" ? "HTML / CSS / JS" : run.language[0].toUpperCase() + run.language.slice(1)) : "";
     return (
       <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-paper/60 p-2.5">
         <button
@@ -273,6 +273,9 @@ export function RecordEditorPanel({
               editing={editingImage}
               onAdd={onAddOutputImage}
               onUpdate={onUpdateOutputImage}
+              code={runnableSource(record)}
+              stdin={record.program_input ?? ""}
+              onInputChange={(v) => onFieldChange("program_input", v)}
             />
           </EditorSection>
   );

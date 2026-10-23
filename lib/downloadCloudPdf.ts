@@ -1,10 +1,11 @@
 import { exportRecordPdf } from "./exportHtml2Pdf";
 import type { CloudDocument } from "./firestoreService";
 import { loadSettings } from "./settings";
+import { loadVerification } from "./verification";
 import { DEFAULT_RECORD, DEFAULT_WATERMARK } from "./types";
 
-/** Saves a cloud file as a PDF, rendered exactly like the editor's Save PDF, without opening it. */
-export async function downloadCloudDocumentPdf(document: CloudDocument): Promise<void> {
+/** Renders a cloud file to PDF exactly like the editor's Save PDF, without opening it. */
+async function renderCloudDocumentPdf(document: CloudDocument, output: "save" | "blob") {
   const payload = document.data;
   if (!payload?.record) throw new Error("This file has no record to export.");
   const record = { ...DEFAULT_RECORD, ...payload.record };
@@ -16,5 +17,19 @@ export async function downloadCloudDocumentPdf(document: CloudDocument): Promise
   if (record.title.trim()) filename += "-" + part(record.title);
   if (record.rrn.trim()) filename += "-" + part(record.rrn);
 
-  await exportRecordPdf(record, watermark, loadSettings().font, `${filename}.pdf`);
+  const verified = await loadVerification(document.userId, document.folderId);
+  const result = await exportRecordPdf(record, watermark, loadSettings().font, `${filename}.pdf`, output, verified);
+  return { blob: result instanceof Blob ? result : null, filename: `${filename}.pdf` };
+}
+
+/** Saves a cloud file as a PDF download. */
+export async function downloadCloudDocumentPdf(document: CloudDocument): Promise<void> {
+  await renderCloudDocumentPdf(document, "save");
+}
+
+/** Renders a cloud file to a PDF blob (no download). */
+export async function cloudDocumentPdfBlob(document: CloudDocument): Promise<{ blob: Blob; filename: string }> {
+  const { blob, filename } = await renderCloudDocumentPdf(document, "blob");
+  if (!blob) throw new Error("Unable to create the PDF.");
+  return { blob, filename };
 }

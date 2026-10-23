@@ -8,25 +8,31 @@ rules_version = '2';
 // here.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Admins are listed by hand in the Firebase console: create a document at
-    // admins/<their uid> (any fields). Nothing in the app can write here.
+    // Admins are the documents under admins/<uid>. The FIRST admin is created by hand in the
+    // Firebase console (any fields). After that, an admin can add another admin and can give up
+    // their own access (hand-over); nobody can remove someone else's access from the app.
     function isAdmin() {
       return request.auth != null
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     match /admins/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
+      // You can always read your own document (that is how the app checks "am I an admin");
+      // admins can also read the list.
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create: if isAdmin();
+      allow delete: if isAdmin() && request.auth.uid == uid;
+      allow update: if false;
     }
 
     // One lightweight, content-free row per signed-in user, for the admin
     // usage panel (email, name, join date, last seen). Their records and
-    // settings stay private: admins can NOT read `documents` or `users`.
+    // settings stay private: admins can NOT read `users`. (They can read `documents`: see below.)
     match /profiles/{uid} {
       allow create, update: if request.auth != null && request.auth.uid == uid;
       allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
-      allow delete: if false;
+      // Only the owner, when they delete their account (Settings > Account).
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Anonymous-ish usage counters: stats/<YYYY-MM-DD> (and stats/_all) hold
@@ -36,6 +42,16 @@ service cloud.firestore {
       allow create, update: if request.auth != null
         && (day == '_all' || day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
       allow delete: if false;
+    }
+
+    // One document per welcomed user: it is the "welcome email already sent" marker. The server creates it
+    // as the user just before sending, so only the owner can create it, and a second create fails. Delete
+    // lets the server release the marker when the mail didn't go out. Admins can read.
+    match /welcomes/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow read: if isAdmin();
+      allow update: if false;
     }
 
     // Share links: anyone holding the link can read that one snapshot (get by id);
@@ -50,12 +66,109 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
+    // Colleges named by students, keyed by email domain (e.g. psgtech.ac.in).
+    // Anyone signed in can read; a student can add their own domain's college once
+    // (the id must match the domain of their email). Nobody edits or deletes in the
+    // app; admins fix a wrong name in the Firebase console.
+    match /colleges/{domain} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.split('@')[1] == domain
+        && (domain.matches('.*(^|[.])(edu|ac)([.].*|$)') || domain.matches('.*[.]education'))
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---- Faculty review (see docs/faculty.md) ----
+    function isFaculty() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/faculty/$(request.auth.uid));
+    }
+
+    // A person asks to be faculty; an admin approves (creates faculty/<uid>) or declines (deletes the request).
+    match /facultyRequests/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 80;
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+    }
+
+    // Approved faculty. Only an admin creates or removes them; a faculty member can read their own row.
+    match /faculty/{uid} {
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    // One class per subject a faculty member teaches. The id is the join code, so a student can `get` it by
+    // typing the code; only the owner can list. Nobody edits a class: delete it and make a new one.
+    match /classes/{code} {
+      allow get: if request.auth != null;
+      allow list: if request.auth != null && request.auth.uid == resource.data.facultyUid;
+      allow create: if isFaculty()
+        && request.resource.data.facultyUid == request.auth.uid
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() > 0
+        && request.resource.data.subject.size() <= 80;
+      allow update: if false;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.facultyUid;
+    }
+
+    // A student's subject handed in to a class, plus the faculty verdict. The id is <classCode>_<studentUid>.
+    // The student can only (re)submit as "pending" or withdraw; the faculty can only change the verdict fields.
+    match /submissions/{subId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == resource.data.studentUid || request.auth.uid == resource.data.facultyUid || isAdmin());
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.studentUid
+        && subId == request.resource.data.classCode + '_' + request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.facultyName == get(/databases/$(database)/documents/classes/$(request.resource.data.classCode)).data.facultyName
+        && get(/databases/$(database)/documents/classes/$(request.resource.data.classCode)).data.facultyUid == request.resource.data.facultyUid;
+      allow update: if request.auth != null && (
+        (request.auth.uid == resource.data.studentUid
+          && request.resource.data.studentUid == resource.data.studentUid
+          && request.resource.data.facultyUid == resource.data.facultyUid
+          && request.resource.data.classCode == resource.data.classCode
+          && request.resource.data.facultyName == resource.data.facultyName
+          && request.resource.data.status == 'pending')
+        || (request.auth.uid == resource.data.facultyUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'comment', 'reviewedAt', 'reviewedBy'])
+          && request.resource.data.status in ['approved', 'changes'])
+      );
+      allow delete: if request.auth != null && request.auth.uid == resource.data.studentUid;
+    }
+
     match /documents/{docId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Admins may READ every record (admin panel). A record a student handed in (`submittedTo` = a class code)
+      // can also be read by that class's faculty. Only owners change or delete records.
+      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || isAdmin()
+        || (request.auth != null
+          && resource.data.get('submittedTo', null) != null
+          && get(/databases/$(database)/documents/classes/$(resource.data.submittedTo)).data.facultyUid == request.auth.uid);
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.title is string
         && request.resource.data.data is map;
+    }
+
+    // Settings the admins control. config/ai: whether the AI assistant is on, which provider answers, the limits.
+    // Every signed-in user can read it (the app hides the feature when it is off); only admins change it.
+    match /config/{doc} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin() && doc == 'ai'
+        && request.resource.data.enabled is bool
+        && request.resource.data.mode in ['auto', 'keyless', 'key', 'puter']
+        && request.resource.data.perMinute is int && request.resource.data.perMinute >= 1 && request.resource.data.perMinute <= 60
+        && request.resource.data.perDay is int && request.resource.data.perDay >= 1 && request.resource.data.perDay <= 1000
+        && request.resource.data.model is string && request.resource.data.model.size() <= 80;
     }
 
     // Per-user profile: currently just the last-linked Puter account (see

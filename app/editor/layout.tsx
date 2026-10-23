@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BootSplash } from "@/components/BootSplash";
 
 export const metadata: Metadata = {
   title: "Editor — Record Lab",
@@ -6,5 +7,10 @@ export const metadata: Metadata = {
 };
 
 export default function EditorLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      {children}
+      <BootSplash label="Setting up your sheet" />
+    </>
+  );
 }

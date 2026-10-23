@@ -3,8 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownAZ,
+  Download,
+  ListChecks,
+  X,
+  CloudUpload,
   Clock,
   Cloud,
+  ExternalLink,
+  Hash,
+  Unlink,
   FilePlus2,
   FileText,
   Folder as FolderIcon,
@@ -17,10 +24,21 @@ import {
   Search,
   Trash2,
   LayoutList,
+  UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { Modal, modalButton } from "./Modal";
-import { downloadCloudDocumentPdf } from "@/lib/downloadCloudPdf";
+import { cloudDocumentPdfBlob, downloadCloudDocumentPdf } from "@/lib/downloadCloudPdf";
+import { downloadCloudZip } from "@/lib/downloadZip";
+import {
+  connectDrive,
+  DriveAuthError,
+  hasDriveToken,
+  isDriveLinked,
+  openDriveFolder,
+  unlinkDrive,
+  uploadPdfToDrive,
+} from "@/lib/googleDrive";
 import { FILE_DRAG_TYPE, FileCard, FileRow, FileThumb, relativeTime } from "./CloudFileViews";
 import { MoveToSubjectModal } from "./MoveToSubjectModal";
 import { DriveDetails } from "./DriveDetails";
@@ -28,6 +46,7 @@ import { deleteDocument, moveDocument, renameDocument, watchUserDocuments } from
 import { createFolder, deleteFolder, renameFolder, setFolderTemplate, useFolders, type Folder } from "@/lib/folderService";
 import { effectiveLayout, type SectionTemplate } from "@/lib/sections";
 import { loadSettings } from "@/lib/settings";
+import { FacultyReviewModal } from "./FacultyReviewModal";
 import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
 import { useAuthUser } from "@/lib/authService";
@@ -49,7 +68,22 @@ interface DashboardModalProps {
 }
 
 type View = "grid" | "list";
-type Sort = "modified" | "name";
+type Sort = "modified" | "exercise" | "name";
+const SORT_ORDER: Sort[] = ["modified", "exercise", "name"];
+const SORT_LABEL: Record<Sort, string> = { modified: "Last edited", exercise: "Exercise no.", name: "Name" };
+
+/** Leading number of an exercise label ("12", "Ex. 3b", "4.2"); null when there is none. */
+function exerciseKey(doc: CloudDocument): string | null {
+  const n = (doc.data?.record?.exercise_number ?? "").trim();
+  return /\d/.test(n) ? n : null;
+}
+
+function byExercise(a: CloudDocument, b: CloudDocument): number {
+  const x = exerciseKey(a);
+  const y = exerciseKey(b);
+  if (x === null || y === null) return x === y ? a.title.localeCompare(b.title, undefined, { numeric: true }) : x === null ? 1 : -1;
+  return x.localeCompare(y, undefined, { numeric: true }) || a.title.localeCompare(b.title, undefined, { numeric: true });
+}
 /** "all", "recent", or `f:<folderId>` for one subject. */
 type Section = string;
 
@@ -88,6 +122,7 @@ export function DashboardModal({
   const [deleting, setDeleting] = useState<CloudDocument | null>(null);
   const folders = useFolders();
   const [moving, setMoving] = useState<CloudDocument | null>(null);
+  const [facultyOpen, setFacultyOpen] = useState(false);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderTemplate, setNewFolderTemplate] = useState<SectionTemplate | null>(null);
@@ -97,6 +132,16 @@ export function DashboardModal({
   const [folderRenameValue, setFolderRenameValue] = useState("");
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [driveLinked, setDriveLinked] = useState(false);
+  const [driveBusy, setDriveBusy] = useState<{ done: number; total: number } | null>(null);
+  const [driveConnecting, setDriveConnecting] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [zipBusy, setZipBusy] = useState<{ done: number; total: number } | null>(null);
+
+  useEffect(() => {
+    setDriveLinked(user ? isDriveLinked(user.uid) : false);
+  }, [user]);
 
   const folderId = section.startsWith("f:") ? section.slice(2) : null;
   const activeFolder = folderId ? (folders ?? []).find((f) => f.id === folderId) ?? null : null;
@@ -156,12 +201,16 @@ export function DashboardModal({
       return [d.title, r?.exercise_number, r?.rrn, r?.aim].some((v) => (v ?? "").toLowerCase().includes(q));
     });
     return [...list].sort((a, b) =>
-      sort === "name" ? a.title.localeCompare(b.title, undefined, { numeric: true }) : time(b) - time(a),
+      sort === "name"
+        ? a.title.localeCompare(b.title, undefined, { numeric: true })
+        : sort === "exercise"
+          ? byExercise(a, b)
+          : time(b) - time(a),
     );
   }, [documents, query, section, folderId, sort]);
 
   const groups = useMemo(() => {
-    if (sort === "name") return [{ label: "", docs: visible }];
+    if (sort !== "modified") return [{ label: "", docs: visible }];
     const map = new Map<string, CloudDocument[]>();
     for (const d of visible) {
       const label = groupLabel(d);
@@ -175,6 +224,13 @@ export function DashboardModal({
     [documents],
   );
   const selected = documents?.find((d) => d.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!open) {
+      setSelectMode(false);
+      setChecked(new Set());
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -305,6 +361,72 @@ export function DashboardModal({
       },
     };
   }
+
+  async function linkDrive(): Promise<boolean> {
+    if (!user) return false;
+    setDriveConnecting(true);
+    try {
+      await connectDrive(user);
+      setDriveLinked(true);
+      track("link_google_drive");
+      return true;
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        console.error("Drive link failed:", err);
+        onToast(code === "auth/credential-already-in-use" ? "That Google account belongs to another RecordLab account." : "Unable to link Google Drive.");
+      }
+      return false;
+    } finally {
+      setDriveConnecting(false);
+    }
+  }
+
+  function unlinkGoogleDrive() {
+    if (!user) return;
+    unlinkDrive(user.uid);
+    setDriveLinked(false);
+    onToast("Google Drive unlinked. Files already in Drive stay there.");
+  }
+
+  /** Renders each file to PDF and puts it in RecordLab/<subject> on Drive, in exercise order. */
+  async function backUpToDrive(docs: CloudDocument[]) {
+    if (!user || docs.length === 0 || driveBusy) return;
+    if (!hasDriveToken() && !(await linkDrive())) return;
+    const ordered = [...docs].sort(byExercise);
+    setDriveBusy({ done: 0, total: ordered.length });
+    let saved = 0;
+    try {
+      for (const doc of ordered) {
+        const { blob, filename } = await cloudDocumentPdfBlob(doc);
+        const subject = (folders ?? []).find((f) => f.id === doc.folderId)?.name ?? null;
+        await uploadPdfToDrive(blob, filename, subject);
+        saved += 1;
+        setDriveBusy({ done: saved, total: ordered.length });
+      }
+      track("drive_backup");
+      onToast(saved === 1 ? `Saved "${ordered[0].title}" to Google Drive.` : `Saved ${saved} files to Google Drive.`);
+    } catch (err) {
+      console.error("Drive backup failed:", err);
+      if (err instanceof DriveAuthError) onToast(`Drive access expired after ${saved} of ${ordered.length}. Reconnect and retry.`);
+      else onToast(err instanceof Error ? err.message : "Unable to save to Google Drive.");
+    } finally {
+      setDriveBusy(null);
+    }
+  }
+
+  async function showDriveFolder() {
+    try {
+      if (!hasDriveToken() && !(await linkDrive())) return;
+      window.open(await openDriveFolder(), "_blank", "noopener");
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Unable to open Google Drive.");
+    }
+  }
+
+  const driveButton =
+    "flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink disabled:cursor-default disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+
   const navItem = (id: Section, label: string, Icon: typeof Cloud) => (
     <button
       type="button"
@@ -330,8 +452,53 @@ export function DashboardModal({
     }
   }
 
+  function toggleChecked(ids: string[], on?: boolean) {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      const allOn = ids.every((id) => next.has(id));
+      for (const id of ids) (on ?? !allOn) ? next.add(id) : next.delete(id);
+      return next;
+    });
+  }
+
+  function endSelect() {
+    setSelectMode(false);
+    setChecked(new Set());
+  }
+
+  /** Zips the ticked files, one folder per subject, rendered like the editor's Save PDF. */
+  async function downloadZip() {
+    if (zipBusy || !documents) return;
+    const docs = documents.filter((d) => checked.has(d.id)).sort(byExercise);
+    if (docs.length === 0) return;
+    const subjectOf = (d: CloudDocument) => (folders ?? []).find((f) => f.id === d.folderId)?.name ?? null;
+    const subjects = new Set(docs.map(subjectOf));
+    const zipName = subjects.size === 1 && [...subjects][0] ? [...subjects][0]! : "record-lab-files";
+    setZipBusy({ done: 0, total: docs.length });
+    try {
+      const n = await downloadCloudZip(
+        docs.map((doc) => ({ doc, subject: subjectOf(doc) })),
+        zipName,
+        (done, total) => setZipBusy({ done, total }),
+      );
+      track("zip_download");
+      onToast(`Downloaded ${n} ${n === 1 ? "PDF" : "PDFs"} as ${zipName}.zip.`);
+      endSelect();
+    } catch (err) {
+      console.error("Zip download failed:", err);
+      onToast(err instanceof Error ? err.message : "Unable to create the zip.");
+    } finally {
+      setZipBusy(null);
+    }
+  }
+
+  const visibleIds = visible.map((d) => d.id);
+  const allVisibleChecked = visibleIds.length > 0 && visibleIds.every((id) => checked.has(id));
+
   const actions = (doc: CloudDocument) => ({
-    onSelect: () => setSelectedId(doc.id),
+    selectMode,
+    checked: checked.has(doc.id),
+    onSelect: () => (selectMode ? toggleChecked([doc.id]) : setSelectedId(doc.id)),
     onOpen: () => handleLoad(doc),
     onRename: () => startRename(doc),
     onMove: () => setMoving(doc),
@@ -395,12 +562,63 @@ export function DashboardModal({
                 <FolderPlus className="h-4 w-4" strokeWidth={2} />
                 Subject
               </button>
+              <Link
+                href="/join"
+                className="flex shrink-0 items-center gap-2.5 rounded-full px-3.5 py-2 text-[13px] font-semibold text-ink-soft transition-colors hover:bg-ink/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent md:mt-2"
+              >
+                <UserCheck className="h-4 w-4 shrink-0" strokeWidth={2} />
+                Join with class code
+              </Link>
             </>
           )}
           {user && (
-            <p className="mt-auto hidden px-3.5 pt-4 text-xs text-ink-soft/70 md:block">
-              {total} {total === 1 ? "file" : "files"} in the cloud
-            </p>
+            <div className="mt-auto hidden flex-col gap-2 pt-4 md:flex">
+              <section aria-label="Google Drive" className="rounded-2xl border border-line bg-paper p-2">
+                <p className="flex items-center gap-2 px-2.5 pb-1 pt-1 text-xs font-semibold text-ink">
+                  <span
+                    aria-hidden
+                    className={`h-2 w-2 rounded-full ${driveLinked ? "bg-emerald-500" : "bg-ink-soft/30"}`}
+                  />
+                  {driveLinked ? "Google Drive linked" : "Google Drive"}
+                </p>
+                {!driveLinked ? (
+                  <>
+                    <p className="px-2.5 pb-1.5 text-[11px] leading-snug text-ink-soft/80">
+                      Keep a PDF copy of every record in your own Drive.
+                    </p>
+                    <button type="button" onClick={linkDrive} disabled={driveConnecting} className={driveButton}>
+                      <Cloud className="h-3.5 w-3.5" strokeWidth={2} />
+                      {driveConnecting ? "Connecting…" : "Link Google Drive"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => backUpToDrive(visible)}
+                      disabled={!!driveBusy || visible.length === 0}
+                      className={driveButton}
+                    >
+                      <CloudUpload className="h-3.5 w-3.5" strokeWidth={2} />
+                      {driveBusy
+                        ? `Saving ${driveBusy.done} of ${driveBusy.total}…`
+                        : `Save ${visible.length} ${visible.length === 1 ? "file" : "files"} to Drive`}
+                    </button>
+                    <button type="button" onClick={showDriveFolder} className={driveButton}>
+                      <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
+                      Open RecordLab folder
+                    </button>
+                    <button type="button" onClick={unlinkGoogleDrive} className={driveButton}>
+                      <Unlink className="h-3.5 w-3.5" strokeWidth={2} />
+                      Unlink
+                    </button>
+                  </>
+                )}
+              </section>
+              <p className="px-3.5 text-xs text-ink-soft/70">
+                {total} {total === 1 ? "file" : "files"} in the cloud
+              </p>
+            </div>
           )}
         </nav>
 
@@ -437,6 +655,15 @@ export function DashboardModal({
                     </button>
                     <button
                       type="button"
+                      aria-label="Hand in to faculty"
+                      title="Hand in to faculty"
+                      onClick={() => setFacultyOpen(true)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                    <button
+                      type="button"
                       aria-label="Rename subject"
                       title="Rename subject"
                       onClick={() => {
@@ -460,17 +687,37 @@ export function DashboardModal({
                 )}
               </div>
               <div className="flex items-center gap-1.5">
+                {total > 0 && (
+                  <button
+                    type="button"
+                    aria-pressed={selectMode}
+                    title="Select files to download as a zip"
+                    onClick={() => (selectMode ? endSelect() : (setSelectMode(true), setSelectedId(null)))}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      selectMode
+                        ? "border-accent bg-accent-soft text-accent-ink"
+                        : "border-line text-ink-soft hover:border-accent/40 hover:text-accent"
+                    }`}
+                  >
+                    <ListChecks className="h-3.5 w-3.5" strokeWidth={2} />
+                    Select
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setSort(sort === "modified" ? "name" : "modified")}
+                  title="Change sort order"
+                  aria-label={`Sorted by ${SORT_LABEL[sort]}. Change sort order`}
+                  onClick={() => setSort(SORT_ORDER[(SORT_ORDER.indexOf(sort) + 1) % SORT_ORDER.length])}
                   className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent"
                 >
                   {sort === "modified" ? (
                     <Clock className="h-3.5 w-3.5" strokeWidth={2} />
+                  ) : sort === "exercise" ? (
+                    <Hash className="h-3.5 w-3.5" strokeWidth={2} />
                   ) : (
                     <ArrowDownAZ className="h-3.5 w-3.5" strokeWidth={2} />
                   )}
-                  {sort === "modified" ? "Last edited" : "Name"}
+                  {SORT_LABEL[sort]}
                 </button>
                 <div
                   className="flex overflow-hidden rounded-full border border-line"
@@ -593,10 +840,18 @@ export function DashboardModal({
                     <button
                       key={f.id}
                       type="button"
-                      onClick={() => setSection(`f:${f.id}`)}
+                      onClick={() =>
+                        selectMode
+                          ? toggleChecked((documents ?? []).filter((d) => d.folderId === f.id).map((d) => d.id))
+                          : setSection(`f:${f.id}`)
+                      }
                       {...dropProps(f.id, `card:${f.id}`)}
                       className={`group flex items-center gap-3 rounded-2xl border bg-paper px-3.5 py-3 text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
-                        dropTarget === `card:${f.id}` ? "border-accent bg-accent-soft/60 ring-2 ring-accent" : "border-line"
+                        dropTarget === `card:${f.id}`
+                          ? "border-accent bg-accent-soft/60 ring-2 ring-accent"
+                          : selectMode && countIn(f.id) > 0 && (documents ?? []).filter((d) => d.folderId === f.id).every((d) => checked.has(d.id))
+                            ? "border-accent bg-accent-soft/40 ring-1 ring-accent"
+                            : "border-line"
                       }`}
                     >
                       <FolderIcon className="h-7 w-7 shrink-0 fill-accent-soft text-accent" strokeWidth={1.75} />
@@ -637,7 +892,7 @@ export function DashboardModal({
           </div>
         </main>
 
-        {selected && (
+        {selected && !selectMode && (
           <div className="hidden lg:flex">
             <DriveDetails
               document={selected}
@@ -646,13 +901,54 @@ export function DashboardModal({
               onRename={() => startRename(selected)}
               onDownload={() => handleDownloadPdf(selected)}
               onDelete={() => setDeleting(selected)}
+              onSaveToDrive={driveLinked ? () => backUpToDrive([selected]) : undefined}
+              driveBusy={!!driveBusy}
             />
           </div>
         )}
       </div>
 
+      {selectMode && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-line bg-paper px-4 py-2.5">
+          <p className="min-w-0 flex-1 text-xs font-semibold text-ink" aria-live="polite">
+            {zipBusy
+              ? `Making PDF ${Math.min(zipBusy.done + 1, zipBusy.total)} of ${zipBusy.total}…`
+              : checked.size === 0
+                ? "Tick files or subjects to download"
+                : `${checked.size} ${checked.size === 1 ? "file" : "files"} selected`}
+          </p>
+          <button
+            type="button"
+            disabled={!!zipBusy || visibleIds.length === 0}
+            onClick={() => toggleChecked(visibleIds, !allVisibleChecked)}
+            className="rounded-xl border border-line bg-white px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent disabled:opacity-60"
+          >
+            {allVisibleChecked ? "Clear" : activeFolder ? "Select subject" : query ? "Select results" : "Select all"}
+          </button>
+          <button
+            type="button"
+            disabled={!!zipBusy || checked.size === 0}
+            onClick={downloadZip}
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-60"
+          >
+            <Download className="h-3.5 w-3.5" strokeWidth={2.25} />
+            {zipBusy ? "Zipping…" : "Download zip"}
+          </button>
+          <button
+            type="button"
+            disabled={!!zipBusy}
+            aria-label="Done selecting"
+            title="Done"
+            onClick={endSelect}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 disabled:opacity-60"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </div>
+      )}
+
       {/* Small screens: action bar for the selected file (no side panel) */}
-      {selected && (
+      {selected && !selectMode && (
         <div className="flex shrink-0 items-center gap-2 border-t border-line bg-paper px-4 py-2.5 lg:hidden">
           <p className="min-w-0 flex-1 truncate text-xs font-semibold text-ink">{selected.title}</p>
           <button
@@ -824,6 +1120,18 @@ export function DashboardModal({
           to All files.
         </p>
       </Modal>
+
+      {user && activeFolder && (
+        <FacultyReviewModal
+          open={facultyOpen}
+          onClose={() => setFacultyOpen(false)}
+          user={user}
+          subjectId={activeFolder.id}
+          subjectName={activeFolder.name}
+          documents={(documents ?? []).filter((d) => d.folderId === activeFolder.id)}
+          onToast={onToast}
+        />
+      )}
 
       <MoveToSubjectModal
         open={moving !== null}

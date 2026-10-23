@@ -8,6 +8,7 @@ import {
   parseLabRecordHTML,
   validateLabRecord,
 } from "@/lib/aiAssistant";
+import { AiUserError } from "@/lib/aiServer";
 import { generateContent } from "@/lib/puter";
 import { createRateLimiter } from "@/lib/rateLimiter";
 import { useToast, ToastViewport } from "@/components/Toast";
@@ -95,19 +96,20 @@ export function DirectLlmTab({
       if (commitIfActive(generationId, parsed, title)) {
         onClose();
       }
-    } catch {
-      showToast("Generation failed, please try again");
+    } catch (err) {
+      showToast(err instanceof AiUserError ? err.message : "Generation failed, please try again");
     } finally {
       setGenerating(false);
     }
   }
 
   const rateLimited = retryAfterMs > 0;
+  const blocked = rateLimited;
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-ink-soft/80 leading-relaxed">
-        Generate directly inside Record Lab — powered by Puter.js, no API key needed. Limited to{" "}
+        Generate directly inside Record Lab. Your Record Lab sign-in is all you need, and a linked Puter account is used if you have one. Limited to{" "}
         {MAX_REQUESTS_PER_WINDOW} requests per minute.
       </p>
 
@@ -122,7 +124,7 @@ export function DirectLlmTab({
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={generating || rateLimited}
+          disabled={generating || blocked}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50 sm:w-auto"
         >
           {generating ? (

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LandingPageClient } from "@/components/landing/LandingPageClient";
 import { FAQS } from "@/lib/landingContent";
-import { BRAND, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { ALT_NAMES, BRAND, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const title = "Record Lab: lab records for every department, with real output";
 
@@ -39,6 +39,7 @@ const jsonLd = {
       "@id": `${SITE_URL}/#website`,
       url: SITE_URL,
       name: SITE_NAME,
+      alternateName: ALT_NAMES,
       description: SITE_DESCRIPTION,
       inLanguage: "en",
       publisher: { "@id": `${BRAND.url}/#org` },
@@ -47,6 +48,7 @@ const jsonLd = {
       "@type": "SoftwareApplication",
       "@id": `${SITE_URL}/#app`,
       name: SITE_NAME,
+      alternateName: ALT_NAMES,
       url: SITE_URL,
       description: SITE_DESCRIPTION,
       applicationCategory: "EducationalApplication",

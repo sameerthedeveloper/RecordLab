@@ -20,8 +20,8 @@ interface RunCodeModalProps {
   onUse: (result: RunResult, code: string, opts: { replace: boolean; text: boolean; images: boolean }) => void;
 }
 
-const CONSENT_KEY = "recordlab.runner-consent";
-const REMOTE_KEY = "recordlab.runner-url";
+export const CONSENT_KEY = "recordlab.runner-consent";
+export const REMOTE_KEY = "recordlab.runner-url";
 
 type Phase = "idle" | "running" | "done";
 
@@ -187,7 +187,7 @@ export function RunCodeModal({ open, onClose, record, autoRun, onUse, onInputCha
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
               <p className="font-semibold">{info.label} is compiled on a runner service.</p>
               <p className="mt-1 leading-relaxed">
-                Your code is sent to <span className="font-mono">{remoteUrl.replace(/^https?:\/\//, "")}</span> to run it, and its output comes back. Python and JavaScript never leave this device.
+                Your code is sent to <span className="font-mono">{remoteUrl.replace(/^https?:\/\//, "")}</span> to run it, and its output comes back. Python, JavaScript and HTML / CSS / JS never leave this device.
               </p>
               <label className="mt-2 flex cursor-pointer items-start gap-2 font-semibold">
                 <input type="checkbox" checked={consent} onChange={(e) => remember(e.target.checked)} className="mt-0.5 accent-[#c2410c]" />
@@ -268,7 +268,7 @@ export function RunCodeModal({ open, onClose, record, autoRun, onUse, onInputCha
               {result.images.length > 0 && (
                 <div>
                   <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
-                    <ImageIcon className="h-3.5 w-3.5" strokeWidth={2} /> Graphs and images ({result.images.length})
+                    <ImageIcon className="h-3.5 w-3.5" strokeWidth={2} /> {language === "web" ? "Page screenshot" : `Graphs and images (${result.images.length})`}
                   </p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {result.images.map((img) => (
@@ -298,7 +298,7 @@ export function RunCodeModal({ open, onClose, record, autoRun, onUse, onInputCha
                   )}
                   {result.images.length > 0 && (
                     <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-soft">
-                      <input type="checkbox" checked={useImages} onChange={(e) => setUseImages(e.target.checked)} className="accent-[#c2410c]" /> Graphs and images
+                      <input type="checkbox" checked={useImages} onChange={(e) => setUseImages(e.target.checked)} className="accent-[#c2410c]" /> {language === "web" ? "Page screenshot" : "Graphs and images"}
                     </label>
                   )}
                   <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink-soft">

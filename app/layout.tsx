@@ -5,7 +5,8 @@ import "./globals.css";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { ADSENSE_CLIENT } from "@/lib/ads";
-import { SITE_URL } from "@/lib/site";
+import { NamePrompt } from "@/components/NamePrompt";
+import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 
 const displayFont = Source_Serif_4({
   subsets: ["latin"],
@@ -45,6 +46,14 @@ export const metadata: Metadata = {
   category: "education",
   verification: { google: "o2QjTRyQcv-xTaXC7mIn5LLCGwcbgy4dMJNSKNPBMKw" },
   keywords: [
+    "online lab record maker",
+    "lab record maker online",
+    "free lab record maker",
+    "online lab record generator",
+    "practical record maker",
+    "lab manual maker",
+    "record book maker",
+    "college lab record online",
     "lab record",
     "lab record maker",
     "practical record",
@@ -65,19 +74,19 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   creator: "Cogniheim",
   publisher: "Cogniheim",
-  title: "Record Lab",
-  description: "Lab records for every department — pick your sections, run your code for real output, and export a print-ready fair copy on true A4 pages.",
+  title: "Record Lab: Free Online Lab Record Maker for Every Department",
+  description: SITE_DESCRIPTION,
   openGraph: {
-    title: "Record Lab",
-    description: "Lab records for every department — pick your sections, run your code for real output, and export a print-ready fair copy on true A4 pages.",
+    title: "Record Lab: Free Online Lab Record Maker",
+    description: SITE_DESCRIPTION,
     siteName: "Record Lab",
     type: "website",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Record Lab",
-    description: "Lab records for every department — pick your sections, run your code for real output, and export a print-ready fair copy on true A4 pages.",
+    title: "Record Lab: Free Online Lab Record Maker",
+    description: SITE_DESCRIPTION,
   },
 };
 
@@ -87,14 +96,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Set the saved UI style before first paint so the app doesn't flash the wrong look. */}
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html:
               'try{var s=JSON.parse(localStorage.getItem("recordlab-settings-v1")||"{}");document.documentElement.dataset.ui=s.uiStyle==="classic"?"classic":"apple"}catch(e){document.documentElement.dataset.ui="apple"}',
           }}
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0"
         />
         {/* Google AdSense: account verification meta tag and loader, both in <head>. */}
         <meta name="google-adsense-account" content={ADSENSE_CLIENT} />
@@ -106,6 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <NamePrompt />
         <PwaRegister />
         <OfflineBadge />
         <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />

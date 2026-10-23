@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, Stamp, User as UserIcon } from "lucide-react";
+import { FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, ShieldCheck, Sparkles, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
+import { AdminSettings } from "./AdminSettings";
+import { AiSettings } from "./AiSettings";
+import { useAdminAccess } from "@/lib/adminService";
+import { CollegeInfo } from "./CollegeInfo";
 import { AccountSettings } from "./AccountSettings";
 import { RecordFormatPicker } from "./RecordFormatPicker";
 import { PageBorderControls } from "./PageBorderControls";
@@ -28,10 +32,11 @@ const inputClass =
   "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
-type Tab = "account" | "appearance" | "record" | "sections" | "subjects" | "heading" | "watermark";
+type Tab = "admin" | "ai" | "account" | "appearance" | "record" | "sections" | "subjects" | "heading" | "watermark";
 
 const TABS: { id: Tab; label: string; icon: typeof Palette }[] = [
   { id: "account", label: "Account", icon: UserIcon },
+  { id: "ai", label: "AI assistant", icon: Sparkles },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "record", label: "Record", icon: FileText },
   { id: "sections", label: "Record sections", icon: LayoutList },
@@ -39,10 +44,12 @@ const TABS: { id: Tab; label: string; icon: typeof Palette }[] = [
   { id: "heading", label: "Heading table", icon: Rows3 },
   { id: "watermark", label: "Watermark", icon: Stamp },
 ];
+const ADMIN_TAB = { id: "admin" as Tab, label: "Admin", icon: ShieldCheck };
 
 export function SettingsModal({ open, settings, onClose, onSave, onToast }: SettingsModalProps) {
   const [draft, setDraft] = useState<AppSettings>(settings);
   const [tab, setTab] = useState<Tab>("appearance");
+  const isAdmin = useAdminAccess().status === "admin";
 
   // Re-sync the draft to the saved settings each time the modal opens —
   // otherwise a Cancel'd edit from a previous open would linger and
@@ -96,7 +103,7 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
           aria-label="Settings sections"
           className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-3 py-2 md:w-52 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3"
         >
-          {TABS.map(({ id, label, icon: Icon }) => (
+          {(isAdmin ? [...TABS, ADMIN_TAB] : TABS).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -113,11 +120,14 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
         </nav>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          {tab === "admin" && isAdmin && <AdminSettings onNavigate={onClose} />}
+          {tab === "ai" && <AiSettings value={draft.aiStart} onChange={(aiStart) => setDraft({ ...draft, aiStart })} />}
           {tab === "account" && (
             <AccountSettings
               onToast={onToast}
               afterDetails={
                 <>
+                <CollegeInfo />
                 <section>
                   <h3 className="mb-3 font-serif text-sm font-bold text-ink">Department</h3>
                   <label htmlFor="settingsDepartment" className={labelClass}>

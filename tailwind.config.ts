@@ -8,18 +8,19 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Channels live in globals.css (:root and html[data-theme="dark"]) so one class works in both themes.
       colors: {
-        paper: "#faf7f0",
+        paper: "rgb(var(--c-paper) / <alpha-value>)",
         ink: {
-          DEFAULT: "#1c2b33",
-          soft: "#4b5a63",
+          DEFAULT: "rgb(var(--c-ink) / <alpha-value>)",
+          soft: "rgb(var(--c-ink-soft) / <alpha-value>)",
         },
-        line: "#e5decb",
+        line: "rgb(var(--c-line) / <alpha-value>)",
         accent: {
-          DEFAULT: "#c2410c",
-          soft: "#fde8d8",
-          ink: "#7c2d12",
-          hover: "#9a3412",
+          DEFAULT: "rgb(var(--c-accent) / <alpha-value>)",
+          soft: "rgb(var(--c-accent-soft) / <alpha-value>)",
+          ink: "rgb(var(--c-accent-ink) / <alpha-value>)",
+          hover: "rgb(var(--c-accent-hover) / <alpha-value>)",
         },
       },
       fontFamily: {

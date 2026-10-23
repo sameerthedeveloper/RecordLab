@@ -1,6 +1,14 @@
 /** Landing-page copy shared with the structured data in app/page.tsx (the FAQ appears on the page and in FAQPage JSON-LD). */
 export const FAQS: { q: string; a: string }[] = [
   {
+    q: "What is the best online lab record maker?",
+    a: "Record Lab is a free online lab record maker for engineering and science students in any department. You choose the sections your lab needs, write or AI-draft the record, run the code to capture its real output, and download a print-ready fair copy as PDF or Word. It works in the browser with no install and no account.",
+  },
+  {
+    q: "How do I make a lab record online?",
+    a: "Open Record Lab, pick your department's layout, fill in the aim, program or procedure, output and result, check the live A4 preview, then export a PDF or Word file or print it. Python and JavaScript can be run in the browser so the output in your record is real.",
+  },
+  {
     q: "Is it really free?",
     a: "Yes. Record Lab runs in your browser, there is nothing to install and no payment step. It is supported by small ads.",
   },
@@ -33,7 +41,15 @@ export const FAQS: { q: string; a: string }[] = [
     a: "Choose the standard sheet or the college sheet, then adjust the heading table, page border, watermark, font and sections until it matches your department's format.",
   },
   {
+    q: "Can my faculty check and sign off my record?",
+    a: "Yes. Your faculty create a class for the subject and share its code or link. You hand in a subject, they read each record as it prints, and verify it or send it back with a note. A verified record shows a tick and the faculty's name bottom right of its last page. They see only what you hand in, and you can take it back at any time.",
+  },
+  {
+    q: "How do faculty get access?",
+    a: "Faculty sign up on the faculty page and send a short request. An admin approves it, and then they can create classes, review hand-ins and verify subjects. Students never need a faculty account.",
+  },
+  {
     q: "Where is my data stored?",
-    a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account and are visible only to you. A share link shows a copy only to people who have the link, until you revoke it.",
+    a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account. You can open them; Record Lab administrators can also read saved records to support users and keep the service healthy. A share link shows a copy only to people who have the link, until you revoke it.",
   },
 ];

@@ -1,4 +1,6 @@
-export type RunLanguage = "python" | "javascript" | "c" | "cpp" | "java";
+import { looksLikeWeb } from "./web";
+
+export type RunLanguage = "python" | "javascript" | "web" | "c" | "cpp" | "java";
 
 export interface LanguageInfo {
   id: RunLanguage;
@@ -12,6 +14,7 @@ export interface LanguageInfo {
 export const LANGUAGES: LanguageInfo[] = [
   { id: "python", label: "Python", where: "browser", judge0: 71 },
   { id: "javascript", label: "JavaScript", where: "browser", judge0: 63 },
+  { id: "web", label: "HTML / CSS / JS", where: "browser" },
   { id: "c", label: "C", where: "remote", judge0: 50 },
   { id: "cpp", label: "C++", where: "remote", judge0: 54 },
   { id: "java", label: "Java", where: "remote", judge0: 62 },
@@ -22,6 +25,7 @@ export const languageInfo = (id: RunLanguage): LanguageInfo => LANGUAGES.find((l
 /** Best guess of the language from the code itself, for the "Auto" choice. */
 export function detectLanguage(code: string): RunLanguage {
   const c = code.trim();
+  if (looksLikeWeb(c)) return "web";
   if (/\bpublic\s+(static\s+)?(class|void)\b|System\.out\.print/.test(c)) return "java";
   if (/#include\s*<(iostream|vector|string|bits\/stdc\+\+\.h|algorithm|map|set)>|std::|using\s+namespace\s+std/.test(c)) return "cpp";
   if (/#include\s*<(stdio|stdlib|string|math)\.h>|\bint\s+main\s*\(/.test(c)) return "c";
@@ -32,6 +36,7 @@ export function detectLanguage(code: string): RunLanguage {
 /** Maps free text like "Python 3", "C++" or "java" onto a supported language. */
 export function languageFromText(text: string): RunLanguage | null {
   const t = text.toLowerCase();
+  if (/\bhtml\b|\bcss\b|web ?page|front-?end/.test(t)) return "web";
   if (/c\+\+|cpp/.test(t)) return "cpp";
   if (/\bjava\b(?!script)/.test(t)) return "java";
   if (/javascript|\bjs\b|node/.test(t)) return "javascript";

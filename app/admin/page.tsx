@@ -1,11 +1,13 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { AdminClient } from "@/components/AdminClient";
+import { OverviewPage } from "@/components/admin/OverviewPage";
 
-export const metadata: Metadata = {
-  title: "Usage — Record Lab admin",
-  robots: { index: false, follow: false },
-};
+export const metadata: Metadata = { title: "Overview · Record Lab admin" };
 
-export default function AdminPage() {
-  return <AdminClient />;
+export default function Page() {
+  return (
+    <Suspense>
+      <OverviewPage />
+    </Suspense>
+  );
 }

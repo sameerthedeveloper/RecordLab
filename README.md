@@ -1,6 +1,6 @@
 # Record Lab
 
-A Next.js 14 (App Router) + TypeScript + Tailwind port of the original single-file
+A Next.js 16 (App Router) + TypeScript + Tailwind port of the original single-file
 `index.html` lab-record builder. Behavior, layout, and UX are preserved 1:1; the
 codebase has been split into typed components and modules.
 
@@ -17,6 +17,11 @@ npm run dev      # http://localhost:3000
 npm run build    # production build
 npm run start    # serve the production build
 ```
+
+## Deploy
+
+See [docs/deploy.md](docs/deploy.md) for the environment variables, Firebase and Google setup, and a post-deploy checklist.
+The admin area is described in [docs/admin.md](docs/admin.md) and mail in [docs/admin-mail.md](docs/admin-mail.md).
 
 ## Project layout
 

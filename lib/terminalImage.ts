@@ -7,6 +7,25 @@ export const PLATFORMS: { id: TerminalPlatform; label: string; symbol: string; h
   { id: "powershell", label: "PowerShell", symbol: ">", hint: "Windows" },
 ];
 
+/** Space between the text and each edge of the image, in px. */
+export interface TerminalMargins {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const MARGIN_MAX = 240;
+
+export interface TerminalDraw {
+  url: string;
+  /** Image size in CSS px (the PNG itself is 2x). */
+  width: number;
+  height: number;
+  /** The margins actually used, so a drag can start from where the image is now. */
+  margins: TerminalMargins;
+}
+
 export interface TerminalImageOptions {
   platform: TerminalPlatform;
   user: string;
@@ -20,6 +39,8 @@ export interface TerminalImageOptions {
   windowBar: boolean;
   /** Trailing empty prompt with a block cursor, like a finished session. */
   endPrompt: boolean;
+  /** Per-side space around the text. Absent = automatic (older images, and new ones until a side is dragged). */
+  margins?: TerminalMargins;
 }
 
 interface Palette {
@@ -70,6 +91,11 @@ function plain(s: string): string {
 
 /** Draws a terminal screenshot and returns it as a PNG data URL (browser only). */
 export function renderTerminalImage(opts: TerminalImageOptions): string {
+  return drawTerminal(opts)?.url ?? "";
+}
+
+/** Same as renderTerminalImage, plus the image size and the margins used (browser only). */
+export function drawTerminal(opts: TerminalImageOptions): TerminalDraw | null {
   const user = opts.user.trim() || "student";
   const host = opts.host.trim() || "lab-pc";
   const dir = opts.dir.trim() || (opts.platform === "linux" || opts.platform === "macos" ? "~" : "record");
@@ -122,12 +148,24 @@ export function renderTerminalImage(opts: TerminalImageOptions): string {
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
+  if (!ctx) return null;
   ctx.font = `${fontSize}px ${FONT_STACK}`;
   const charW = ctx.measureText("M").width;
   const cols = Math.max(...rows.map((r) => r.reduce((n, s) => n + s.text.length, 0))) + (opts.endPrompt ? 2 : 0);
-  const width = Math.round(Math.max(520, cols * charW + pad * 2));
-  const height = barH + pad * 2 - 6 + rows.length * lineH;
+  const textW = cols * charW;
+  const clamp = (n: number) => Math.min(MARGIN_MAX, Math.max(0, Math.round(n)));
+  // Automatic sizing: 520 px minimum width, 22 px sides, 16 px above, 22 px below.
+  const autoWidth = Math.round(Math.max(520, textW + pad * 2));
+  const margins: TerminalMargins = opts.margins
+    ? {
+        top: clamp(opts.margins.top),
+        right: clamp(opts.margins.right),
+        bottom: clamp(opts.margins.bottom),
+        left: clamp(opts.margins.left),
+      }
+    : { top: pad - 6, right: Math.max(0, autoWidth - pad - Math.round(textW)), bottom: pad, left: pad };
+  const width = opts.margins ? Math.max(120, Math.round(textW + margins.left + margins.right)) : autoWidth;
+  const height = barH + margins.top + rows.length * lineH + margins.bottom;
 
   canvas.width = width * scale;
   canvas.height = height * scale;
@@ -192,8 +230,8 @@ export function renderTerminalImage(opts: TerminalImageOptions): string {
   }
 
   rows.forEach((segs, i) => {
-    const baseline = barH + pad - 6 + i * lineH + fontSize + 3;
-    let x = pad;
+    const baseline = barH + margins.top + i * lineH + fontSize + 3;
+    let x = margins.left;
     for (const seg of segs) {
       ctx.fillStyle = t[seg.color];
       ctx.fillText(seg.text, x, baseline);
@@ -205,5 +243,5 @@ export function renderTerminalImage(opts: TerminalImageOptions): string {
     }
   });
 
-  return canvas.toDataURL("image/png");
+  return { url: canvas.toDataURL("image/png"), width, height, margins };
 }
