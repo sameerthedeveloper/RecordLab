@@ -59,6 +59,26 @@ export function useSubscription(): Subscription | null | undefined {
 }
 
 /**
+ * Whether to show ads: not until the sign-in has been restored and the plan is known (so a Pro member never
+ * gets even one request), and never for anyone on Pro.
+ */
+export function useShowAds(): boolean {
+  const sub = useSubscription();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    getFirebaseAuth()
+      .authStateReady()
+      .then(() => live && setReady(true))
+      .catch(() => live && setReady(true));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return ready && sub === null;
+}
+
+/**
  * Called before a NEW cloud record is created. Plans off, or a paid plan running: always fine. Otherwise the
  * person's record count must be under the free limit. (Browser-side check: it keeps honest accounts honest,
  * it is not a security boundary, because Firestore rules cannot count documents.)

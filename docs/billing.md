@@ -46,3 +46,6 @@ Admin > Billing > **Promo codes**: enter an email, how long Pro lasts (1 week to
 
 ## Where people manage their plan
 **Settings > Billing** holds the whole subscription: current plan or free-record tally, the plans and Razorpay checkout, and the promo code field (`components/SubscriptionPanel.tsx`). **Settings > Account** shows a one-line plan summary with a button into Billing. The upgrade sheet (`UpgradeModal`) now only opens when a free account is out of room, and shows the same panel.
+
+## Ads
+Pro members see no ads. `AdSlot` renders nothing for them (no empty box), and `AdsLoader` (in `app/layout.tsx`) only adds Google's ad script when the person is not on Pro. Nothing is requested until sign-in has been restored and the plan is known (`useShowAds` in `lib/billing.ts`). The AdSense verification meta tag stays in the page head for everyone. Pro bought mid-visit takes full effect on the next page load.

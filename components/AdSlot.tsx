@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ADSENSE_CLIENT } from "@/lib/ads";
+import { useShowAds } from "@/lib/billing";
 
 interface AdSlotProps {
   /** AdSense ad-unit id (data-ad-slot). Without it, or without NEXT_PUBLIC_ADSENSE_CLIENT, a placeholder is shown. */
@@ -27,21 +28,25 @@ declare global {
  * placeholder, so layouts are designed around the ad before one is live. Never used in the editor.
  */
 export function AdSlot({ slot, shape = "banner", name, className = "" }: AdSlotProps) {
+  const show = useShowAds();
   const live = Boolean(CLIENT && slot);
   const pushed = useRef(false);
 
   useEffect(() => {
-    if (!live || pushed.current) return;
+    if (!show || !live || pushed.current) return;
     pushed.current = true;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch {
       /* blocked by an ad blocker: the reserved space just stays empty */
     }
-  }, [live]);
+  }, [show, live]);
 
   const size = shape === "banner" ? "min-h-[90px] max-w-3xl" : shape === "small" ? "h-[60px] max-w-[234px]" : "min-h-[250px] max-w-sm";
   const height = shape === "banner" ? 90 : shape === "small" ? 60 : 250;
+
+  // Pro members see no ads, and no empty space where they would be.
+  if (!show) return null;
 
   return (
     <aside aria-label="Advertisement" className={`mx-auto w-full ${size} ${className}`}>
