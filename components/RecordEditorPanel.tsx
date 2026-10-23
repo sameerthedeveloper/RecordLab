@@ -6,7 +6,7 @@ import { Cloud, FilePlus2, Files, LayoutList, Play, ShieldCheck, TriangleAlert, 
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { SheetSetup } from "./SheetSetup";
-import { isCustomLayout, MAX_PAIRS, pairCount, pairIds, pairTitles } from "@/lib/sections";
+import { imageOwner, isCustomLayout, MAX_PAIRS, pairCount, pairIds, pairTitles } from "@/lib/sections";
 import { AdSlot } from "./AdSlot";
 import { outputStatus, runnableSource } from "@/lib/runner/source";
 import type { Folder } from "@/lib/folderService";
@@ -19,10 +19,13 @@ interface RecordEditorPanelProps {
   watermark: WatermarkOptions;
   onFieldChange: <K extends keyof RecordState>(field: K, value: RecordState[K]) => void;
   onWatermarkChange: (next: WatermarkOptions) => void;
-  onImageUpload: (files: FileList) => void;
+  onImageUpload: (files: FileList, section?: string) => void;
   onRemoveImage: (id: number) => void;
   /** Adds a generated image (data URL); `clearText` also empties the plain output text. */
-  onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => void;
+  onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions, section?: string) => void;
+  /** Runs every program of a Code + output section and makes a screenshot of each output. */
+  onGenerateAll: (sectionId: string) => void;
+  generating: { id: string; done: number; total: number } | null;
   onUpdateOutputImage: (id: number, src: string, terminal: TerminalImageOptions) => void;
   onFormatChange: (format: RecordFormat) => void;
   onShare: () => void;
@@ -74,6 +77,8 @@ export function RecordEditorPanel({
   onImageUpload,
   onRemoveImage,
   onAddOutputImage,
+  onGenerateAll,
+  generating,
   onUpdateOutputImage,
   onFormatChange,
   onShare,
@@ -99,7 +104,8 @@ export function RecordEditorPanel({
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>("details");
-  const [terminalOpen, setTerminalOpen] = useState(false);
+  /** Which image area has its terminal-screenshot window open (the id of its output block). */
+  const [terminalFor, setTerminalFor] = useState<string | null>(null);
   const [newSubject, setNewSubject] = useState<string | null>(null);
   const [editingImage, setEditingImage] = useState<OutputImage | null>(null);
 
@@ -121,6 +127,7 @@ export function RecordEditorPanel({
       delete values[last.code];
       delete values[last.out];
       onFieldChange("section_values", values);
+      onFieldChange("output_images", record.output_images.filter((img) => img.section !== last.out));
     }
     onFieldChange("sections", customSections.map((x) => (x.id === id ? { ...x, pairs: n } : x)));
   };
@@ -146,7 +153,7 @@ export function RecordEditorPanel({
               ? true
               : c.kind === "codeoutput"
                 ? Array.from({ length: pairCount(c) }, (_, i) => pairIds(c.id, i)).every(
-                    (ids) => sectionValue(ids.code).trim() && (sectionValue(ids.out).trim() || record.output_images.length)
+                    (ids) => sectionValue(ids.code).trim() && (sectionValue(ids.out).trim() || record.output_images.some((img) => imageOwner(record, img) === ids.out))
                   )
                 : Boolean(sectionValue(c.id).trim() || (c.kind === "output" && record.output_images.length)),
           ])
@@ -217,14 +224,16 @@ export function RecordEditorPanel({
   };
 
   /** Upload / terminal-screenshot controls and the thumbnails; the image pool is shared by the whole record. */
-  const renderImagesBlock = (imagesInputId: string, terminalText: string) => (
+  const renderImagesBlock = (imagesInputId: string, terminalText: string, tag: string | undefined, code: string) => {
+    const shownImages = tag === undefined ? record.output_images : record.output_images.filter((img) => imageOwner(record, img) === tag);
+    return (
           <>
             <div className="image-upload-area mt-2">
               <button
                 type="button"
                 onClick={() => {
                   setEditingImage(null);
-                  setTerminalOpen(true);
+                  setTerminalFor(tag ?? "");
                 }}
                 className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-ink p-2.5 text-xs font-semibold text-paper transition-colors hover:bg-ink/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
@@ -244,14 +253,14 @@ export function RecordEditorPanel({
                   multiple
                   className="hidden"
                   onChange={(e) => {
-                    if (e.target.files) onImageUpload(e.target.files);
+                    if (e.target.files) onImageUpload(e.target.files, tag);
                     e.target.value = "";
                   }}
                 />
               </label>
 
               <div className="uploaded-images mt-2.5">
-                {record.output_images.map((image: OutputImage) => (
+                {shownImages.map((image: OutputImage) => (
                   <div className="uploaded-image-card" key={image.id}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={image.src} alt={image.name} />
@@ -263,7 +272,7 @@ export function RecordEditorPanel({
                         title="Edit terminal screenshot"
                         onClick={() => {
                           setEditingImage(image);
-                          setTerminalOpen(true);
+                          setTerminalFor(tag ?? "");
                         }}
                       >
                         <Pencil className="h-3.5 w-3.5" strokeWidth={2.25} />
@@ -282,22 +291,23 @@ export function RecordEditorPanel({
               </div>
             </div>
             <TerminalImageModal
-              open={terminalOpen}
-              onClose={() => setTerminalOpen(false)}
+              open={terminalFor === (tag ?? "")}
+              onClose={() => setTerminalFor(null)}
               initialOutput={terminalText}
               editing={editingImage}
-              onAdd={onAddOutputImage}
+              onAdd={(src, name, clear, terminal) => onAddOutputImage(src, name, clear, terminal, tag)}
               onUpdate={onUpdateOutputImage}
-              code={runnableSource(record)}
+              code={code}
               stdin={record.program_input ?? ""}
               onInputChange={(v) => onFieldChange("program_input", v)}
             />
           </>
-  );
+    );
+  };
 
   /** The text + images section: the fixed Output of the programming layout, or any custom section of that kind. */
   const renderOutputSection = (o: { id: string; title: string; index: string; text: string; onText: (v: string) => void; textLabel: string; placeholder: string; inputId: string; imagesInputId: string }) => (
-<EditorSection key={o.id} id={o.id} title={o.title} index={o.index} filled={Boolean(o.text.trim() || record.output_images.length)}>
+<EditorSection key={o.id} id={o.id} title={o.title} index={o.index} filled={Boolean(o.text.trim() || (custom ? record.output_images.some((img) => imageOwner(record, img) === o.id) : record.output_images.length))}>
             {renderRunBar()}
             <label htmlFor={o.inputId} className={labelClass}>
               {o.textLabel}
@@ -310,7 +320,7 @@ export function RecordEditorPanel({
               onChange={o.onText}
             />
 
-            {renderImagesBlock(o.imagesInputId, o.text)}
+            {renderImagesBlock(o.imagesInputId, o.text, custom ? o.id : undefined, runnableSource(record))}
           </EditorSection>
   );
 
@@ -842,7 +852,19 @@ export function RecordEditorPanel({
                 const count = pairCount(c);
                 return (
                   <EditorSection key={c.id} id={c.id} title={c.title} index={index} filled={filled[c.id]}>
-                    {renderRunBar()}
+                    <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-paper/60 p-2.5">
+                      <button
+                        type="button"
+                        onClick={() => onGenerateAll(c.id)}
+                        disabled={Boolean(generating) || !Array.from({ length: count }, (_, i) => pairIds(c.id, i)).some((ids) => sectionValue(ids.code).trim())}
+                        title="Run every program and make a terminal screenshot of each output"
+                        className="ui-primary flex min-h-10 shrink-0 items-center gap-1.5 px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
+                      >
+                        <Play className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        {generating?.id === c.id ? `Running ${Math.min(generating.done + 1, generating.total)} of ${generating.total}…` : count > 1 ? `Generate output for all ${count} programs` : "Generate output"}
+                      </button>
+                      <p className="min-w-0 flex-1 text-[11px] leading-snug text-ink-soft/75">Runs each program and puts its output screenshot right under it.</p>
+                    </div>
                     <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-line bg-paper/60 px-3 py-2">
                       <span id={`pairs-${c.id}`} className="text-xs font-semibold text-ink-soft">
                         Programs in this section
@@ -898,10 +920,10 @@ export function RecordEditorPanel({
                             value={sectionValue(ids.out)}
                             onChange={(v) => setSectionValue(ids.out, v)}
                           />
+                          {renderImagesBlock(`img-${ids.out}`, sectionValue(ids.out), ids.out, sectionValue(ids.code))}
                         </div>
                       );
                     })}
-                    {renderImagesBlock(`img-${c.id}`, sectionValue(pairIds(c.id, 0).out))}
                   </EditorSection>
                 );
               }

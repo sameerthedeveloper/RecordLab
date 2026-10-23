@@ -21,6 +21,28 @@ export const MAX_PAIRS = 10;
 /** How many code + output pairs a "codeoutput" section holds (1 when unset). */
 export const pairCount = (s: { pairs?: number }): number => Math.min(MAX_PAIRS, Math.max(1, Math.round(Number(s.pairs) || 1)));
 
+/** Id of the record's first output block (an output section, or the first pair of a code + output section). */
+export function firstOutputId(record: Pick<RecordState, "sections">): string | undefined {
+  for (const s of record.sections ?? []) {
+    if (s.kind === "output") return s.id;
+    if (s.kind === "codeoutput") return outputIdOf(s.id);
+  }
+  return undefined;
+}
+
+/** Every output block id of a custom layout, in print order. */
+export function outputBlockIds(record: Pick<RecordState, "sections">): string[] {
+  return (record.sections ?? []).flatMap((s) =>
+    s.kind === "output" ? [s.id] : s.kind === "codeoutput" ? Array.from({ length: pairCount(s) }, (_, i) => pairIds(s.id, i).out) : []
+  );
+}
+
+/** Which output block an image prints under: its own, if it still exists, else the first one. */
+export function imageOwner(record: Pick<RecordState, "sections">, image: Pick<OutputImage, "section">): string | undefined {
+  if (image.section && outputBlockIds(record).includes(image.section)) return image.section;
+  return firstOutputId(record);
+}
+
 /** Value ids of pair i: the first pair keeps the plain ids, so a single pair stores exactly as before. */
 export const pairIds = (id: string, i: number): { code: string; out: string } =>
   i === 0 ? { code: id, out: outputIdOf(id) } : { code: `${id}__c${i}`, out: `${id}__o${i}` };
@@ -91,29 +113,25 @@ export function resultHeading(record: Pick<RecordState, "format" | "sections" | 
 /** forPrint: the sheet being previewed or downloaded; false: the saved record as it is stored (cloud views). */
 export function resolveSections(record: RecordState, forPrint = false): ResolvedSection[] {
   if (isCustomLayout(record)) {
-    let imagesGiven = false;
+    const imagesFor = (id: string) => record.output_images.filter((img) => imageOwner(record, img) === id);
     return record.sections!.flatMap((s): ResolvedSection[] => {
       if (s.kind === "codeoutput") {
         const count = pairCount(s);
         return Array.from({ length: count }, (_, i) => {
           const ids = pairIds(s.id, i);
           // One heading for the whole section; the programs and outputs run on under it.
-          const gives = !imagesGiven;
-          imagesGiven = true;
           return [
             { id: ids.code, heading: i === 0 ? headingFor(s.title) : "", kind: "code" as const, value: record.section_values?.[ids.code] ?? "", images: [], lines: 0 },
-            { id: ids.out, heading: "", kind: "output" as const, value: record.section_values?.[ids.out] ?? "", images: gives ? record.output_images : [], lines: 0 },
+            { id: ids.out, heading: "", kind: "output" as const, value: record.section_values?.[ids.out] ?? "", images: imagesFor(ids.out), lines: 0 },
           ];
         }).flat();
       }
-      const gives = s.kind === "output" && !imagesGiven;
-      if (gives) imagesGiven = true;
       return [{
         id: s.id,
         heading: headingFor(s.title),
         kind: s.kind,
         value: s.kind === "lines" ? "" : record.section_values?.[s.id] ?? "",
-        images: gives ? record.output_images : [],
+        images: s.kind === "output" ? imagesFor(s.id) : [],
         lines: Math.min(MAX_LINES, Math.max(1, s.lines ?? MANUAL_CALCULATION_LINES)),
       }];
     });

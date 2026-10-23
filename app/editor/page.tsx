@@ -15,12 +15,18 @@ import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
+import { RecordLimitError } from "@/lib/billing";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
 import { applyTemplate, effectiveLayout, isCustomLayout, pairCount, pairIds, pairTitles } from "@/lib/sections";
 import type { AiContext } from "@/lib/aiAssistant";
 import { RunCodeModal } from "@/components/RunCodeModal";
 import { hashCode, outputTarget } from "@/lib/runner/source";
-import type { RunResult } from "@/lib/runner";
+import { DEFAULT_REMOTE_URL, runCode, type RunResult } from "@/lib/runner";
+import { detectLanguage, languageInfo } from "@/lib/runner/languages";
+import { CONSENT_KEY, REMOTE_KEY } from "@/components/RunCodeModal";
+import { loadIdentity, suggestCommands } from "@/components/TerminalImageModal";
+import { renderTerminalImage } from "@/lib/terminalImage";
 import type { RlabPayload } from "@/lib/firestoreService";
 import { track } from "@/lib/analytics";
 import { useAuthUser } from "@/lib/authService";
@@ -31,7 +37,7 @@ import { createShareLink, loadSharedRecord } from "@/lib/shareLink";
 import { applyUiStyle, DEFAULT_SETTINGS, loadSettings, normalizeSettings, saveSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import { DEFAULT_PAGE_BORDER, DEFAULT_RECORD, DEFAULT_WATERMARK } from "@/lib/types";
-import type { DownloadFormat, OutputImage, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
+import type { DownloadFormat, OutputImage, OutputRun, PdfEngine, RecordState, WatermarkOptions } from "@/lib/types";
 import type { ParsedLabRecord } from "@/lib/aiAssistant";
 import { stampAiText } from "@/lib/aiMark";
 import { clearDraft, hasContent, loadDraft, saveDraft } from "@/lib/editorDraft";
@@ -75,6 +81,7 @@ export default function Home() {
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [runOpen, setRunOpen] = useState(false);
   // True when the person ticked "run after importing": the dialog starts running by itself.
   const [runAuto, setRunAuto] = useState(false);
@@ -351,14 +358,14 @@ export default function Home() {
     []
   );
 
-  const handleImageUpload = useCallback((files: FileList) => {
+  const handleImageUpload = useCallback((files: FileList, section?: string) => {
     Array.from(files).forEach((file) => {
       if (!file.type.startsWith("image/")) return;
       const reader = new FileReader();
       reader.onload = (e) => {
         const src = e.target?.result;
         if (typeof src !== "string") return;
-        const image: OutputImage = { id: Date.now() + Math.random(), src, name: file.name };
+        const image: OutputImage = { id: Date.now() + Math.random(), src, name: file.name, ...(section ? { section } : {}) };
         setRecord((prev) => ({ ...prev, output_images: [...prev.output_images, image] }));
       };
       reader.readAsDataURL(file);
@@ -372,11 +379,12 @@ export default function Home() {
     }));
   }, []);
 
-  const handleAddOutputImage = useCallback((src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => {
-    const image: OutputImage = { id: Date.now() + Math.random(), src, name, terminal };
+  const handleAddOutputImage = useCallback((src: string, name: string, clearText: boolean, terminal: TerminalImageOptions, section?: string) => {
+    const image: OutputImage = { id: Date.now() + Math.random(), src, name, terminal, ...(section ? { section } : {}) };
     setRecord((prev) => ({
       ...prev,
-      output: clearText ? "" : prev.output,
+      output: clearText && !section ? "" : prev.output,
+      section_values: clearText && section ? { ...(prev.section_values ?? {}), [section]: "" } : prev.section_values,
       output_images: [...prev.output_images, image],
     }));
   }, []);
@@ -466,6 +474,73 @@ export default function Home() {
     if (folder.layoutMode === "custom") showToast(`Using the ${folder.name} layout.`);
   }
 
+  /** Runs every program of a Code + output section and fills each pair: output text becomes a terminal screenshot under its own program. */
+  const [generating, setGenerating] = useState<{ id: string; done: number; total: number } | null>(null);
+  async function handleGenerateAll(sectionId: string) {
+    const def = record.sections?.find((s) => s.id === sectionId);
+    if (!def || def.kind !== "codeoutput" || generating) return;
+    const count = pairCount(def);
+    const pairs = Array.from({ length: count }, (_, i) => pairIds(sectionId, i)).map((ids) => ({ ids, code: record.section_values?.[ids.code] ?? "" }));
+    const todo = pairs.filter((p) => p.code.trim());
+    if (!todo.length) return showToast("Add a program first.");
+    let consent = false;
+    let remoteUrl = DEFAULT_REMOTE_URL;
+    try {
+      consent = localStorage.getItem(CONSENT_KEY) === "1";
+      remoteUrl = localStorage.getItem(REMOTE_KEY) || DEFAULT_REMOTE_URL;
+    } catch {}
+    if (todo.some((p) => languageInfo(detectLanguage(p.code)).where === "remote") && !consent) {
+      return showToast("C, C++ and Java run on an online runner. Use Run the code once to allow it, then try again.");
+    }
+    track("run_all_programs", { count: todo.length });
+    setGenerating({ id: sectionId, done: 0, total: todo.length });
+    const identity = loadIdentity();
+    const outputs = new Map<string, string>();
+    const made = new Map<string, OutputImage[]>();
+    let firstRun: OutputRun | null = null;
+    let failed = 0;
+    for (const p of todo) {
+      const language = detectLanguage(p.code);
+      try {
+        const r = await runCode({ language, code: p.code, stdin: record.program_input ?? "", remoteUrl });
+        const text = (r.ok ? r.stdout : [r.stdout, r.stderr].filter((t) => t.trim()).join("\n")).replace(/\s+$/, "");
+        if (!r.ok) failed += 1;
+        const terminal: TerminalImageOptions = {
+          ...identity,
+          platform: "macos",
+          symbol: "%",
+          commands: suggestCommands(language, p.code),
+          output: text,
+          theme: "dark",
+          windowBar: false,
+          endPrompt: true,
+        };
+        const list: OutputImage[] = [];
+        if (text || !r.images.length) {
+          const src = renderTerminalImage(terminal);
+          if (src) list.push({ id: Date.now() + Math.random(), src, name: "terminal-output.png", terminal, section: p.ids.out });
+        }
+        for (const img of r.images) list.push({ id: Date.now() + Math.random(), src: img.dataUrl, name: img.name, captured: true, section: p.ids.out });
+        outputs.set(p.ids.out, text);
+        made.set(p.ids.out, list);
+        if (!firstRun && p.ids.code === sectionId) firstRun = { language: r.language, engine: r.engine, ranAt: Date.now(), codeHash: hashCode(p.code), ok: r.ok };
+      } catch (err) {
+        failed += 1;
+        showToast(err instanceof Error ? err.message : "A program could not be run.");
+      }
+      setGenerating((g) => (g ? { ...g, done: g.done + 1 } : g));
+    }
+    setRecord((prev) => ({
+      ...prev,
+      // Text lives in the screenshot now; earlier terminal screenshots of these outputs are replaced, uploads stay.
+      section_values: { ...(prev.section_values ?? {}), ...Object.fromEntries([...made].map(([out]) => [out, ""])) },
+      output_images: [...prev.output_images.filter((img) => !(img.terminal && img.section && made.has(img.section))), ...[...made.values()].flat()],
+      ...(firstRun ? { output_run: firstRun } : {}),
+    }));
+    setGenerating(null);
+    showToast(failed ? `Output made for ${made.size} of ${todo.length} programs. ${failed} had errors.` : `Output screenshots made for ${made.size} program${made.size === 1 ? "" : "s"}.`);
+  }
+
   /** Puts what a real run produced into the OUTPUT section and marks it as verified. */
   function handleUseRun(result: RunResult, code: string, opts: { replace: boolean; text: boolean; images: boolean }) {
     track("run_code_used", { language: result.language, engine: result.engine });
@@ -537,6 +612,10 @@ export default function Home() {
       showToast("Saved to cloud.");
       track("save_cloud");
     } catch (error) {
+      if (error instanceof RecordLimitError) {
+        setUpgradeOpen(true);
+        return;
+      }
       console.error("Cloud save failed:", error);
       const message = error instanceof Error ? error.message : "Unable to save to the cloud. Please try again.";
       showToast(message);
@@ -787,6 +866,8 @@ export default function Home() {
           onImageUpload={handleImageUpload}
           onRemoveImage={handleRemoveImage}
           onAddOutputImage={handleAddOutputImage}
+          onGenerateAll={handleGenerateAll}
+          generating={generating}
           signedIn={Boolean(authUser)}
           folders={folders ?? []}
           folderId={cloudFolderId}
@@ -873,6 +954,8 @@ export default function Home() {
         onNewRecord={handleNewRecord}
         onToast={showToast}
       />
+
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} onToast={showToast} reason="limit" />
 
       <RunCodeModal
         open={runOpen}

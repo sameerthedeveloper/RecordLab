@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
+import { saveAppConfig, useAppConfig } from "@/lib/appConfig";
 import { approveFaculty, declineFaculty, loadFaculty, loadFacultyRequests, removeFaculty, type FacultyMember, type FacultyRequest } from "@/lib/facultyService";
 import { fmtDate } from "@/lib/adminFormat";
 import { useAdmin } from "./AdminProvider";
-import { Avatar, Card, Empty } from "./ui";
+import { Avatar, Card, Empty, Switch } from "./ui";
 
 /** Faculty requests waiting for approval, and the faculty who already have access. Needs the faculty rules from docs/faculty.md. */
 export function FacultyPage() {
@@ -14,6 +15,20 @@ export function FacultyPage() {
   const [faculty, setFaculty] = useState<FacultyMember[] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
+  const app = useAppConfig();
+  const [switching, setSwitching] = useState(false);
+
+  async function setFacultyEnabled(next: boolean) {
+    setSwitching(true);
+    try {
+      await saveAppConfig({ facultyEnabled: next }, me.uid);
+      setError("");
+    } catch {
+      setError("Couldn't change faculty sign-in. Deploy the latest firestore.rules (see docs/billing.md), then try again.");
+    } finally {
+      setSwitching(false);
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -47,6 +62,18 @@ export function FacultyPage() {
           {error}
         </p>
       )}
+      <Card title="Faculty sign-in" aside={app ? (app.facultyEnabled ? "On" : "Off") : undefined}>
+        <div className="flex items-center justify-between gap-4 px-5 pb-5 pt-4 sm:px-6">
+          <div>
+            <p className="text-sm font-semibold text-ink">Let faculty sign in</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-soft">
+              Off: /faculty shows a pause notice to everyone, and faculty can&apos;t create classes or review records. Students keep working, and nothing is deleted.
+            </p>
+          </div>
+          <Switch checked={app?.facultyEnabled ?? true} disabled={!app || switching} onChange={(v) => void setFacultyEnabled(v)} label="Let faculty sign in" />
+        </div>
+      </Card>
+
       <Card title="Waiting for approval" aside={requests ? `${requests.length}` : undefined}>
         {requests === null ? (
           <Empty>Loading…</Empty>

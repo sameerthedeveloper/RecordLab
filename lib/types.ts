@@ -20,6 +20,8 @@ export interface OutputImage {
   captured?: boolean;
   /** Present on generated terminal screenshots; lets the user reopen and edit them. */
   terminal?: TerminalImageOptions;
+  /** Custom layouts: the id of the output block this image belongs to. Absent = the record's first output block. */
+  section?: string;
 }
 
 /**

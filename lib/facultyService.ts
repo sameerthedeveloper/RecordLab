@@ -49,7 +49,17 @@ export interface ClassRow {
   facultyName: string;
   subject: string;
   section: string;
+  /** Experiments the faculty assigned to everyone in the class, in order. */
+  experiments: AssignedExperiment[];
   createdAt: Date | null;
+}
+
+export interface AssignedExperiment {
+  /** Matches the record's exercise number, so a student's records tick it off. */
+  no: string;
+  title: string;
+  /** Optional due date, YYYY-MM-DD. */
+  due: string;
 }
 
 export interface Submission {
@@ -195,8 +205,34 @@ function newCode(): string {
   return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 }
 
+function toExperiments(v: unknown): AssignedExperiment[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : {}))
+    .map((e) => ({ no: str(e.no), title: str(e.title), due: str(e.due) }))
+    .filter((e) => e.no && e.title);
+}
+
 function toClass(code: string, x: Record<string, unknown>): ClassRow {
-  return { code, facultyUid: str(x.facultyUid), facultyName: str(x.facultyName), subject: str(x.subject), section: str(x.section), createdAt: toDate(x.createdAt) };
+  return {
+    code,
+    facultyUid: str(x.facultyUid),
+    facultyName: str(x.facultyName),
+    subject: str(x.subject),
+    section: str(x.section),
+    experiments: toExperiments(x.experiments),
+    createdAt: toDate(x.createdAt),
+  };
+}
+
+/** Faculty: replaces the experiments assigned to a class. Students who have the class code see the list. */
+export async function saveExperiments(code: string, experiments: AssignedExperiment[]): Promise<void> {
+  const clean = experiments
+    .map((e) => ({ no: e.no.trim().slice(0, 10), title: e.title.trim().replace(/\s+/g, " ").slice(0, 120), due: /^\d{4}-\d{2}-\d{2}$/.test(e.due) ? e.due : "" }))
+    .filter((e) => e.no && e.title);
+  if (new Set(clean.map((e) => e.no)).size !== clean.length) throw new Error("Two experiments share a number.");
+  if (clean.length > 60) throw new Error("A class can have up to 60 experiments.");
+  await updateDoc(doc(getDb(), "classes", code), { experiments: clean });
 }
 
 export function watchMyClasses(uid: string, onChange: (rows: ClassRow[]) => void, onError: (e: Error) => void): () => void {
@@ -219,6 +255,7 @@ export async function createClass(uid: string, facultyName: string, subject: str
         facultyName,
         subject: name,
         section: section.trim().slice(0, 40),
+        experiments: [],
         createdAt: serverTimestamp(),
       });
       return code;

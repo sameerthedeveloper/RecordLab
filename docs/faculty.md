@@ -7,9 +7,10 @@ subject or send it back with a note.
 1. **Faculty** opens `/faculty`, signs in (email or Google) and sends an access request (name, department, college).
 2. **Admin** opens `/admin/faculty` and approves it. That creates `faculty/<uid>`; declining deletes the request.
 3. **Faculty** creates a class per subject. Its id is a 6-character join code (`classes/<code>`).
-4. **Student** opens the join link (`/join/<code>`, copied from the class page with *Copy join link*), or opens a subject in their dashboard, chooses the *Hand in to faculty* icon and types the code. Every record in
+4. **Faculty** can list the experiments to assign on the class page (*Assigned experiments*: exercise number, title, optional due date) and choose *Assign to students*. Anyone with the class code sees the list on the join page and in the *Hand in to faculty* dialog, with a tick on each exercise number they already have a record for.
+5. **Student** opens the join link (`/join/<code>`, copied from the class page with *Copy join link*), or opens a subject in their dashboard, chooses the *Hand in to faculty* icon and types the code. Every record in
    the subject is stamped `submittedTo: <code>` and `submissions/<code>_<studentUid>` is written as `pending`.
-5. **Faculty** opens the class, reads the records exactly as they print, and chooses *Verify subject* or *Send back with note*.
+6. **Faculty** opens the class, reads the records exactly as they print, and chooses *Verify subject* or *Send back with note*.
    The student sees the verdict and note in the same dialog and can hand in again or take it back.
 
 ## Collections
@@ -17,12 +18,12 @@ subject or send it back with a note.
 | --- | --- | --- |
 | `facultyRequests/<uid>` | the person | them, admins |
 | `faculty/<uid>` | admins | them, admins |
-| `classes/<code>` | that faculty | any signed-in user can `get` by code; only the owner can list |
+| `classes/<code>` | that faculty (create; later only the `experiments` list) | any signed-in user can `get` by code; only the owner can list |
 | `submissions/<code>_<studentUid>` | student (pending only) / faculty (verdict fields only) | both, admins |
 | `documents/*` | owner | owner, admins, and the class faculty when `submittedTo` is that class's code |
 
 ## Setup
-Deploy the rules: `firebase deploy --only firestore:rules`. The Firestore queries need no new indexes
+Deploy the rules (assigning experiments needs the new `classes` update rule): `firebase deploy --only firestore:rules`. The Firestore queries need no new indexes
 (all use equality filters only, except the admin request list which orders by `requestedAt`: Firestore creates that single-field index itself).
 
 ## Notes

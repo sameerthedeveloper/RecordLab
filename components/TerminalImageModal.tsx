@@ -43,7 +43,7 @@ const SIDES: { side: Side; label: string }[] = [
 ];
 
 /** What a student would type to build and run this program in a real terminal. */
-function suggestCommands(language: RunLanguage, code: string): string {
+export function suggestCommands(language: RunLanguage, code: string): string {
   switch (language) {
     case "python":
       return "python3 main.py";
@@ -68,7 +68,7 @@ const inputClass =
   "w-full rounded-lg border border-line bg-white px-3 py-2.5 font-mono text-[13px] text-ink max-md:min-h-11 outline-none transition-colors placeholder:text-ink-soft/50 focus:border-accent focus:ring-2 focus:ring-accent/15";
 const labelClass = "mb-1.5 block text-xs font-semibold text-ink-soft";
 
-function loadIdentity(): Pick<TerminalImageOptions, "user" | "host" | "dir"> {
+export function loadIdentity(): Pick<TerminalImageOptions, "user" | "host" | "dir"> {
   const fallback = { user: "student", host: "lab-pc", dir: "record" };
   try {
     const raw = localStorage.getItem(STORE_KEY);

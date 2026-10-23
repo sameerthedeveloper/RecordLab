@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogIn, LogOut } from "lucide-react";
+import { ChevronDown, LogIn, LogOut, Sparkles } from "lucide-react";
 import { signOutUser, useAuthUser } from "@/lib/authService";
+import { useBillingConfig, useSubscription } from "@/lib/billing";
 import { touchProfile } from "@/lib/profileService";
 import { AuthModal } from "./AuthModal";
 import { PuterLinkButton } from "./PuterLinkButton";
+import { UpgradeModal } from "./UpgradeModal";
 
 interface AccountMenuProps {
   onToast: (message: string) => void;
@@ -22,6 +24,9 @@ export function AccountMenu({ onToast, menuAlign = "end" }: AccountMenuProps) {
   }, [user]);
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
+  const billing = useBillingConfig();
+  const sub = useSubscription();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,6 +95,18 @@ export function AccountMenu({ onToast, menuAlign = "end" }: AccountMenuProps) {
             onError={onToast}
           />
 
+                    <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              setPlanOpen(true);
+            }}
+            className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-ink-soft transition-colors hover:bg-accent-soft/40 hover:text-accent-ink"
+          >
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
+            {sub ? "Pro plan" : billing?.enabled ? "Upgrade to Pro" : "Redeem promo code"}
+          </button>
+
           <button
             type="button"
             onClick={handleSignOut}
@@ -100,6 +117,7 @@ export function AccountMenu({ onToast, menuAlign = "end" }: AccountMenuProps) {
           </button>
         </div>
       )}
+      <UpgradeModal open={planOpen} onClose={() => setPlanOpen(false)} onToast={onToast} />
     </div>
   );
 }

@@ -46,6 +46,7 @@ import { deleteDocument, moveDocument, renameDocument, watchUserDocuments } from
 import { createFolder, deleteFolder, renameFolder, setFolderTemplate, useFolders, type Folder } from "@/lib/folderService";
 import { effectiveLayout, type SectionTemplate } from "@/lib/sections";
 import { loadSettings } from "@/lib/settings";
+import { SubjectAssignments } from "./SubjectAssignments";
 import { FacultyReviewModal } from "./FacultyReviewModal";
 import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
@@ -765,6 +766,8 @@ export function DashboardModal({
                 <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onToast={onToast} />
               </div>
             )}
+
+            {user && activeFolder && !query && <SubjectAssignments key={`${activeFolder.id}:${facultyOpen}`} subjectId={activeFolder.id} documents={(documents ?? []).filter((d) => d.folderId === activeFolder.id)} />}
 
             {user && documents === null && (
               <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 xl:grid-cols-4">

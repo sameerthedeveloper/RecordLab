@@ -89,6 +89,12 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/faculty/$(request.auth.uid));
     }
 
+    // The admin's faculty switch (config/app). Missing document = on.
+    function facultyOn() {
+      return !exists(/databases/$(database)/documents/config/app)
+        || get(/databases/$(database)/documents/config/app).data.get('facultyEnabled', true) != false;
+    }
+
     // A person asks to be faculty; an admin approves (creates faculty/<uid>) or declines (deletes the request).
     match /facultyRequests/{uid} {
       allow create, update: if request.auth != null && request.auth.uid == uid
@@ -107,16 +113,19 @@ service cloud.firestore {
     }
 
     // One class per subject a faculty member teaches. The id is the join code, so a student can `get` it by
-    // typing the code; only the owner can list. Nobody edits a class: delete it and make a new one.
+    // typing the code; only the owner can list. The owner can edit only `experiments` (the list assigned to students).
     match /classes/{code} {
       allow get: if request.auth != null;
       allow list: if request.auth != null && request.auth.uid == resource.data.facultyUid;
-      allow create: if isFaculty()
+      allow create: if isFaculty() && facultyOn()
         && request.resource.data.facultyUid == request.auth.uid
         && request.resource.data.subject is string
         && request.resource.data.subject.size() > 0
         && request.resource.data.subject.size() <= 80;
-      allow update: if false;
+      allow update: if request.auth != null && request.auth.uid == resource.data.facultyUid && facultyOn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['experiments'])
+        && request.resource.data.experiments is list
+        && request.resource.data.experiments.size() <= 60;
       allow delete: if request.auth != null && request.auth.uid == resource.data.facultyUid;
     }
 
@@ -138,7 +147,7 @@ service cloud.firestore {
           && request.resource.data.classCode == resource.data.classCode
           && request.resource.data.facultyName == resource.data.facultyName
           && request.resource.data.status == 'pending')
-        || (request.auth.uid == resource.data.facultyUid
+        || (request.auth.uid == resource.data.facultyUid && facultyOn()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'comment', 'reviewedAt', 'reviewedBy'])
           && request.resource.data.status in ['approved', 'changes'])
       );
@@ -151,7 +160,8 @@ service cloud.firestore {
       allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || isAdmin()
         || (request.auth != null
           && resource.data.get('submittedTo', null) != null
-          && get(/databases/$(database)/documents/classes/$(resource.data.submittedTo)).data.facultyUid == request.auth.uid);
+          && get(/databases/$(database)/documents/classes/$(resource.data.submittedTo)).data.facultyUid == request.auth.uid
+          && facultyOn());
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
@@ -160,15 +170,40 @@ service cloud.firestore {
     }
 
     // Settings the admins control. config/ai: whether the AI assistant is on, which provider answers, the limits.
-    // Every signed-in user can read it (the app hides the feature when it is off); only admins change it.
+    // config/app: the faculty sign-in switch (readable by anyone, so /faculty can say "paused" before sign-in).
+    // config/billing: whether paid plans are on, the free record limit and the prices.
+    // Every signed-in user can read them; only admins change them.
     match /config/{doc} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null || doc == 'app';
       allow write: if isAdmin() && doc == 'ai'
         && request.resource.data.enabled is bool
         && request.resource.data.mode in ['auto', 'keyless', 'key', 'puter']
         && request.resource.data.perMinute is int && request.resource.data.perMinute >= 1 && request.resource.data.perMinute <= 60
         && request.resource.data.perDay is int && request.resource.data.perDay >= 1 && request.resource.data.perDay <= 1000
         && request.resource.data.model is string && request.resource.data.model.size() <= 80;
+      allow write: if isAdmin() && doc == 'app'
+        && request.resource.data.facultyEnabled is bool;
+      allow write: if isAdmin() && doc == 'billing'
+        && request.resource.data.enabled is bool
+        && request.resource.data.freeLimit is int && request.resource.data.freeLimit >= 1 && request.resource.data.freeLimit <= 1000
+        && request.resource.data.monthPaise is int && request.resource.data.monthPaise >= 100 && request.resource.data.monthPaise <= 1000000
+        && request.resource.data.yearPaise is int && request.resource.data.yearPaise >= 100 && request.resource.data.yearPaise <= 1000000;
+    }
+
+    // Paid plans. Written ONLY by the server (Admin SDK, after Razorpay confirms a payment), never by a browser.
+    // A person reads their own subscription; admins read all of them and the payment log.
+    match /subscriptions/{uid} {
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow write: if false;
+    }
+    // Promo codes an admin issued to one email address: written only by the server, read by admins.
+    match /promoCodes/{code} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /payments/{paymentId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // Per-user profile: currently just the last-linked Puter account (see

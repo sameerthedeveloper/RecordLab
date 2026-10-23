@@ -4,6 +4,7 @@ import { createContext, useContext, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { authErrorMessage, resetPassword, signInWithEmail, signInWithGoogle, signOutUser, signUpWithEmail, useAuthUser } from "@/lib/authService";
+import { useAppConfig } from "@/lib/appConfig";
 import { requestFacultyAccess, useFacultyAccess } from "@/lib/facultyService";
 import { Stamp } from "./Stamp";
 
@@ -214,8 +215,20 @@ function RequestAccess({ uid, email, defaultName, pending, onSent }: { uid: stri
 export function FacultyProvider({ children }: { children: React.ReactNode }) {
   const { access, recheck } = useFacultyAccess();
   const user = useAuthUser();
+  const app = useAppConfig();
 
-  if (access.status === "loading") {
+  if (app && !app.facultyEnabled) {
+    return (
+      <Door title="The faculty desk is paused." intro="Faculty sign-in is switched off for now. Students' records are safe, and nothing is lost. Come back once it is switched on again.">
+        <p className="font-serif text-lg font-bold text-ink">Faculty sign-in is off</p>
+        <p className="mt-2 text-sm text-ink-soft">Ask your Record Lab admin when it will be back.</p>
+        <Link href="/editor" className="ui-btn ui-btn-secondary mt-5 flex min-h-11 w-full items-center justify-center px-4 text-sm font-semibold">
+          Go to Record Lab
+        </Link>
+      </Door>
+    );
+  }
+  if (!app || access.status === "loading") {
     return (
       <div className="app-canvas fixed inset-0 flex items-center justify-center" role="status">
         <Loader2 className="h-6 w-6 animate-spin text-accent" />
