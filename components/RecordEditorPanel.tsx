@@ -636,7 +636,7 @@ export function RecordEditorPanel({
                 {[
                   ...(!custom
                     ? [
-                        { id: "detailsAimToggle", label: "Aim & algorithm", hint: "Off leaves both off the downloaded sheet to write by hand. Still saved.", checked: !record.hide_aim_algorithm, onToggle: (v: boolean) => onFieldChange("hide_aim_algorithm", !v) },
+                        { id: "detailsAimToggle", label: "Aim & algorithm", hint: "Off prints both headings with blank space to write by hand. Text stays saved.", checked: !record.hide_aim_algorithm, onToggle: (v: boolean) => onFieldChange("hide_aim_algorithm", !v) },
                         { id: "detailsReviewToggle", label: "Review questions", hint: "Questions and answers after the output", checked: record.review_questions_enabled, onToggle: (v: boolean) => onFieldChange("review_questions_enabled", v) },
                       ]
                     : []),

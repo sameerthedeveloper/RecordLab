@@ -86,12 +86,9 @@ export function resolveSections(record: RecordState, forPrint = false): Resolved
   }
   const college = record.format === "college";
   const out: ResolvedSection[] = [
-    ...(forPrint && record.hide_aim_algorithm
-      ? []
-      : ([
-          { id: "aim", heading: "AIM:", kind: "text", value: record.aim, images: [], lines: 0 },
-          { id: "algorithm", heading: "ALGORITHM:", kind: "text", value: record.algorithm, images: [], lines: 0 },
-        ] as ResolvedSection[])),
+    // Hidden for print: headings stay with their empty writing space, the saved text is just not printed.
+    { id: "aim", heading: "AIM:", kind: "text", value: forPrint && record.hide_aim_algorithm ? "" : record.aim, images: [], lines: 0 },
+    { id: "algorithm", heading: "ALGORITHM:", kind: "text", value: forPrint && record.hide_aim_algorithm ? "" : record.algorithm, images: [], lines: 0 },
     { id: "source_code", heading: "SOURCE CODE:", kind: "code", value: record.source_code, images: [], lines: 0 },
     { id: "output", heading: "OUTPUT:", kind: "output", value: record.output, images: record.output_images, lines: 0 },
   ];
