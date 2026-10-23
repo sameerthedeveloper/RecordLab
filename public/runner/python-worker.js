@@ -19,7 +19,11 @@ async function ensurePyodide() {
 }
 
 const PRELUDE = `
-import sys, os
+import sys, os, warnings
+# Library notices (pandas/pyarrow etc.) are not errors and would only clutter the record's output.
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 os.environ["MPLBACKEND"] = "AGG"
 try:
     import matplotlib
