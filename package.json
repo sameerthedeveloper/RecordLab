@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "razorpay:reviewer": "node --env-file=.env.local scripts/create-razorpay-reviewer.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.10.0",

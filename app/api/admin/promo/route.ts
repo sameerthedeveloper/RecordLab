@@ -31,7 +31,7 @@ async function mailCode(input: { email: string; code: string; days: number; code
     input.note,
     `Your Record Lab Pro code: ${input.code}`,
     `It gives you ${input.days} days of Pro: unlimited cloud records. Use it before ${fmt(input.codeExpiresAt)}.`,
-    `To redeem: sign in to Record Lab with this email address (${input.email}), open the account menu, choose Pro plan or Upgrade to Pro, and enter the code under "Have a promo code?".`,
+    `To redeem: sign in to Record Lab with this email address (${input.email}), open Settings, choose Billing, and enter the code under "Have a promo code?".`,
   ]
     .filter(Boolean)
     .join("\n\n");

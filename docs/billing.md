@@ -41,5 +41,8 @@ Admin > Faculty > **Let faculty sign in**. Off: `/faculty` shows a pause notice 
 ## Promo codes (free Pro for one person)
 Admin > Billing > **Promo codes**: enter an email, how long Pro lasts (1 week to 1 year), and how long they have to redeem it (3 days to 1 month), optionally a message. The code (`RL-XXXX-XXXX`) is emailed to them with the existing Gmail setup (docs/admin-mail.md); if mail isn't set up you can copy it and send it yourself.
 - The code works **only for a person signed in with that email address**, once, and only before its redeem-by date. Expired and used codes stay in the list. Unused ones can be resent or deleted.
-- Redeeming adds the code's days to the end of any Pro they already have. They enter it in the account menu > **Redeem promo code** (or **Pro plan** / **Upgrade to Pro**) > "Have a promo code?". It works even while "Charge for Pro" is off.
+- Redeeming adds the code's days to the end of any Pro they already have. They enter it in **Settings > Billing** > "Have a promo code?". It works even while "Charge for Pro" is off.
 - Stored in `promoCodes/<code>`, written only by the server (`/api/admin/promo`, `/api/billing/redeem`). Needs the same `FIREBASE_SERVICE_ACCOUNT` as payments, and the updated `firestore.rules` for the admin list.
+
+## Where people manage their plan
+**Settings > Billing** holds the whole subscription: current plan or free-record tally, the plans and Razorpay checkout, and the promo code field (`components/SubscriptionPanel.tsx`). **Settings > Account** shows a one-line plan summary with a button into Billing. The upgrade sheet (`UpgradeModal`) now only opens when a free account is out of room, and shows the same panel.

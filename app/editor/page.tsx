@@ -955,7 +955,7 @@ export default function Home() {
         onToast={showToast}
       />
 
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} onToast={showToast} reason="limit" />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} onToast={showToast} />
 
       <RunCodeModal
         open={runOpen}
