@@ -113,6 +113,23 @@ export default function Home() {
     if (cloudFolderId && folders && !folders.some((f) => f.id === cloudFolderId)) setCloudFolderId(null);
   }, [cloudFolderId, folders]);
 
+  // Changing the open subject's layout in Settings reaches the open record if it is still on that subject's old layout.
+  const subjectLayout = effectiveLayout(
+    cloudFolderId ? folders?.find((f) => f.id === cloudFolderId) : undefined,
+    settings.defaultLayout
+  );
+  const subjectLayoutKey = JSON.stringify(subjectLayout?.sections ?? null) + (subjectLayout?.resultTitle ?? "");
+  const lastLayoutRef = useRef<{ folder: string | null; layout: typeof subjectLayout; key: string } | null>(null);
+  useEffect(() => {
+    const prev = lastLayoutRef.current;
+    lastLayoutRef.current = { folder: cloudFolderId, layout: subjectLayout, key: subjectLayoutKey };
+    if (!prev || prev.folder !== cloudFolderId || prev.key === subjectLayoutKey) return;
+    setRecord((r) =>
+      JSON.stringify(r.sections ?? null) === JSON.stringify(prev.layout?.sections ?? null) ? applyTemplate(r, subjectLayout) : r
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudFolderId, subjectLayoutKey]);
+
   // A cloud file belongs to one account: forget it if the user signs out or switches accounts.
   const lastUidRef = useRef<string | null>(null);
   useEffect(() => {
