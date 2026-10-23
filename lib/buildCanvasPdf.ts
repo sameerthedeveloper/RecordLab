@@ -288,7 +288,7 @@ export function buildCanvasPdf(record: RecordState, watermark: WatermarkOptions,
       (async () => {
         drawHeaderTable();
 
-        for (const sec of resolveSections(record)) {
+        for (const sec of resolveSections(record, true)) {
           if (sec.kind === "lines") {
             // Starts right under the previous section; the lines that don't fit continue on the next page.
             const lineH = BODY_FONT_SIZE * 1.5;

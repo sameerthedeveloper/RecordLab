@@ -194,7 +194,7 @@ function paginateMainFlow(record: RecordState, measureContent: HTMLElement, head
   }
 
   // Legacy programming-lab fields or the record's custom layout: lib/sections.ts decides which.
-  const sections: Section[] = resolveSections(record).map((r) => ({
+  const sections: Section[] = resolveSections(record, true).map((r) => ({
     id: r.id,
     heading: r.heading,
     type: r.kind === "lines" ? ("blank" as const) : r.kind,

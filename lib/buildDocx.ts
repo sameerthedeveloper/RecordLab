@@ -332,7 +332,7 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
   const collegeSpacer = new Paragraph({ spacing: { before: convertMillimetersToTwip(Math.max(0, record.headerLayout.height - 10 + 4)) }, children: [] });
   const children: (Paragraph | Table)[] = college ? [collegeHeaderTable(record, font), collegeSpacer] : [headerTable(record, font), afterHeader];
 
-  for (const sec of resolveSections(record)) {
+  for (const sec of resolveSections(record, true)) {
     if (sec.kind === "lines") {
       // Starts right under the previous section and flows on to the next page if it runs out of room;
       // the heading stays with its first lines.

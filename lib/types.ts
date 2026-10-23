@@ -163,6 +163,8 @@ export interface RecordState {
   review_questions_enabled: boolean;
   /** Blank hand-written working space (MANUAL_CALCULATION_LINES lines) before RESULT. Off unless set, so older records are unchanged. */
   manual_calculation_enabled?: boolean;
+  /** Leave AIM and ALGORITHM off the printed/downloaded sheet (they stay saved) so they can be written by hand. On unless set. */
+  hide_aim_algorithm?: boolean;
   /**
    * Custom record layout (see lib/sections.ts). Absent = the original programming-lab layout using the
    * fixed fields above, so older files are unchanged.

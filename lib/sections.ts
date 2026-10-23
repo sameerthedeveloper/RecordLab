@@ -67,7 +67,8 @@ export function resultHeading(record: Pick<RecordState, "format" | "sections" | 
  * lab (aim, algorithm, source code, output, review questions, optional manual calculation), so every
  * file saved before layouts existed renders exactly as it did.
  */
-export function resolveSections(record: RecordState): ResolvedSection[] {
+/** forPrint: the sheet being previewed or downloaded; false: the saved record as it is stored (cloud views). */
+export function resolveSections(record: RecordState, forPrint = false): ResolvedSection[] {
   if (isCustomLayout(record)) {
     let imagesGiven = false;
     return record.sections!.map((s) => {
@@ -85,8 +86,12 @@ export function resolveSections(record: RecordState): ResolvedSection[] {
   }
   const college = record.format === "college";
   const out: ResolvedSection[] = [
-    { id: "aim", heading: "AIM:", kind: "text", value: record.aim, images: [], lines: 0 },
-    { id: "algorithm", heading: "ALGORITHM:", kind: "text", value: record.algorithm, images: [], lines: 0 },
+    ...(forPrint && record.hide_aim_algorithm
+      ? []
+      : ([
+          { id: "aim", heading: "AIM:", kind: "text", value: record.aim, images: [], lines: 0 },
+          { id: "algorithm", heading: "ALGORITHM:", kind: "text", value: record.algorithm, images: [], lines: 0 },
+        ] as ResolvedSection[])),
     { id: "source_code", heading: "SOURCE CODE:", kind: "code", value: record.source_code, images: [], lines: 0 },
     { id: "output", heading: "OUTPUT:", kind: "output", value: record.output, images: record.output_images, lines: 0 },
   ];
