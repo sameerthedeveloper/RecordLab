@@ -137,7 +137,16 @@ export interface SectionPreset {
 }
 
 export const SECTION_PRESETS: SectionPreset[] = [
-  { id: "programming", name: "Programming lab", note: "CSE / IT / AI: aim, algorithm, code, output, review questions", build: null },
+  { id: "programming", name: "Programming lab", note: "CSE / IT: aim, algorithm, code, output, review questions", build: null },
+  {
+    id: "aids",
+    name: "AI & Data Science",
+    note: "Aim, algorithm, program with its output straight after, result",
+    build: () => ({
+      resultTitle: "Result",
+      sections: [sec("Aim"), sec("Algorithm"), sec("Program", "code"), sec("Output", "output")],
+    }),
+  },
   {
     id: "science",
     name: "Physics / Chemistry",
@@ -213,7 +222,8 @@ export const DEPARTMENTS = [
 export function suggestPresetId(department: string): string | null {
   const d = department.toLowerCase();
   if (!d.trim()) return null;
-  if (/(computer|software|information tech|\bit\b|\bcse\b|data science|artificial|\bai\b|machine learning|cyber)/.test(d)) return "programming";
+  if (/(data science|artificial|\bai\b|\baids\b|\bai ?& ?ds\b|machine learning|deep learning)/.test(d)) return "aids";
+  if (/(computer|software|information tech|\bit\b|\bcse\b|cyber)/.test(d)) return "programming";
   if (/(electronic|electrical|\bece\b|\beee\b|instrument|communication)/.test(d)) return "electronics";
   if (/(mechanic|civil|automobile|aero|production|industrial|structural)/.test(d)) return "mechanical";
   if (/(physic|chemi|bio|material|environment|science)/.test(d)) return "science";
@@ -239,7 +249,8 @@ export function layoutLabel(folder: { layoutMode?: "default" | "programming" | "
 }
 
 const NAME_HINTS: { id: string; re: RegExp }[] = [
-  { id: "programming", re: /(data struct|algorithm|programming|python|java\b|\bc\+\+|\bc lang|\boop|dbms|database|\bsql\b|operating system|computer network|\bweb\b|software|compiler|machine learning|artificial|\bai\b|cyber|cloud|\bdsa\b|\bos\b)/ },
+  { id: "aids", re: /(data science|data analytics|data mining|big data|machine learning|deep learning|artificial|neural|\bai\b|\bml\b|\bnlp\b|computer vision|\bpandas\b|data visuali)/ },
+  { id: "programming", re: /(data struct|algorithm|programming|python|java\b|\bc\+\+|\bc lang|\boop|dbms|database|\bsql\b|operating system|computer network|\bweb\b|software|compiler|cyber|cloud|\bdsa\b|\bos\b)/ },
   { id: "electronics", re: /(electronic|circuit|digital|analog|vlsi|microprocessor|microcontroller|embedded|signal|communication|electrical|machine|power system|control system|\bbeee\b|\bede\b|\bnetwork analysis)/ },
   { id: "mechanical", re: /(mechanic|thermal|thermo|fluid|strength of material|manufactur|workshop|\bcivil\b|survey|concrete|structur|hydraulic|\bcad\b|\bcam\b|heat transfer|dynamics|automobile|material testing)/ },
   { id: "science", re: /(physic|chemi|biolog|material science|environment|biochem|organic|inorganic|optics|quantum)/ },
