@@ -17,6 +17,7 @@ import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
 import { RecordLimitError } from "@/lib/billing";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { AuthModal } from "@/components/AuthModal";
 import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
 import { applyTemplate, effectiveLayout, isCustomLayout, pairCount, pairIds, pairTitles } from "@/lib/sections";
 import type { AiContext } from "@/lib/aiAssistant";
@@ -82,6 +83,9 @@ export default function Home() {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  // A download asked for while signed out; it runs once sign-in completes.
+  const [saveAfterAuth, setSaveAfterAuth] = useState(false);
   const [runOpen, setRunOpen] = useState(false);
   // True when the person ticked "run after importing": the dialog starts running by itself.
   const [runAuto, setRunAuto] = useState(false);
@@ -786,6 +790,12 @@ export default function Home() {
   }
 
   function handleSave() {
+    if (!authUser) {
+      setSaveAfterAuth(true);
+      setAuthOpen(true);
+      showToast("Sign in to download your copy.");
+      return;
+    }
     if (downloadFormat === "docx") {
       handleSaveDocx();
     } else if (pdfEngine === "canvas2pdf") {
@@ -794,6 +804,15 @@ export default function Home() {
       handleSaveHtml2Pdf();
     }
   }
+
+  useEffect(() => {
+    if (saveAfterAuth && authUser) {
+      setSaveAfterAuth(false);
+      handleSave();
+    }
+    // handleSave closes over current render state; only the sign-in transition should fire it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser, saveAfterAuth]);
 
   const aiContext: AiContext = {
     department: settings.department,
@@ -952,6 +971,12 @@ export default function Home() {
         onClose={() => setDashboardOpen(false)}
         onLoad={handleLoadFromDashboard}
         onNewRecord={handleNewRecord}
+        onToast={showToast}
+      />
+
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
         onToast={showToast}
       />
 
