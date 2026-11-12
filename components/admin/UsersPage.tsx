@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Download, FileText, Mail, Search, UserRound } from "lucide-react";
-import type { ProfileRow } from "@/lib/adminService";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Download, FileText, Mail, Pencil, Search, UserRound } from "lucide-react";
+import { saveProfileEdits, type ProfileRow } from "@/lib/adminService";
 import type { AdminView } from "@/lib/adminView";
 import { ago, DAY, fmtDate, fmtDateTime } from "@/lib/adminFormat";
 import { Modal } from "../Modal";
@@ -25,10 +25,12 @@ const FILTERS: { id: Filter; label: string }[] = [
 const csvCell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
 
 export function UsersPage() {
-  return <WhenLoaded>{({ view, data }) => <Users view={view} profiles={data.usage.profiles} />}</WhenLoaded>;
+  return <WhenLoaded>{({ view, data, refresh }) => <Users view={view} profiles={data.usage.profiles} refresh={refresh} />}</WhenLoaded>;
 }
 
-function Users({ view, profiles }: { view: AdminView; profiles: ProfileRow[] }) {
+function Users({ view, profiles, refresh }: { view: AdminView; profiles: ProfileRow[]; refresh: () => Promise<void> | void }) {
+  // An admin-typed college wins over the one found from the email domain.
+  const collegeOf = useCallback((p: ProfileRow) => p.college || view.collegeOf(p.email), [view]);
   const params = useSearchParams();
   const initial = (FILTERS.find((f) => f.id === params.get("filter"))?.id ?? "all") as Filter;
   const [filter, setFilter] = useState<Filter>(initial);
@@ -59,7 +61,7 @@ function Users({ view, profiles }: { view: AdminView; profiles: ProfileRow[] }) 
       if (filter === "active7") return p.lastSeenAt !== null && now - p.lastSeenAt.getTime() <= 7 * DAY;
       if (filter === "new7") return p.createdAt !== null && now - p.createdAt.getTime() <= 7 * DAY;
       if (filter === "noname") return !named(p);
-      if (filter === "nocollege") return !view.collegeOf(p.email);
+      if (filter === "nocollege") return !collegeOf(p);
       return true;
     });
     const val = (p: ProfileRow): string | number => {
@@ -69,7 +71,7 @@ function Users({ view, profiles }: { view: AdminView; profiles: ProfileRow[] }) 
       return p.lastSeenAt?.getTime() ?? 0;
     };
     return [...keep].sort((a, b) => (val(a) < val(b) ? -1 : val(a) > val(b) ? 1 : 0) * sort.dir);
-  }, [profiles, q, filter, sort, view]);
+  }, [profiles, q, filter, sort, view, collegeOf]);
 
   const counts = useMemo(() => {
     const now = Date.now();
@@ -78,14 +80,14 @@ function Users({ view, profiles }: { view: AdminView; profiles: ProfileRow[] }) 
       active7: profiles.filter((p) => p.lastSeenAt && now - p.lastSeenAt.getTime() <= 7 * DAY).length,
       new7: profiles.filter((p) => p.createdAt && now - p.createdAt.getTime() <= 7 * DAY).length,
       noname: profiles.filter((p) => !p.displayName?.trim()).length,
-      nocollege: profiles.filter((p) => !view.collegeOf(p.email)).length,
+      nocollege: profiles.filter((p) => !collegeOf(p)).length,
     } satisfies Record<Filter, number>;
-  }, [profiles, view]);
+  }, [profiles, collegeOf]);
 
   function exportCsv() {
     const head = ["Name", "Email", "College", "Records", "Joined", "Last seen", "Sign-in"];
     const lines = rows.map((p) =>
-      [p.displayName ?? "", p.email ?? "", view.collegeOf(p.email) ?? "", view.records === null ? "" : view.recordsByUser.get(p.uid) ?? 0, p.createdAt?.toISOString().slice(0, 10) ?? "", p.lastSeenAt?.toISOString().slice(0, 10) ?? "", p.providers.join(" ")].map(csvCell).join(","),
+      [p.displayName ?? "", p.email ?? "", collegeOf(p) ?? "", view.records === null ? "" : view.recordsByUser.get(p.uid) ?? 0, p.createdAt?.toISOString().slice(0, 10) ?? "", p.lastSeenAt?.toISOString().slice(0, 10) ?? "", p.providers.join(" ")].map(csvCell).join(","),
     );
     const url = URL.createObjectURL(new Blob([[head.map(csvCell).join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -179,7 +181,7 @@ function Users({ view, profiles }: { view: AdminView; profiles: ProfileRow[] }) 
                       </span>
                     </button>
                   </td>
-                  <td className="px-3 py-3 text-ink-soft">{view.collegeOf(p.email) ?? <span className="text-ink-soft/50">—</span>}</td>
+                  <td className="px-3 py-3 text-ink-soft">{collegeOf(p) ?? <span className="text-ink-soft/50">—</span>}</td>
                   <td className="px-3 py-3 text-right font-mono text-ink">{view.records === null ? "—" : view.recordsByUser.get(p.uid) ?? 0}</td>
                   <td className="whitespace-nowrap px-3 py-3 text-ink-soft">{fmtDate(p.createdAt)}</td>
                   <td className="whitespace-nowrap px-3 py-3 text-ink-soft">{ago(p.lastSeenAt)}</td>
@@ -209,23 +211,26 @@ function Users({ view, profiles }: { view: AdminView; profiles: ProfileRow[] }) 
       </Card>
 
       <Modal open={!!open} onClose={() => setOpen(null)} title={open?.displayName || open?.email || "User"} description={open?.displayName ? open.email ?? undefined : undefined} icon={UserRound} size="md" bodyClassName="p-5 sm:p-6">
-        {open && <UserDetail p={open} view={view} />}
+        {open && <UserDetail key={open.uid} p={open} view={view} college={collegeOf(open)} onSaved={async () => { await refresh(); setOpen(null); }} />}
       </Modal>
     </>
   );
 }
 
-function UserDetail({ p, view }: { p: ProfileRow; view: AdminView }) {
+function UserDetail({ p, view, college, onSaved }: { p: ProfileRow; view: AdminView; college: string | null; onSaved: () => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
   const count = view.records === null ? null : view.recordsByUser.get(p.uid) ?? 0;
   const items: [string, string][] = [
-    ["College", view.collegeOf(p.email) ?? "Not named yet"],
+    ["College", college ?? "Not named yet"],
     ["Joined", fmtDateTime(p.createdAt)],
     ["Last seen", `${ago(p.lastSeenAt)}${p.lastSeenAt ? ` · ${fmtDateTime(p.lastSeenAt)}` : ""}`],
     ["Sign-in", p.providers.map((x) => (x === "google.com" ? "Google" : x === "password" ? "Email and password" : x)).join(", ") || "—"],
     ["Saved records", count === null ? "Deploy rules to see" : String(count)],
   ];
+  if (editing) return <EditUser p={p} college={college} onCancel={() => setEditing(false)} onSaved={onSaved} />;
   return (
     <div className="space-y-5">
+      {p.edited && <p className="rounded-xl bg-accent-soft px-4 py-2.5 text-xs font-medium text-accent-ink">An admin edited these details. The person&apos;s own account is unchanged.</p>}
       <dl className="divide-y divide-line/70 rounded-xl border border-line bg-white">
         {items.map(([k, v]) => (
           <div key={k} className="flex items-baseline justify-between gap-4 px-4 py-2.5 text-[13px]">
@@ -236,6 +241,9 @@ function UserDetail({ p, view }: { p: ProfileRow; view: AdminView }) {
       </dl>
       {!p.displayName?.trim() && <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900">This person hasn&apos;t given a name. They are asked the next time they open the app.</p>}
       <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => setEditing(true)} className="ui-btn ui-btn-secondary flex min-h-10 items-center gap-2 px-4 text-xs font-semibold">
+          <Pencil className="h-3.5 w-3.5" strokeWidth={2.2} /> Edit details
+        </button>
         {p.email && (
           <Link href={`/admin/mail?to=${encodeURIComponent(p.uid)}`} className="ui-primary flex min-h-10 items-center gap-2 px-4 py-2 text-xs font-semibold">
             <Mail className="h-3.5 w-3.5" strokeWidth={2.3} /> Email this user
@@ -246,5 +254,52 @@ function UserDetail({ p, view }: { p: ProfileRow; view: AdminView }) {
         </Link>
       </div>
     </div>
+  );
+}
+
+function EditUser({ p, college, onCancel, onSaved }: { p: ProfileRow; college: string | null; onCancel: () => void; onSaved: () => Promise<void> }) {
+  const [name, setName] = useState(p.displayName ?? "");
+  const [email, setEmail] = useState(p.email ?? "");
+  const [col, setCol] = useState(college ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const emailBad = email.trim() !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (emailBad) return;
+    setBusy(true);
+    setError("");
+    try {
+      await saveProfileEdits(p.uid, { name, email, college: col });
+      await onSaved();
+    } catch {
+      setError("Could not save. Deploy the latest firestore.rules, then try again.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-4">
+      {[
+        { id: "euName", label: "Name", value: name, set: setName, type: "text", max: 80, ph: "Full name" },
+        { id: "euEmail", label: "Email", value: email, set: setEmail, type: "email", max: 120, ph: "name@college.edu" },
+        { id: "euCollege", label: "College", value: col, set: setCol, type: "text", max: 120, ph: "College name" },
+      ].map((f) => (
+        <div key={f.id}>
+          <label htmlFor={f.id} className="mb-1 block text-xs font-semibold text-ink-soft">{f.label}</label>
+          <input id={f.id} type={f.type} maxLength={f.max} value={f.value} placeholder={f.ph} onChange={(e) => f.set(e.target.value)} className="ui-input w-full px-3 py-2.5" />
+        </div>
+      ))}
+      {emailBad && <p className="text-xs font-medium text-red-700">Enter a valid email.</p>}
+      <p className="text-xs text-ink-soft">
+        Changes what this panel and the mailer show. The person&apos;s sign-in email does not change. Leave a field empty to go back to what their account gives.
+      </p>
+      {error && <p role="alert" className="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-medium text-red-700">{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={busy || emailBad} className="ui-primary min-h-10 px-5 py-2 text-xs font-semibold disabled:opacity-50">{busy ? "Saving…" : "Save"}</button>
+        <button type="button" onClick={onCancel} disabled={busy} className="ui-btn ui-btn-secondary min-h-10 px-4 text-xs font-semibold">Cancel</button>
+      </div>
+    </form>
   );
 }

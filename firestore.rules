@@ -30,6 +30,9 @@ service cloud.firestore {
     // settings stay private: admins can NOT read `users`. (They can read `documents`: see below.)
     match /profiles/{uid} {
       allow create, update: if request.auth != null && request.auth.uid == uid;
+      // An admin can correct what the panel shows for a person: only these three fields, nothing else.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['adminName', 'adminEmail', 'adminCollege']);
       allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
       // Only the owner, when they delete their account (Settings > Account).
       allow delete: if request.auth != null && request.auth.uid == uid;
