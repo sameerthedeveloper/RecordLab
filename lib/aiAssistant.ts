@@ -38,6 +38,7 @@ const KIND_HINT: Record<SectionKind, string> = {
   text: "Plain paragraphs, or an ordered list (<ol><li>) where steps are natural.",
   code: "Preformatted text inside <pre>. Keep spacing and alignment; type tables as aligned rows separated by | .",
   output: "Plain text describing the readings or results. Images are added by the student later, so do not mention images.",
+  codeoutput: "",
   lines: "",
 };
 

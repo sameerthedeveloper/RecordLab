@@ -342,12 +342,12 @@ export async function buildRecordDocx(record: RecordState, watermark: WatermarkO
       }
     } else if (sec.kind === "output") {
       if (!sec.value.trim() && sec.images.length === 0) continue;
-      children.push(headingParagraph(sec.heading, font, college));
+      if (sec.heading) children.push(headingParagraph(sec.heading, font, college));
       if (sec.value.trim()) children.push(bodyParagraph(sec.value, font, college));
       for (const image of sec.images) children.push(await outputImageParagraph(image));
     } else if (sec.value.trim()) {
       if (college && sec.id === "aim") children.push(inlineAimParagraph(sec.value, font));
-      else children.push(headingParagraph(sec.heading, font, college), bodyParagraph(sec.value, font, college));
+      else children.push(...(sec.heading ? [headingParagraph(sec.heading, font, college)] : []), bodyParagraph(sec.value, font, college));
     }
   }
   if (record.result.trim()) {

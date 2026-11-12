@@ -9,6 +9,7 @@ import { findClass, submitSubject, useMySubmissions, type ClassRow } from "@/lib
 import { watchUserDocuments, type CloudDocument } from "@/lib/firestoreService";
 import { createFolder, useFolders } from "@/lib/folderService";
 import { loadSettings } from "@/lib/settings";
+import { AssignedExperiments, exerciseNumbers } from "./AssignedExperiments";
 import { AuthModal } from "./AuthModal";
 
 const NEW = "__new__";
@@ -49,6 +50,14 @@ export function JoinClassClient() {
     const match = folders.find((f) => f.name.toLowerCase() === cls.subject.toLowerCase());
     setChoice(match?.id ?? (folders.length === 0 ? NEW : ""));
   }, [cls, folders, choice]);
+
+  // Remember the class for the chosen subject, so its assigned experiments show on the subject folder.
+  useEffect(() => {
+    if (!cls || !choice || choice === NEW) return;
+    try {
+      localStorage.setItem(`recordlab.faculty-class.${choice}`, cls.code);
+    } catch {}
+  }, [cls, choice]);
 
   async function hand() {
     if (!user || !cls || !docs) return;
@@ -124,6 +133,7 @@ export function JoinClassClient() {
                   {cls.section ? ` · ${cls.section}` : ""}
                 </p>
               </div>
+              <AssignedExperiments experiments={cls.experiments} doneNumbers={exerciseNumbers(docs.filter((d) => !!choice && d.folderId === choice))} />
               {already && (
                 <p className="rounded-lg bg-black/[0.04] px-3 py-2 text-sm text-ink">
                   You already handed in &ldquo;{already.subject}&rdquo; here. It is {already.status === "approved" ? "verified" : already.status === "changes" ? "sent back with a note" : "waiting for review"}. Handing in again replaces it.

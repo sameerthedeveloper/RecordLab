@@ -5,6 +5,7 @@ import { ChevronDown, LogIn, LogOut } from "lucide-react";
 import { signOutUser, useAuthUser } from "@/lib/authService";
 import { touchProfile } from "@/lib/profileService";
 import { AuthModal } from "./AuthModal";
+import { ProBadge } from "./ProSeal";
 import { PuterLinkButton } from "./PuterLinkButton";
 
 interface AccountMenuProps {
@@ -79,6 +80,7 @@ export function AccountMenu({ onToast, menuAlign = "end" }: AccountMenuProps) {
         <span className="max-w-[120px] truncate text-xs font-semibold text-ink max-[420px]:hidden">
           {user.displayName || user.email}
         </span>
+        <ProBadge size={16} className="-ml-1" />
         <ChevronDown className="h-3.5 w-3.5 text-ink-soft/60" strokeWidth={2} />
       </button>
 

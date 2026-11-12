@@ -20,6 +20,7 @@ import { fmtDate } from "@/lib/adminFormat";
 import { CodeChip } from "./ClassesView";
 import { useFaculty } from "./FacultyProvider";
 import { aiSignals } from "@/lib/aiMark";
+import { ExperimentsPanel } from "./ExperimentsPanel";
 import { RecordViewer } from "./RecordViewer";
 import { Stamp } from "./Stamp";
 
@@ -142,6 +143,8 @@ export function ClassView() {
           {error}
         </p>
       )}
+
+      {cls && <ExperimentsPanel cls={cls} />}
 
       <div className="grid gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
         <section aria-label="Students" className="ui-card self-start overflow-hidden">

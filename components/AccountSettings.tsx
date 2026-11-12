@@ -11,13 +11,17 @@ import {
   updateDisplayName,
   useAuthUser,
 } from "@/lib/authService";
+import { useBillingConfig, useSubscription } from "@/lib/billing";
 import { AccountDanger } from "./AccountDanger";
+import { ProBadge } from "./ProSeal";
 import { AuthModal } from "./AuthModal";
 import { PuterLinkButton } from "./PuterLinkButton";
 import { SharedLinks } from "./SharedLinks";
 
 interface AccountSettingsProps {
   onToast: (message: string) => void;
+  /** Opens Settings > Billing. */
+  onOpenBilling?: () => void;
   /** Rendered right after the user's own details (profile, name), before password and the rest. */
   afterDetails?: React.ReactNode;
 }
@@ -32,7 +36,30 @@ const primary =
   "rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50";
 
 /** The Account tab of Settings: profile, display name, password, Puter link and sign out. */
-export function AccountSettings({ onToast, afterDetails }: AccountSettingsProps) {
+/** One line about the plan, with a way into Settings > Billing. Hidden while plans are off and the person has no Pro. */
+function PlanSummary({ onOpenBilling }: { onOpenBilling?: () => void }) {
+  const cfg = useBillingConfig();
+  const sub = useSubscription();
+  if (!onOpenBilling || (!cfg?.enabled && !sub)) return null;
+  return (
+    <section>
+      <h3 className={heading}>Plan</h3>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4">
+        <div>
+          <p className="text-sm font-semibold text-ink">{sub ? "Record Lab Pro" : "Free plan"}</p>
+          <p className="mt-0.5 text-xs text-ink-soft">
+            {sub ? `Unlimited cloud records until ${sub.expiresAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}.` : `Up to ${cfg?.freeLimit} records in the cloud.`}
+          </p>
+        </div>
+        <button type="button" onClick={onOpenBilling} className={secondary}>
+          {sub ? "Manage plan" : "Upgrade or redeem a code"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function AccountSettings({ onToast, afterDetails, onOpenBilling }: AccountSettingsProps) {
   const user = useAuthUser();
   const [authOpen, setAuthOpen] = useState(false);
   const [name, setName] = useState<string | null>(null);
@@ -153,7 +180,10 @@ export function AccountSettings({ onToast, afterDetails }: AccountSettingsProps)
           <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-soft font-serif text-xl font-bold text-accent-ink">{initial}</span>
         )}
         <div className="min-w-0">
-          <p className="truncate font-serif text-lg font-bold text-ink">{displayName || "Your account"}</p>
+          <p className="flex items-center gap-1.5 font-serif text-lg font-bold text-ink">
+            <span className="truncate">{displayName || "Your account"}</span>
+            <ProBadge size={20} />
+          </p>
           <p className="truncate text-sm text-ink-soft">{user.email}</p>
           <p className="mt-1 text-[11px] text-ink-soft/70">
             {providers.join(" · ")}
@@ -175,6 +205,8 @@ export function AccountSettings({ onToast, afterDetails }: AccountSettingsProps)
           </button>
         </form>
       </section>
+
+      <PlanSummary onOpenBilling={onOpenBilling} />
 
       {afterDetails}
 

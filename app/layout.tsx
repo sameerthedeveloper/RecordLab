@@ -5,6 +5,7 @@ import "./globals.css";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineBadge } from "@/components/OfflineBadge";
 import { ADSENSE_CLIENT } from "@/lib/ads";
+import { AdsLoader } from "@/components/AdsLoader";
 import { NamePrompt } from "@/components/NamePrompt";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 
@@ -102,16 +103,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               'try{var s=JSON.parse(localStorage.getItem("recordlab-settings-v1")||"{}");document.documentElement.dataset.ui=s.uiStyle==="classic"?"classic":"apple"}catch(e){document.documentElement.dataset.ui="apple"}',
           }}
         />
-        {/* Google AdSense: account verification meta tag and loader, both in <head>. */}
+        {/* Google AdSense: the account verification meta tag. The loader script is added by <AdsLoader /> (not for Pro). */}
         <meta name="google-adsense-account" content={ADSENSE_CLIENT} />
-        <script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-          crossOrigin="anonymous"
-        />
       </head>
       <body>
         {children}
+        <AdsLoader />
         <NamePrompt />
         <PwaRegister />
         <OfflineBadge />

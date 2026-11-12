@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Cloud, FilePlus2, Files, LayoutList, Play, ShieldCheck, TriangleAlert, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X } from "lucide-react";
+import { Cloud, FilePlus2, Files, LayoutList, Play, ShieldCheck, TriangleAlert, Share2, FolderOpen, ImagePlus, MoreHorizontal, Save, Settings, Pencil, Sparkles, TerminalSquare, X, Minus, Plus } from "lucide-react";
 import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { SheetSetup } from "./SheetSetup";
-import { isCustomLayout } from "@/lib/sections";
+import { imageOwner, isCustomLayout, MAX_PAIRS, pairCount, pairIds, pairTitles } from "@/lib/sections";
 import { AdSlot } from "./AdSlot";
 import { outputStatus, runnableSource } from "@/lib/runner/source";
 import type { Folder } from "@/lib/folderService";
@@ -19,10 +19,13 @@ interface RecordEditorPanelProps {
   watermark: WatermarkOptions;
   onFieldChange: <K extends keyof RecordState>(field: K, value: RecordState[K]) => void;
   onWatermarkChange: (next: WatermarkOptions) => void;
-  onImageUpload: (files: FileList) => void;
+  onImageUpload: (files: FileList, section?: string) => void;
   onRemoveImage: (id: number) => void;
   /** Adds a generated image (data URL); `clearText` also empties the plain output text. */
-  onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions) => void;
+  onAddOutputImage: (src: string, name: string, clearText: boolean, terminal: TerminalImageOptions, section?: string) => void;
+  /** Runs every program of a Code + output section and makes a screenshot of each output. */
+  onGenerateAll: (sectionId: string) => void;
+  generating: { id: string; done: number; total: number } | null;
   onUpdateOutputImage: (id: number, src: string, terminal: TerminalImageOptions) => void;
   onFormatChange: (format: RecordFormat) => void;
   onShare: () => void;
@@ -74,6 +77,8 @@ export function RecordEditorPanel({
   onImageUpload,
   onRemoveImage,
   onAddOutputImage,
+  onGenerateAll,
+  generating,
   onUpdateOutputImage,
   onFormatChange,
   onShare,
@@ -99,13 +104,33 @@ export function RecordEditorPanel({
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionId>("details");
-  const [terminalOpen, setTerminalOpen] = useState(false);
+  /** Which image area has its terminal-screenshot window open (the id of its output block). */
+  const [terminalFor, setTerminalFor] = useState<string | null>(null);
   const [newSubject, setNewSubject] = useState<string | null>(null);
   const [editingImage, setEditingImage] = useState<OutputImage | null>(null);
 
   const custom = isCustomLayout(record);
   const customSections = record.sections ?? [];
   const sectionValue = (id: string) => record.section_values?.[id] ?? "";
+  /** Sets how many program + output pairs a Code + output section holds; asks first when removing a pair that has content. */
+  const setPairs = (id: string, next: number) => {
+    const def = customSections.find((x) => x.id === id);
+    if (!def) return;
+    const count = pairCount(def);
+    const n = Math.min(MAX_PAIRS, Math.max(1, next));
+    if (n === count) return;
+    if (n < count) {
+      const last = pairIds(id, count - 1);
+      const hasContent = Boolean(sectionValue(last.code).trim() || sectionValue(last.out).trim());
+      if (hasContent && !window.confirm(`Remove program ${count}? What you typed in it will be deleted.`)) return;
+      const values = { ...(record.section_values ?? {}) };
+      delete values[last.code];
+      delete values[last.out];
+      onFieldChange("section_values", values);
+      onFieldChange("output_images", record.output_images.filter((img) => img.section !== last.out));
+    }
+    onFieldChange("sections", customSections.map((x) => (x.id === id ? { ...x, pairs: n } : x)));
+  };
   const setSectionValue = (id: string, v: string) => onFieldChange("section_values", { ...(record.section_values ?? {}), [id]: v });
 
   // Section rail: the original six, or this record's own sections, always bracketed by Details and the closing block.
@@ -122,7 +147,16 @@ export function RecordEditorPanel({
     result: Boolean(record.result.trim()),
     ...(custom
       ? Object.fromEntries(
-          customSections.map((c) => [c.id, c.kind === "lines" ? true : Boolean(sectionValue(c.id).trim() || (c.kind === "output" && record.output_images.length))])
+          customSections.map((c) => [
+            c.id,
+            c.kind === "lines"
+              ? true
+              : c.kind === "codeoutput"
+                ? Array.from({ length: pairCount(c) }, (_, i) => pairIds(c.id, i)).every(
+                    (ids) => sectionValue(ids.code).trim() && (sectionValue(ids.out).trim() || record.output_images.some((img) => imageOwner(record, img) === ids.out))
+                  )
+                : Boolean(sectionValue(c.id).trim() || (c.kind === "output" && record.output_images.length)),
+          ])
         )
       : {
           aim: Boolean(record.aim.trim()),
@@ -189,27 +223,17 @@ export function RecordEditorPanel({
     );
   };
 
-  /** The text + images section: the fixed Output of the programming layout, or any custom section of that kind. */
-  const renderOutputSection = (o: { id: string; title: string; index: string; text: string; onText: (v: string) => void; textLabel: string; placeholder: string; inputId: string; imagesInputId: string }) => (
-<EditorSection id={o.id} title={o.title} index={o.index} filled={Boolean(o.text.trim() || record.output_images.length)}>
-            {renderRunBar()}
-            <label htmlFor={o.inputId} className={labelClass}>
-              {o.textLabel}
-            </label>
-            <AutoTextarea
-              id={o.inputId}
-              minRows={3}
-              placeholder={o.placeholder}
-              value={o.text}
-              onChange={o.onText}
-            />
-
+  /** Upload / terminal-screenshot controls and the thumbnails; the image pool is shared by the whole record. */
+  const renderImagesBlock = (imagesInputId: string, terminalText: string, tag: string | undefined, code: string) => {
+    const shownImages = tag === undefined ? record.output_images : record.output_images.filter((img) => imageOwner(record, img) === tag);
+    return (
+          <>
             <div className="image-upload-area mt-2">
               <button
                 type="button"
                 onClick={() => {
                   setEditingImage(null);
-                  setTerminalOpen(true);
+                  setTerminalFor(tag ?? "");
                 }}
                 className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-ink p-2.5 text-xs font-semibold text-paper transition-colors hover:bg-ink/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
@@ -217,26 +241,26 @@ export function RecordEditorPanel({
                 <span>Make terminal screenshot from this text</span>
               </button>
               <label
-                htmlFor={o.imagesInputId}
+                htmlFor={imagesInputId}
                 className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-[#fdfcf8] p-2.5 text-xs font-semibold text-ink-soft transition-all hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent-ink"
               >
                 <ImagePlus className="h-4 w-4" strokeWidth={2} />
                 <span>Add screenshots or diagrams</span>
                 <input
-                  id={o.imagesInputId}
+                  id={imagesInputId}
                   type="file"
                   accept="image/*"
                   multiple
                   className="hidden"
                   onChange={(e) => {
-                    if (e.target.files) onImageUpload(e.target.files);
+                    if (e.target.files) onImageUpload(e.target.files, tag);
                     e.target.value = "";
                   }}
                 />
               </label>
 
               <div className="uploaded-images mt-2.5">
-                {record.output_images.map((image: OutputImage) => (
+                {shownImages.map((image: OutputImage) => (
                   <div className="uploaded-image-card" key={image.id}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={image.src} alt={image.name} />
@@ -248,7 +272,7 @@ export function RecordEditorPanel({
                         title="Edit terminal screenshot"
                         onClick={() => {
                           setEditingImage(image);
-                          setTerminalOpen(true);
+                          setTerminalFor(tag ?? "");
                         }}
                       >
                         <Pencil className="h-3.5 w-3.5" strokeWidth={2.25} />
@@ -267,16 +291,36 @@ export function RecordEditorPanel({
               </div>
             </div>
             <TerminalImageModal
-              open={terminalOpen}
-              onClose={() => setTerminalOpen(false)}
-              initialOutput={o.text}
+              open={terminalFor === (tag ?? "")}
+              onClose={() => setTerminalFor(null)}
+              initialOutput={terminalText}
               editing={editingImage}
-              onAdd={onAddOutputImage}
+              onAdd={(src, name, clear, terminal) => onAddOutputImage(src, name, clear, terminal, tag)}
               onUpdate={onUpdateOutputImage}
-              code={runnableSource(record)}
+              code={code}
               stdin={record.program_input ?? ""}
               onInputChange={(v) => onFieldChange("program_input", v)}
             />
+          </>
+    );
+  };
+
+  /** The text + images section: the fixed Output of the programming layout, or any custom section of that kind. */
+  const renderOutputSection = (o: { id: string; title: string; index: string; text: string; onText: (v: string) => void; textLabel: string; placeholder: string; inputId: string; imagesInputId: string }) => (
+<EditorSection key={o.id} id={o.id} title={o.title} index={o.index} filled={Boolean(o.text.trim() || (custom ? record.output_images.some((img) => imageOwner(record, img) === o.id) : record.output_images.length))}>
+            {renderRunBar()}
+            <label htmlFor={o.inputId} className={labelClass}>
+              {o.textLabel}
+            </label>
+            <AutoTextarea
+              id={o.inputId}
+              minRows={3}
+              placeholder={o.placeholder}
+              value={o.text}
+              onChange={o.onText}
+            />
+
+            {renderImagesBlock(o.imagesInputId, o.text, custom ? o.id : undefined, runnableSource(record))}
           </EditorSection>
   );
 
@@ -803,6 +847,85 @@ export function RecordEditorPanel({
                   inputId: `in-${c.id}`,
                   imagesInputId: `img-${c.id}`,
                 });
+              }
+              if (c.kind === "codeoutput") {
+                const count = pairCount(c);
+                return (
+                  <EditorSection key={c.id} id={c.id} title={c.title} index={index} filled={filled[c.id]}>
+                    <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-paper/60 p-2.5">
+                      <button
+                        type="button"
+                        onClick={() => onGenerateAll(c.id)}
+                        disabled={Boolean(generating) || !Array.from({ length: count }, (_, i) => pairIds(c.id, i)).some((ids) => sectionValue(ids.code).trim())}
+                        title="Run every program and make a terminal screenshot of each output"
+                        className="ui-primary flex min-h-10 shrink-0 items-center gap-1.5 px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
+                      >
+                        <Play className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        {generating?.id === c.id ? `Running ${Math.min(generating.done + 1, generating.total)} of ${generating.total}…` : count > 1 ? `Generate output for all ${count} programs` : "Generate output"}
+                      </button>
+                      <p className="min-w-0 flex-1 text-[11px] leading-snug text-ink-soft/75">Runs each program and puts its output screenshot right under it.</p>
+                    </div>
+                    <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-line bg-paper/60 px-3 py-2">
+                      <span id={`pairs-${c.id}`} className="text-xs font-semibold text-ink-soft">
+                        Programs in this section
+                      </span>
+                      <div role="group" aria-labelledby={`pairs-${c.id}`} className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label="Remove last program"
+                          disabled={count <= 1}
+                          onClick={() => setPairs(c.id, count - 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-ink transition-colors hover:bg-accent-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                        >
+                          <Minus className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                        <span className="w-8 text-center text-sm font-semibold tabular-nums text-ink" aria-live="polite">
+                          {count}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="Add a program"
+                          disabled={count >= MAX_PAIRS}
+                          onClick={() => setPairs(c.id, count + 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-ink transition-colors hover:bg-accent-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                        >
+                          <Plus className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                      </div>
+                    </div>
+                    {Array.from({ length: count }, (_, i) => {
+                      const ids = pairIds(c.id, i);
+                      const t = pairTitles(c.title, count, i);
+                      return (
+                        <div key={ids.code} className={i > 0 ? "mt-4 border-t border-line pt-4" : ""}>
+                          <label htmlFor={`in-${ids.code}`} className={labelClass}>
+                            {t.code}
+                          </label>
+                          <AutoTextarea
+                            id={`in-${ids.code}`}
+                            code
+                            minRows={6}
+                            maxRows={24}
+                            placeholder="Type or paste. Spacing is kept."
+                            value={sectionValue(ids.code)}
+                            onChange={(v) => setSectionValue(ids.code, v)}
+                          />
+                          <label htmlFor={`in-${ids.out}`} className={`${labelClass} mt-3`}>
+                            {t.out}
+                          </label>
+                          <AutoTextarea
+                            id={`in-${ids.out}`}
+                            minRows={3}
+                            placeholder="Paste what the program printed. Optional."
+                            value={sectionValue(ids.out)}
+                            onChange={(v) => setSectionValue(ids.out, v)}
+                          />
+                          {renderImagesBlock(`img-${ids.out}`, sectionValue(ids.out), ids.out, sectionValue(ids.code))}
+                        </div>
+                      );
+                    })}
+                  </EditorSection>
+                );
               }
               if (c.kind === "lines") {
                 return (

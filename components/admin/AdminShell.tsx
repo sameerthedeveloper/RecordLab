@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FileText, GraduationCap, LayoutDashboard, Loader2, Mail, RefreshCw, ShieldCheck, Sparkles, UserCheck, Users } from "lucide-react";
+import { ArrowLeft, FileText, GraduationCap, LayoutDashboard, Loader2, Mail, Wallet, RefreshCw, ShieldCheck, Sparkles, UserCheck, Users } from "lucide-react";
 import { signOutUser } from "@/lib/authService";
 import { ago } from "@/lib/adminFormat";
 import { PanelFrame, type PanelNavItem } from "../PanelFrame";
@@ -14,6 +14,7 @@ const TABS = [
   { href: "/admin/records", label: "Records", icon: FileText, count: "records" },
   { href: "/admin/colleges", label: "Colleges", icon: GraduationCap, count: "collegesNamed" },
   { href: "/admin/faculty", label: "Faculty", icon: UserCheck, count: null },
+  { href: "/admin/billing", label: "Billing", icon: Wallet, count: null },
   { href: "/admin/ai", label: "AI", icon: Sparkles, count: null },
   { href: "/admin/mail", label: "Send mail", icon: Mail, count: null },
   { href: "/admin/admins", label: "Admins", icon: ShieldCheck, count: "adminCount" },

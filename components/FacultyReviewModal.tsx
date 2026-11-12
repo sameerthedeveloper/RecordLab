@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, UserCheck } from "lucide-react";
 import type { User } from "firebase/auth";
+import { AssignedExperiments, exerciseNumbers } from "./AssignedExperiments";
 import { Modal, modalButton } from "./Modal";
 import { findClass, submitSubject, useMySubmission, withdrawSubmission, type ClassRow } from "@/lib/facultyService";
 import type { CloudDocument } from "@/lib/firestoreService";
@@ -77,18 +78,33 @@ export function FacultyReviewModal({ open, onClose, user, subjectId, subjectName
     }
   }
 
+  /** Links this subject to the class by its code. Handing in is a separate step. */
   async function join() {
     setBusy(true);
     setError("");
     try {
       const found = await findClass(typed);
       if (!found) return setError("No class has that code. Check it with your faculty.");
-      await submit(found);
+      try {
+        localStorage.setItem(key(subjectId), found.code);
+      } catch {}
+      setCode(found.code);
+      setCls(found);
+      setTyped("");
+      onToast(`Joined ${found.subject}.`);
     } catch {
-      setError("Couldn't look up that code. Try again.");
+      setError("Couldn't look up that code. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
+  }
+
+  function leave() {
+    try {
+      localStorage.removeItem(key(subjectId));
+    } catch {}
+    setCode(null);
+    setCls(null);
   }
 
   async function withdraw() {
@@ -126,6 +142,7 @@ export function FacultyReviewModal({ open, onClose, user, subjectId, subjectName
     >
       {sub && cls ? (
         <div className="space-y-4">
+          <AssignedExperiments experiments={cls.experiments} doneNumbers={exerciseNumbers(documents)} />
           <div className="rounded-xl border border-line bg-white p-4">
             <p className="text-sm text-ink-soft">
               {cls.subject}
@@ -154,6 +171,26 @@ export function FacultyReviewModal({ open, onClose, user, subjectId, subjectName
             </button>
           </div>
         </div>
+      ) : cls && sub === null ? (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-line bg-white p-4">
+            <p className="font-serif text-lg font-bold text-ink">{cls.subject}</p>
+            <p className="mt-0.5 text-sm text-ink-soft">
+              {cls.facultyName}
+              {cls.section ? ` · ${cls.section}` : ""}
+            </p>
+          </div>
+          <AssignedExperiments experiments={cls.experiments} doneNumbers={exerciseNumbers(documents)} />
+          {documents.length === 0 && <p className="text-xs text-ink-soft">Add at least one record to this subject, then hand it in.</p>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" disabled={busy || documents.length === 0} onClick={() => void submit(cls)} className={`${modalButton.primary} flex items-center gap-2`}>
+              {busy && <Loader2 className="h-4 w-4 animate-spin" />} Hand in subject
+            </button>
+            <button type="button" disabled={busy} onClick={leave} className={modalButton.secondary}>
+              Use a different code
+            </button>
+          </div>
+        </div>
       ) : (
         <form
           className="space-y-3"
@@ -166,13 +203,10 @@ export function FacultyReviewModal({ open, onClose, user, subjectId, subjectName
             <span className="mb-1 block text-xs font-semibold text-ink-soft">Class code from your faculty</span>
             <input value={typed} onChange={(e) => setTyped(e.target.value)} maxLength={8} placeholder="K7M2QX" className={field} autoComplete="off" spellCheck={false} />
           </label>
-          <p className="text-xs text-ink-soft">
-            Your faculty will see the {documents.length} {documents.length === 1 ? "record" : "records"} in this subject, and nothing else. You can take it back any time.
-          </p>
-          <button type="submit" disabled={busy || typed.trim().length < 4 || documents.length === 0} className={`${modalButton.primary} flex items-center gap-2`}>
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Hand in subject
+          <p className="text-xs text-ink-soft">Joining shows the experiments your faculty assigned. Nothing is shared until you hand the subject in.</p>
+          <button type="submit" disabled={busy || typed.trim().length < 4} className={`${modalButton.primary} flex items-center gap-2`}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Join class
           </button>
-          {documents.length === 0 && <p className="text-xs text-ink-soft">Add at least one record to this subject first.</p>}
         </form>
       )}
       {error && (

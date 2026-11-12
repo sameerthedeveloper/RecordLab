@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, ShieldCheck, Sparkles, Stamp, User as UserIcon } from "lucide-react";
+import { CreditCard, FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, ShieldCheck, Sparkles, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
 import { AdminSettings } from "./AdminSettings";
@@ -9,6 +9,7 @@ import { AiSettings } from "./AiSettings";
 import { useAdminAccess } from "@/lib/adminService";
 import { CollegeInfo } from "./CollegeInfo";
 import { AccountSettings } from "./AccountSettings";
+import { SubscriptionPanel } from "./SubscriptionPanel";
 import { RecordFormatPicker } from "./RecordFormatPicker";
 import { PageBorderControls } from "./PageBorderControls";
 import { InstallAppSection } from "./InstallAppSection";
@@ -32,10 +33,11 @@ const inputClass =
   "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
-type Tab = "admin" | "ai" | "account" | "appearance" | "record" | "sections" | "subjects" | "heading" | "watermark";
+type Tab = "admin" | "ai" | "account" | "billing" | "appearance" | "record" | "sections" | "subjects" | "heading" | "watermark";
 
 const TABS: { id: Tab; label: string; icon: typeof Palette }[] = [
   { id: "account", label: "Account", icon: UserIcon },
+  { id: "billing", label: "Billing", icon: CreditCard },
   { id: "ai", label: "AI assistant", icon: Sparkles },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "record", label: "Record", icon: FileText },
@@ -122,9 +124,16 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           {tab === "admin" && isAdmin && <AdminSettings onNavigate={onClose} />}
           {tab === "ai" && <AiSettings value={draft.aiStart} onChange={(aiStart) => setDraft({ ...draft, aiStart })} />}
+          {tab === "billing" && (
+            <section>
+              <h3 className="mb-3 font-serif text-sm font-bold text-ink">Subscription</h3>
+              <SubscriptionPanel onToast={onToast} />
+            </section>
+          )}
           {tab === "account" && (
             <AccountSettings
               onToast={onToast}
+              onOpenBilling={() => setTab("billing")}
               afterDetails={
                 <>
                 <CollegeInfo />
