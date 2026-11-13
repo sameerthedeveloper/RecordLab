@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownAZ,
+  ChevronLeft,
   Download,
   ListChecks,
   X,
@@ -433,7 +434,7 @@ export function DashboardModal({
       type="button"
       onClick={() => setSection(id)}
       aria-current={section === id ? "page" : undefined}
-      className={`flex shrink-0 items-center gap-2.5 rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+      className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors max-md:min-h-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
         section === id ? "bg-accent-soft text-accent-ink" : "text-ink-soft hover:bg-ink/5"
       }`}
     >
@@ -513,7 +514,7 @@ export function DashboardModal({
         {/* Sidebar */}
         <nav
           aria-label="File sections"
-          className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-3 py-2 md:w-56 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3"
+          className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-line px-3 py-2 max-md:[mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-28px),transparent)] max-md:[scrollbar-width:none] md:w-56 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3"
         >
           <button
             type="button"
@@ -521,7 +522,7 @@ export function DashboardModal({
             className="flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-2xl border border-line bg-white px-4 py-2.5 text-[13px] font-semibold text-ink shadow-sm transition-colors hover:border-accent/40 hover:text-accent max-md:min-h-10 md:mb-1 md:py-3"
           >
             <FilePlus2 className="h-4 w-4 text-accent" strokeWidth={2} />
-            New record
+            New<span className="max-md:hidden"> record</span>
           </button>
           {navItem("all", "All files", FileText)}
           {navItem("recent", "Recent", Clock)}
@@ -626,18 +627,20 @@ export function DashboardModal({
         {/* Main */}
         <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-white">
           {user && (
-            <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-2.5 sm:px-5">
-              <div className="flex min-w-0 items-center gap-2">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2.5 px-4 py-3 sm:px-5 md:py-2.5">
+              <div className="flex min-w-0 items-center gap-1.5 max-md:w-full md:gap-2">
                 {activeFolder && (
                   <button
                     type="button"
                     onClick={() => setSection("all")}
-                    className="shrink-0 text-xs font-semibold text-ink-soft transition-colors hover:text-accent"
+                    aria-label="Back to all files"
+                    className="flex shrink-0 items-center text-xs font-semibold text-ink-soft transition-colors hover:text-accent max-md:-ml-1.5 max-md:h-9 max-md:w-9 max-md:justify-center max-md:rounded-full max-md:bg-ink/5"
                   >
-                    All files /
+                    <ChevronLeft className="h-4 w-4 md:hidden" strokeWidth={2.4} />
+                    <span className="max-md:hidden">All files /</span>
                   </button>
                 )}
-                <p className="truncate font-serif text-[15px] font-bold text-ink">
+                <p className="min-w-0 truncate font-serif text-base font-bold text-ink max-md:flex-1 md:text-[15px]">
                   {activeFolder ? activeFolder.name : section === "recent" ? "Recent" : "All files"}
                 </p>
                 {activeFolder && (
@@ -650,7 +653,7 @@ export function DashboardModal({
                         setSectionsDraft(effectiveLayout(activeFolder, loadSettings().defaultLayout));
                         setEditingSections(activeFolder);
                       }}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft max-md:h-9 max-md:w-9 transition-colors hover:bg-ink/10 hover:text-accent"
                     >
                       <LayoutList className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
@@ -659,7 +662,7 @@ export function DashboardModal({
                       aria-label="Hand in to faculty"
                       title="Hand in to faculty"
                       onClick={() => setFacultyOpen(true)}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft max-md:h-9 max-md:w-9 transition-colors hover:bg-ink/10 hover:text-accent"
                     >
                       <UserCheck className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
@@ -671,7 +674,7 @@ export function DashboardModal({
                         setFolderRenameValue(activeFolder.name);
                         setRenamingFolder(activeFolder);
                       }}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-ink/10 hover:text-accent"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft max-md:h-9 max-md:w-9 transition-colors hover:bg-ink/10 hover:text-accent"
                     >
                       <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
@@ -680,21 +683,21 @@ export function DashboardModal({
                       aria-label="Delete subject"
                       title="Delete subject"
                       onClick={() => setDeletingFolder(activeFolder)}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft max-md:h-9 max-md:w-9 transition-colors hover:bg-red-50 hover:text-red-600"
                     >
                       <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 max-md:w-full">
                 {total > 0 && (
                   <button
                     type="button"
                     aria-pressed={selectMode}
                     title="Select files to download as a zip"
                     onClick={() => (selectMode ? endSelect() : (setSelectMode(true), setSelectedId(null)))}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors max-md:min-h-9 ${
                       selectMode
                         ? "border-accent bg-accent-soft text-accent-ink"
                         : "border-line text-ink-soft hover:border-accent/40 hover:text-accent"
@@ -709,7 +712,7 @@ export function DashboardModal({
                   title="Change sort order"
                   aria-label={`Sorted by ${SORT_LABEL[sort]}. Change sort order`}
                   onClick={() => setSort(SORT_ORDER[(SORT_ORDER.indexOf(sort) + 1) % SORT_ORDER.length])}
-                  className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent"
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:border-accent/40 hover:text-accent max-md:min-h-9 max-md:flex-1 max-md:justify-center"
                 >
                   {sort === "modified" ? (
                     <Clock className="h-3.5 w-3.5" strokeWidth={2} />
@@ -721,7 +724,7 @@ export function DashboardModal({
                   {SORT_LABEL[sort]}
                 </button>
                 <div
-                  className="flex overflow-hidden rounded-full border border-line"
+                  className="flex overflow-hidden rounded-full border border-line max-md:ml-auto"
                   role="group"
                   aria-label="View"
                 >
@@ -734,7 +737,7 @@ export function DashboardModal({
                         aria-pressed={view === v}
                         aria-label={v === "grid" ? "Grid view" : "List view"}
                         onClick={() => changeView(v)}
-                        className={`px-2.5 py-1.5 transition-colors ${
+                        className={`px-2.5 py-1.5 transition-colors max-md:min-h-9 max-md:px-3 ${
                           view === v ? "bg-accent-soft text-accent-ink" : "text-ink-soft hover:bg-ink/5"
                         }`}
                       >
