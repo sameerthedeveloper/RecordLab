@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Check, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Check, Copy, Share2 } from "lucide-react";
 import { buildLabRecordPrompt, type AiContext } from "@/lib/aiAssistant";
 
 interface CopyPromptTabProps {
@@ -36,6 +36,12 @@ export function CopyPromptTab({
   context,
 }: CopyPromptTabProps) {
   const [copied, setCopied] = useState(false);
+  // Phones get the system share sheet, so the prompt goes straight into ChatGPT, Claude, Gemini and so on.
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => {
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+    setCanShare(touch && typeof navigator.share === "function");
+  }, []);
   const programming = !context?.layout;
   const promptText = buildLabRecordPrompt({
     experimentTitle: title,
@@ -45,12 +51,28 @@ export function CopyPromptTab({
     context,
   });
 
-  async function handleCopy() {
+  function ready(): boolean {
     onError("");
     if (!title.trim() || (programming && !lang.trim()) || !requirement.trim()) {
       onError(programming ? "Please fill in Experiment Title, Programming Language, and Program Requirement before copying prompt." : "Please fill in the Experiment Title and what the experiment covers before copying the prompt.");
-      return;
+      return false;
     }
+    return true;
+  }
+
+  async function handleShare() {
+    if (!ready()) return;
+    try {
+      await navigator.share({ title: `Lab record: ${title.trim()}`, text: promptText });
+    } catch (err) {
+      // Closing the sheet is not an error; anything else falls back to copying.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      await handleCopy();
+    }
+  }
+
+  async function handleCopy() {
+    if (!ready()) return;
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -164,18 +186,30 @@ export function CopyPromptTab({
         </div>
       </details>
 
-      <div className="pt-2 flex justify-end">
+      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+        {canShare && (
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-accent bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
+          >
+            <Share2 className="h-4 w-4" strokeWidth={2.2} />
+            <span>Send to ChatGPT, Claude, Gemini…</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={handleCopy}
           className={`rounded-xl border px-4 py-2.5 text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2 w-full sm:w-auto ${
             copied
               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-              : "bg-accent text-white border-accent hover:bg-accent-hover"
-          }`}
+              : canShare
+                ? "border-line bg-white text-ink-soft hover:border-accent/40 hover:text-accent"
+                : "bg-accent text-white border-accent hover:bg-accent-hover"
+          } ${canShare ? "min-h-11" : ""}`}
         >
           {copied ? <Check className="h-4 w-4" strokeWidth={2.5} /> : <Copy className="h-4 w-4" strokeWidth={2} />}
-          <span>{copied ? "Copied to Clipboard!" : "Copy Prefilled Prompt"}</span>
+          <span>{copied ? "Copied to Clipboard!" : canShare ? "Just copy it" : "Copy Prefilled Prompt"}</span>
         </button>
       </div>
     </div>

@@ -256,7 +256,7 @@ export function PreviewPanel({
       <div
         role="toolbar"
         aria-label="Preview controls"
-        className="liquid-glass pointer-events-auto absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 max-md:bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] items-center gap-0.5 rounded-full p-1"
+        className="liquid-glass pointer-events-auto absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 max-md:bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] items-center gap-0.5 rounded-full p-1"
       >
         <button type="button" aria-label="Previous page" title="Previous page" disabled={current <= 0 || pageCount < 2} onClick={() => goToPage(current - 1)} className={toolBtn}>
           <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
