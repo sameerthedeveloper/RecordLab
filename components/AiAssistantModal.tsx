@@ -133,6 +133,7 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
             onCustomChange={setCustom}
             onError={setError}
             context={context}
+            onGoImport={() => switchTab("import")}
           />
         )}
 

@@ -15,13 +15,16 @@ interface CopyPromptTabProps {
   onCustomChange: (v: string) => void;
   onError: (msg: string) => void;
   context?: AiContext;
+  /** Jumps to the Paste & Import tab, offered once the prompt is copied. */
+  onGoImport?: () => void;
 }
 
-const inputClass =
-  "w-full rounded-xl border border-line p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
-const textareaClass =
-  "w-full resize-none rounded-xl border border-line p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
-const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
+const fieldBase =
+  "w-full rounded-xl border bg-white p-3 text-sm text-ink outline-none placeholder:text-ink-soft/45 transition-colors focus:ring-2";
+const fieldOk = "border-line hover:border-accent/40 focus:border-accent focus:ring-accent/15";
+const fieldBad = "border-red-300 bg-red-50/40 focus:border-red-400 focus:ring-red-200/60";
+const labelClass = "mb-1.5 block text-[13px] font-semibold text-ink";
+const hintClass = "mt-1.5 text-xs text-ink-soft/70";
 
 export function CopyPromptTab({
   title,
@@ -34,8 +37,11 @@ export function CopyPromptTab({
   onCustomChange,
   onError,
   context,
+  onGoImport,
 }: CopyPromptTabProps) {
   const [copied, setCopied] = useState(false);
+  // Set after a copy attempt with missing fields, so only then do empty required fields turn red.
+  const [tried, setTried] = useState(false);
   // Phones get the system share sheet, so the prompt goes straight into ChatGPT, Claude, Gemini and so on.
   const [canShare, setCanShare] = useState(false);
   useEffect(() => {
@@ -51,9 +57,16 @@ export function CopyPromptTab({
     context,
   });
 
+  const missingTitle = tried && !title.trim();
+  const missingLang = tried && programming && !lang.trim();
+  const missingReq = tried && !requirement.trim();
+  const sectionCount = context?.layout ? context.layout.filter((s) => s.kind !== "lines").length : 0;
+  const promptWords = promptText.trim().split(/\s+/).length;
+
   function ready(): boolean {
     onError("");
     if (!title.trim() || (programming && !lang.trim()) || !requirement.trim()) {
+      setTried(true);
       onError(programming ? "Please fill in Experiment Title, Programming Language, and Program Requirement before copying prompt." : "Please fill in the Experiment Title and what the experiment covers before copying the prompt.");
       return false;
     }
@@ -86,7 +99,7 @@ export function CopyPromptTab({
         document.body.removeChild(tempArea);
       }
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2500);
+      window.setTimeout(() => setCopied(false), 6000);
     } catch {
       onError("Failed to copy automatically. You can copy the prompt from the preview box below.");
     }
@@ -95,20 +108,18 @@ export function CopyPromptTab({
   return (
     <div className="space-y-3">
       {context?.department.trim() && (
-        <p className="rounded-lg bg-accent-soft/50 px-2.5 py-1.5 text-xs font-semibold text-accent-ink">
-          Written for {context.department.trim()}
-          {context.layout ? `, using this record's ${context.layout.filter((s) => s.kind !== "lines").length} sections` : ""}.
+        <p className="rounded-xl bg-accent-soft/50 px-3 py-2 text-xs font-semibold text-accent-ink">
+          Tailored to {context.department.trim()}
+          {context.layout ? ` and the ${sectionCount} ${sectionCount === 1 ? "section" : "sections"} in this record` : ""}.
         </p>
       )}
-      <p className="text-xs text-ink-soft/80 leading-relaxed">
-        Enter experiment details to create a prefilled prompt requesting the LLM to output content inside structured
-        HTML tags (
-        <code className="bg-accent-soft/60 px-1 py-0.5 rounded text-accent-ink font-mono">&lt;aim&gt;</code>,{" "}
-        <code className="bg-accent-soft/60 px-1 py-0.5 rounded text-accent-ink font-mono">&lt;algorithm&gt;</code>,{" "}
-        <code className="bg-accent-soft/60 px-1 py-0.5 rounded text-accent-ink font-mono">&lt;sourcecode&gt;</code>).
+      <p className="text-[13px] leading-relaxed text-ink-soft">
+        Fill in the experiment, copy the prompt into any AI chat, then bring the answer back through{" "}
+        <strong className="font-semibold text-ink">Paste &amp; Import</strong>. The AI replies in tagged blocks such as{" "}
+        <code className="rounded bg-accent-soft/60 px-1 py-0.5 font-mono text-[12px] text-accent-ink">&lt;aim&gt;</code> so each part lands in the right section.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <label htmlFor="aiTitleInput" className={labelClass}>
             Experiment Title <span className="text-red-500 font-semibold">*</span>
@@ -117,7 +128,9 @@ export function CopyPromptTab({
             id="aiTitleInput"
             type="text"
             placeholder="Example: Binary Search Tree"
-            className={inputClass}
+            className={`${fieldBase} ${missingTitle ? fieldBad : fieldOk}`}
+            aria-invalid={missingTitle}
+            aria-required="true"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
           />
@@ -139,7 +152,9 @@ export function CopyPromptTab({
             id="aiLangInput"
             type="text"
             placeholder={programming ? "Example: Python / C++" : "Example: Ammeter, voltmeter, 100 Ω resistor"}
-            className={inputClass}
+            className={`${fieldBase} ${missingLang ? fieldBad : fieldOk}`}
+            aria-invalid={missingLang}
+            aria-required={programming}
             value={lang}
             onChange={(e) => onLangChange(e.target.value)}
           />
@@ -152,9 +167,11 @@ export function CopyPromptTab({
         </label>
         <textarea
           id="aiReqInput"
-          rows={2}
+          rows={3}
           placeholder={programming ? "Describe what the program should implement (e.g. tree insertion, deletion, and in-order traversal)..." : "Describe the experiment (e.g. verify Ohm's law by plotting V against I for a fixed resistor)..."}
-          className={textareaClass}
+          className={`${fieldBase} resize-none ${missingReq ? fieldBad : fieldOk}`}
+          aria-invalid={missingReq}
+          aria-required="true"
           value={requirement}
           onChange={(e) => onRequirementChange(e.target.value)}
         />
@@ -168,30 +185,42 @@ export function CopyPromptTab({
           id="aiCustomInput"
           rows={2}
           placeholder="Example: Keep algorithm in Step 1 format, generate viva questions..."
-          className={textareaClass}
+          className={`${fieldBase} resize-none ${fieldOk}`}
           value={custom}
           onChange={(e) => onCustomChange(e.target.value)}
         />
+        <p className={hintClass}>Tell the AI how to write it: length, format, extra sections.</p>
       </div>
 
-      <details className="rounded-xl border border-line bg-white">
-        <summary className="flex cursor-pointer items-center justify-between p-3 select-none text-xs font-bold text-ink uppercase tracking-wider">
-          <span>VIEW PREFILLED PROMPT PREVIEW</span>
-          <ChevronDown className="dropdown-icon h-4 w-4 text-ink-soft/50" strokeWidth={2.25} />
+      <details className="group rounded-xl border border-line bg-white">
+        <summary className="flex cursor-pointer select-none items-center justify-between gap-3 rounded-xl p-3 text-[13px] font-semibold text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          <span>
+            Preview the prompt <span className="font-normal text-ink-soft/70">({promptWords} words)</span>
+          </span>
+          <ChevronDown className="dropdown-icon h-4 w-4 text-ink-soft/50 transition-transform group-open:rotate-180" strokeWidth={2.25} />
         </summary>
         <div className="px-3 pb-3">
-          <pre className="text-xs font-mono whitespace-pre-wrap bg-[#faf7f0] p-3 rounded-xl border border-line text-ink max-h-44 overflow-y-auto leading-relaxed">
+          <pre className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl border border-line bg-[#faf7f0] p-3 font-mono text-xs leading-relaxed text-ink">
             {promptText}
           </pre>
         </div>
       </details>
 
-      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
+        {copied && onGoImport && (
+          <button
+            type="button"
+            onClick={onGoImport}
+            className="min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:mr-auto"
+          >
+            Got the answer? Paste &amp; Import
+          </button>
+        )}
         {canShare && (
           <button
             type="button"
             onClick={handleShare}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-accent bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-accent bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover sm:w-auto"
           >
             <Share2 className="h-4 w-4" strokeWidth={2.2} />
             <span>Send to ChatGPT, Claude, Gemini…</span>
@@ -200,16 +229,17 @@ export function CopyPromptTab({
         <button
           type="button"
           onClick={handleCopy}
-          className={`rounded-xl border px-4 py-2.5 text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2 w-full sm:w-auto ${
+          aria-live="polite"
+          className={`flex w-full items-center justify-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold shadow-sm transition-colors sm:w-auto ${
             copied
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
               : canShare
                 ? "border-line bg-white text-ink-soft hover:border-accent/40 hover:text-accent"
-                : "bg-accent text-white border-accent hover:bg-accent-hover"
-          } ${canShare ? "min-h-11" : ""}`}
+                : "border-accent bg-accent text-white hover:bg-accent-hover"
+          } ${canShare ? "min-h-11" : "min-h-12"}`}
         >
           {copied ? <Check className="h-4 w-4" strokeWidth={2.5} /> : <Copy className="h-4 w-4" strokeWidth={2} />}
-          <span>{copied ? "Copied to Clipboard!" : canShare ? "Just copy it" : "Copy Prefilled Prompt"}</span>
+          <span>{copied ? "Copied" : canShare ? "Just copy it" : "Copy prompt"}</span>
         </button>
       </div>
     </div>
