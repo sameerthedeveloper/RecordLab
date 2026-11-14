@@ -106,35 +106,47 @@ export function DirectLlmTab({
   const rateLimited = retryAfterMs > 0;
   const blocked = rateLimited;
 
+  const programming = !context?.layout;
+  const rows: { label: string; value: string; missing: boolean }[] = [
+    { label: "Title", value: title.trim(), missing: true },
+    ...(programming ? [{ label: "Language", value: lang.trim(), missing: true }] : lang.trim() ? [{ label: "Apparatus", value: lang.trim(), missing: false }] : []),
+    { label: programming ? "Program" : "Covers", value: requirement.trim(), missing: true },
+  ];
+
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-ink-soft/80 leading-relaxed">
-        Generate directly inside Record Lab. Your Record Lab sign-in is all you need, and a linked Puter account is used if you have one. Limited to{" "}
-        {MAX_REQUESTS_PER_WINDOW} requests per minute.
-      </p>
+    <div className="space-y-5">
+      <div>
+        <div className="divide-y divide-black/[0.07] overflow-hidden rounded-2xl bg-white shadow-[0_0_0_0.5px_rgba(0,0,0,0.1)]">
+          {rows.map((r) => (
+            <div key={r.label} className="flex items-baseline gap-3 px-4 py-3.5 text-[15px]">
+              <span className="w-28 shrink-0 text-ink">{r.label}</span>
+              <span className={`min-w-0 flex-1 truncate ${r.value ? "text-ink-soft" : "text-ink-soft/40"}`}>
+                {r.value || (r.missing ? "Fill in on Copy prompt" : "")}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="px-4 pt-1.5 text-xs leading-relaxed text-ink-soft/70">
+          Uses the details from Copy prompt. Your Record Lab sign-in is all you need, and a linked Puter account is used if you have one. Limit: {MAX_REQUESTS_PER_WINDOW} per minute.
+        </p>
+      </div>
 
       {rateLimited && (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
+        <div className="flex items-center gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-xs text-amber-800">
           <TimerReset className="h-4 w-4 shrink-0" strokeWidth={2} />
-          <span>Rate limit reached — try again in {Math.ceil(retryAfterMs / 1000)}s.</span>
+          <span>Rate limit reached. Try again in {Math.ceil(retryAfterMs / 1000)}s.</span>
         </div>
       )}
 
-      <div className="pt-2 flex justify-end">
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={generating || blocked}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50 sm:w-auto"
-        >
-          {generating ? (
-            <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.25} />
-          ) : (
-            <Sparkles className="h-4 w-4" strokeWidth={2.25} />
-          )}
-          <span>{generating ? "Generating Record..." : "Direct Generate"}</span>
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleGenerate}
+        disabled={generating || blocked}
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-accent px-5 text-[15px] font-semibold text-white shadow-[0_8px_20px_-10px_rgba(194,65,12,0.8)] transition hover:bg-accent-hover active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {generating ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.25} /> : <Sparkles className="h-4 w-4" strokeWidth={2.25} />}
+        <span>{generating ? "Writing your record…" : "Generate record"}</span>
+      </button>
 
       <ToastViewport toast={toast} />
     </div>
