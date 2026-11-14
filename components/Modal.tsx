@@ -35,6 +35,8 @@ interface ModalProps {
   footer?: React.ReactNode;
   bodyClassName?: string;
   role?: "dialog" | "alertdialog";
+  /** "sheet": iOS-style, centred title, no icon chip, hairline-free header, soft grey body behind white grouped cards. */
+  variant?: "default" | "sheet";
   children: React.ReactNode;
 }
 
@@ -57,8 +59,10 @@ export function Modal({
   footer,
   bodyClassName = "p-4 sm:p-5",
   role = "dialog",
+  variant = "default",
   children,
 }: ModalProps) {
+  const sheet = variant === "sheet";
   const id = useId();
   const shellRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -138,6 +142,24 @@ export function Modal({
         >
           <span className="h-1.5 w-10 rounded-full bg-ink/20" />
         </div>
+        {sheet ? (
+          <header className="relative flex shrink-0 items-center justify-center px-14 pb-3 pt-3 sm:pt-4">
+            <div className="min-w-0 text-center">
+              <h2 id={`${id}-title`} className="truncate text-[17px] font-semibold leading-tight tracking-[-0.01em] text-ink">
+                {title}
+              </h2>
+              {description && <p className="mt-0.5 truncate text-xs text-ink-soft/70">{description}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/[0.07] text-ink-soft transition-colors hover:bg-black/[0.12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent max-sm:h-9 max-sm:w-9"
+            >
+              <X className="h-4 w-4" strokeWidth={2.4} />
+            </button>
+          </header>
+        ) : (
         <header className="ui-modal-head flex shrink-0 items-center gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             {Icon && (
@@ -176,6 +198,7 @@ export function Modal({
             <X className="h-5 w-5" strokeWidth={2} />
           </button>
         </header>
+        )}
 
         <div className={`min-h-0 flex-1 overflow-y-auto ${bodyClassName}`}>{children}</div>
 

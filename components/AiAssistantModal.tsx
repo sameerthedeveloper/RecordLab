@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Copy, Sparkles, Upload, Zap } from "lucide-react";
-import { Modal, modalButton } from "./Modal";
+import { AlertCircle } from "lucide-react";
+import { Modal } from "./Modal";
 import { CopyPromptTab } from "./ai/CopyPromptTab";
 import { PasteImportTab } from "./ai/PasteImportTab";
 import { DirectLlmTab } from "./ai/DirectLlmTab";
@@ -64,48 +64,47 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
     return true;
   }
 
-  const tabButtonClass = (tab: AiTab) =>
-    `flex-1 rounded-lg py-2 px-3 text-center transition-all flex items-center justify-center gap-1.5 border ${
-      activeTab === tab
-        ? "bg-white font-semibold text-ink shadow-sm border-line"
-        : "font-medium text-ink-soft/70 hover:text-ink-soft border-transparent"
-    }`;
+  const tabs: { id: AiTab; label: string }[] = [
+    { id: "prompt", label: "Copy prompt" },
+    { id: "import", label: "Paste & import" },
+    ...(directOn ? [{ id: "direct" as AiTab, label: "Direct LLM" }] : []),
+  ];
+  const activeIndex = Math.max(0, tabs.findIndex((t) => t.id === activeTab));
 
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="AI prompt & import"
-      description="Copy a ready-made prompt, or paste the answer to fill the record"
-      icon={Sparkles}
+      variant="sheet"
       size="lg"
-      bodyClassName="p-4 sm:p-5"
-      footer={
-        <button type="button" onClick={onClose} className={modalButton.secondary}>
-          Close
-        </button>
-      }
+      bodyClassName="bg-black/[0.03] p-4 pb-6 sm:p-6 sm:pb-7"
     >
-      <div className="space-y-3.5">
-        <div className="mb-3.5 flex rounded-xl border border-line bg-[#faf7f0] p-1 text-xs font-medium gap-1">
-          <button type="button" className={tabButtonClass("prompt")} onClick={() => switchTab("prompt")}>
-            <Copy className="h-4 w-4" strokeWidth={2} />
-            <span>Copy Prompt</span>
-          </button>
-          <button type="button" className={tabButtonClass("import")} onClick={() => switchTab("import")}>
-            <Upload className="h-4 w-4" strokeWidth={2} />
-            <span>Paste &amp; Import</span>
-          </button>
-          {directOn && (
-            <button type="button" className={tabButtonClass("direct")} onClick={() => switchTab("direct")}>
-              <Zap className="h-4 w-4" strokeWidth={2} />
-              <span>Direct LLM</span>
+      <div className="space-y-5">
+        <div role="tablist" aria-label="AI assistant" className="relative grid auto-cols-fr grid-flow-col rounded-[10px] bg-black/[0.07] p-0.5">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0.5 left-0.5 rounded-[8px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.18),0_0_0_0.5px_rgba(0,0,0,0.04)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+            style={{ width: `calc((100% - 4px) / ${tabs.length})`, transform: `translateX(${activeIndex * 100}%)` }}
+          />
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === t.id}
+              onClick={() => switchTab(t.id)}
+              className={`relative z-10 min-h-9 rounded-[8px] px-2 text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                activeTab === t.id ? "font-semibold text-ink" : "font-medium text-ink-soft/80 hover:text-ink"
+              }`}
+            >
+              {t.label}
             </button>
-          )}
+          ))}
         </div>
 
         {!context?.layout && (
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line bg-white px-3.5 py-2.5 text-xs text-ink-soft">
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-white px-4 py-3 text-xs text-ink-soft shadow-[0_0_0_0.5px_rgba(0,0,0,0.1)]">
             <input type="checkbox" checked={runAfter} onChange={(e) => setRunAfter(e.target.checked)} className="mt-0.5 accent-[#c2410c]" />
             <span>
               <span className="font-semibold text-ink">Run the program after importing</span>
