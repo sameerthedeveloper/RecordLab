@@ -154,7 +154,7 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
 
   if (view === "files") {
     return (
-      <div className="app-canvas flex h-full w-full flex-col pb-[calc(env(safe-area-inset-bottom,0px)+82px)]">
+      <div className="app-canvas flex h-full w-full flex-col">
         <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-1 pt-[max(12px,env(safe-area-inset-top))]">
           <button
             type="button"

@@ -750,7 +750,7 @@ export function DashboardModal({
             </div>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5">
+          <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-5 ${embedded ? "max-md:pb-[calc(env(safe-area-inset-bottom,0px)+110px)]" : ""}`}>
             {!user && (
               <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                 <Cloud className="h-10 w-10 text-accent/60" strokeWidth={1.5} />

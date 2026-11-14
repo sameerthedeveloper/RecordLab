@@ -179,6 +179,7 @@ export function PreviewPanel({
               type="button"
               onClick={onSave}
               disabled={isSaving}
+              title="Downloads the file and saves the record to your cloud files"
               data-onboarding="save-button"
               className="ui-primary !rounded-none !shadow-none active:!scale-100 flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-5 py-2.5 text-[13px] max-md:min-h-11 max-md:text-sm font-semibold disabled:opacity-60"
             >
@@ -187,7 +188,7 @@ export function PreviewPanel({
               ) : (
                 <FileDown className="h-3.5 w-3.5" strokeWidth={2.5} />
               )}
-              <span>{isSaving ? "Generating..." : `Save ${FORMAT_LABELS[downloadFormat]}`}</span>
+              <span>{isSaving ? "Saving..." : `Save ${FORMAT_LABELS[downloadFormat]}`}</span>
             </button>
             <label className="sr-only" htmlFor="downloadFormatSelect">
               Download format

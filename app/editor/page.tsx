@@ -596,7 +596,8 @@ export default function Home() {
     track("new_record");
   }
 
-  async function handleSaveCloud() {
+  /** Saves (or updates) the cloud copy. Returns whether it worked; `quiet` skips the success toast. */
+  async function handleSaveCloud(quiet = false): Promise<boolean> {
     setIsSavingCloud(true);
     try {
       const payload = { version: 1, record, watermark };
@@ -604,25 +605,27 @@ export default function Home() {
       if (cloudDocId) {
         try {
           await updateDocument(cloudDocId, payload, title, cloudFolderId);
-          showToast("Cloud file updated.");
+          if (!quiet) showToast("Cloud file updated.");
           track("update_cloud");
-          return;
+          return true;
         } catch (error) {
           // File was deleted elsewhere: fall through and recreate it. Anything else is a real failure.
           if ((error as { code?: string })?.code !== "not-found") throw error;
         }
       }
       setCloudDocId(await saveDocument(payload, title, cloudFolderId));
-      showToast("Saved to cloud.");
+      if (!quiet) showToast("Saved to cloud.");
       track("save_cloud");
+      return true;
     } catch (error) {
       if (error instanceof RecordLimitError) {
         setUpgradeOpen(true);
-        return;
+        return false;
       }
       console.error("Cloud save failed:", error);
       const message = error instanceof Error ? error.message : "Unable to save to the cloud. Please try again.";
       showToast(message);
+      return false;
     } finally {
       setIsSavingCloud(false);
     }
@@ -789,11 +792,19 @@ export default function Home() {
     }
   }
 
-  function handleSave() {
+  /** Downloading always saves the record to the cloud first, so the file and the cloud copy never drift apart. */
+  async function handleSave() {
     if (!authUser) {
       setSaveAfterAuth(true);
       setAuthOpen(true);
-      showToast("Sign in to download your copy.");
+      showToast("Sign in to download your copy. It is saved to your cloud files too.");
+      return;
+    }
+    setIsSavingPdf(true);
+    const saved = await handleSaveCloud(true);
+    setIsSavingPdf(false);
+    if (!saved) {
+      showToast("Not downloaded: the record could not be saved to the cloud first.");
       return;
     }
     if (downloadFormat === "docx") {
@@ -907,7 +918,7 @@ export default function Home() {
           onOpenAiModal={() => setAiModalOpen(true)}
           onSaveWork={handleSaveWork}
           onLoadWork={handleLoadWork}
-          onSaveCloud={handleSaveCloud}
+          onSaveCloud={() => void handleSaveCloud()}
           onNewRecord={handleNewRecord}
           onRunCode={() => {
             setRunAuto(false);
