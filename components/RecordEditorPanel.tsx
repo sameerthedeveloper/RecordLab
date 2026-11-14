@@ -12,7 +12,7 @@ import { outputStatus, runnableSource } from "@/lib/runner/source";
 import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
-import { MANUAL_CALCULATION_LINES, type OutputImage, type RecordFormat, RecordState, WatermarkOptions } from "@/lib/types";
+import { MANUAL_CALCULATION_MAX_LINES, MANUAL_CALCULATION_MIN_LINES, MANUAL_CALCULATION_STEP, manualCalculationLines, type OutputImage, type RecordFormat, RecordState, WatermarkOptions } from "@/lib/types";
 
 interface RecordEditorPanelProps {
   record: RecordState;
@@ -173,6 +173,9 @@ export function RecordEditorPanel({
   );
   const doneCount = trackedIds.filter((s) => filled[s.id]).length;
   const layoutKey = SECTIONS.map((x) => x.id).join("|");
+  const manualLines = manualCalculationLines(record);
+  const setManualLines = (n: number) =>
+    onFieldChange("manual_calculation_lines", Math.min(MANUAL_CALCULATION_MAX_LINES, Math.max(MANUAL_CALCULATION_MIN_LINES, n)));
 
 
   /** Run button and the verified / sample status line at the top of the output section. */
@@ -684,7 +687,7 @@ export function RecordEditorPanel({
                         { id: "detailsReviewToggle", label: "Review questions", hint: "Questions and answers after the output", checked: record.review_questions_enabled, onToggle: (v: boolean) => onFieldChange("review_questions_enabled", v) },
                       ]
                     : []),
-                  { id: "detailsManualToggle", label: "Manual calculation", hint: `${MANUAL_CALCULATION_LINES} blank lines before Result`, checked: Boolean(record.manual_calculation_enabled), onToggle: (v: boolean) => onFieldChange("manual_calculation_enabled", v) },
+                  { id: "detailsManualToggle", label: "Manual calculation", hint: `${manualCalculationLines(record)} blank lines before Result`, checked: Boolean(record.manual_calculation_enabled), onToggle: (v: boolean) => onFieldChange("manual_calculation_enabled", v) },
                 ].map((t) => (
                   <label key={t.id} htmlFor={t.id} className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5">
                     <span className="min-w-0">
@@ -822,11 +825,43 @@ export function RecordEditorPanel({
               </label>
             }
           >
-            <p className="text-xs text-ink-soft/80">
-              {record.manual_calculation_enabled
-                ? `Leaves ${MANUAL_CALCULATION_LINES} blank lines before Result on the printed sheet, for working you write by hand.`
-                : `Turn on to leave ${MANUAL_CALCULATION_LINES} blank lines before Result for hand-written working.`}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="min-w-0 flex-1 text-xs text-ink-soft/80">
+                {record.manual_calculation_enabled
+                  ? `Leaves ${manualLines} blank lines before Result on the printed sheet, for working you write by hand.`
+                  : `Turn on to leave ${manualLines} blank lines before Result for hand-written working.`}
+              </p>
+              <div
+                role="group"
+                aria-label="Manual calculation size"
+                className={`inline-flex items-stretch overflow-hidden rounded-lg border border-gray-200 bg-white ${record.manual_calculation_enabled ? "" : "opacity-50"}`}
+              >
+                <button
+                  type="button"
+                  aria-label="Decrease manual calculation lines"
+                  disabled={!record.manual_calculation_enabled || manualLines <= MANUAL_CALCULATION_MIN_LINES}
+                  onClick={() => setManualLines(manualLines - MANUAL_CALCULATION_STEP)}
+                  className="flex h-8 w-8 items-center justify-center text-base text-ink-soft transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
+                >
+                  −
+                </button>
+                <output
+                  aria-live="polite"
+                  className="flex min-w-[4.5rem] items-center justify-center border-x border-gray-200 px-2 text-xs font-medium tabular-nums text-ink"
+                >
+                  {manualLines} lines
+                </output>
+                <button
+                  type="button"
+                  aria-label="Increase manual calculation lines"
+                  disabled={!record.manual_calculation_enabled || manualLines >= MANUAL_CALCULATION_MAX_LINES}
+                  onClick={() => setManualLines(manualLines + MANUAL_CALCULATION_STEP)}
+                  className="flex h-8 w-8 items-center justify-center text-base text-ink-soft transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           </EditorSection>
 
             </>
