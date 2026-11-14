@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Copy, Sparkles, Upload, Zap } from "lucide-react";
-import { Modal, modalButton } from "./Modal";
+import { AlertCircle } from "lucide-react";
+import { Modal } from "./Modal";
 import { CopyPromptTab } from "./ai/CopyPromptTab";
 import { PasteImportTab } from "./ai/PasteImportTab";
 import { DirectLlmTab } from "./ai/DirectLlmTab";
@@ -33,7 +33,6 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
   const [importText, setImportText] = useState("");
   const [error, setError] = useState("");
   const [runAfter, setRunAfter] = useState(false);
-  const swipe = useRef<{ x: number; y: number } | null>(null);
   const activeGenerationIdRef = useRef<string | null>(null);
 
   // Each time it opens, start on the tab chosen in Settings (Direct LLM only while an admin has it on).
@@ -44,7 +43,6 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
   if (!open) return null;
 
   function switchTab(tab: AiTab) {
-    if (tab !== activeTab) navigator.vibrate?.(8);
     setActiveTab(tab);
     setError("");
   }
@@ -66,10 +64,10 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
     return true;
   }
 
-  const tabs: { id: AiTab; label: string; icon: typeof Copy }[] = [
-    { id: "prompt", label: "Copy prompt", icon: Copy },
-    { id: "import", label: "Paste & import", icon: Upload },
-    ...(directOn ? [{ id: "direct" as const, label: "Direct LLM", icon: Zap }] : []),
+  const tabs: { id: AiTab; label: string }[] = [
+    { id: "prompt", label: "Copy prompt" },
+    { id: "import", label: "Paste & import" },
+    ...(directOn ? [{ id: "direct" as AiTab, label: "Direct LLM" }] : []),
   ];
   const activeIndex = Math.max(0, tabs.findIndex((t) => t.id === activeTab));
 
@@ -78,44 +76,35 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
       open={open}
       onClose={onClose}
       title="AI prompt & import"
-      description="Copy a ready-made prompt, or paste the answer to fill the record"
-      icon={Sparkles}
+      variant="sheet"
       size="lg"
-      iconClassName="!h-auto !w-auto !border-0 !bg-none !bg-transparent !shadow-none !text-accent"
-      footerClassName="max-sm:hidden"
-      bodyClassName="px-4 pb-0 pt-3 sm:p-5"
-      footer={
-        <button type="button" onClick={onClose} className={modalButton.secondary}>
-          Close
-        </button>
-      }
+      bodyClassName="bg-black/[0.03] p-4 pb-6 sm:p-6 sm:pb-7"
     >
-      <div className="space-y-3.5">
-        <div className="ai-seg relative flex rounded-xl bg-[var(--tint-strong)] p-0.5 text-xs max-sm:min-h-10" role="tablist">
+      <div className="space-y-5">
+        <div role="tablist" aria-label="AI assistant" className="relative grid auto-cols-fr grid-flow-col rounded-[10px] bg-black/[0.07] p-0.5">
           <span
             aria-hidden
-            className="ai-thumb absolute inset-y-0.5 left-0.5 rounded-[9px] bg-[var(--surface)] shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]"
+            className="pointer-events-none absolute inset-y-0.5 left-0.5 rounded-[8px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.18),0_0_0_0.5px_rgba(0,0,0,0.04)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
             style={{ width: `calc((100% - 4px) / ${tabs.length})`, transform: `translateX(${activeIndex * 100}%)` }}
           />
-          {tabs.map(({ id, label, icon: Icon }) => (
+          {tabs.map((t) => (
             <button
-              key={id}
+              key={t.id}
               type="button"
               role="tab"
-              aria-selected={activeTab === id}
-              onClick={() => switchTab(id)}
-              className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-[9px] px-3 py-1.5 transition-colors duration-200 ${
-                activeTab === id ? "font-semibold text-ink" : "font-medium text-ink-soft/70 hover:text-ink"
+              aria-selected={activeTab === t.id}
+              onClick={() => switchTab(t.id)}
+              className={`relative z-10 min-h-9 rounded-[8px] px-2 text-[13px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                activeTab === t.id ? "font-semibold text-ink" : "font-medium text-ink-soft/80 hover:text-ink"
               }`}
             >
-              <Icon className="h-4 w-4" strokeWidth={2} />
-              <span>{label}</span>
+              {t.label}
             </button>
           ))}
         </div>
 
         {!context?.layout && (
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line bg-white px-3.5 py-2.5 text-xs text-ink-soft">
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-white px-4 py-3 text-xs text-ink-soft shadow-[0_0_0_0.5px_rgba(0,0,0,0.1)]">
             <input type="checkbox" checked={runAfter} onChange={(e) => setRunAfter(e.target.checked)} className="mt-0.5 accent-[#c2410c]" />
             <span>
               <span className="font-semibold text-ink">Run the program after importing</span>
@@ -125,29 +114,12 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
         )}
 
         {error && (
-          <div role="alert" className="ai-err flex rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 items-center gap-2">
+          <div className="flex rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" strokeWidth={2} />
             <span>{error}</span>
           </div>
         )}
 
-        <div
-          key={activeTab}
-          className="ai-pane"
-          onTouchStart={(e) => {
-            swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-          }}
-          onTouchEnd={(e) => {
-            const from = swipe.current;
-            swipe.current = null;
-            if (!from || (e.target as HTMLElement).closest("input,textarea,pre,select")) return;
-            const dx = e.changedTouches[0].clientX - from.x;
-            const dy = e.changedTouches[0].clientY - from.y;
-            if (Math.abs(dx) < 70 || Math.abs(dy) > 40) return;
-            const next = tabs[activeIndex + (dx < 0 ? 1 : -1)];
-            if (next) switchTab(next.id);
-          }}
-        >
         {activeTab === "prompt" && (
           <CopyPromptTab
             title={title}
@@ -160,6 +132,7 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
             onCustomChange={setCustom}
             onError={setError}
             context={context}
+            onGoImport={() => switchTab("import")}
           />
         )}
 
@@ -189,7 +162,6 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
             context={context}
           />
         )}
-        </div>
       </div>
     </Modal>
   );

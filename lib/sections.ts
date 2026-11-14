@@ -1,5 +1,5 @@
 import type { OutputImage, RecordState } from "./types";
-import { MANUAL_CALCULATION_LINES } from "./types";
+import { MANUAL_CALCULATION_LINES, manualCalculationLines } from "./types";
 
 /**
  * What a section holds:
@@ -155,7 +155,7 @@ export function resolveSections(record: RecordState, forPrint = false): Resolved
     });
   }
   if (record.manual_calculation_enabled) {
-    out.push({ id: "manual_calculation", heading: "MANUAL CALCULATION:", kind: "lines", value: "", images: [], lines: MANUAL_CALCULATION_LINES });
+    out.push({ id: "manual_calculation", heading: "MANUAL CALCULATION:", kind: "lines", value: "", images: [], lines: manualCalculationLines(record) });
   }
   return out;
 }

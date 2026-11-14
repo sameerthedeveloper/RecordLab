@@ -165,6 +165,8 @@ export interface RecordState {
   review_questions_enabled: boolean;
   /** Blank hand-written working space (MANUAL_CALCULATION_LINES lines) before RESULT. Off unless set, so older records are unchanged. */
   manual_calculation_enabled?: boolean;
+  /** Number of blank lines in the manual calculation space. Defaults to MANUAL_CALCULATION_LINES. */
+  manual_calculation_lines?: number;
   /** Leave AIM and ALGORITHM off the printed/downloaded sheet (they stay saved) so they can be written by hand. On unless set. */
   hide_aim_algorithm?: boolean;
   /**
@@ -280,6 +282,16 @@ export function pageBorderCss(pb: Partial<PageBorder> | undefined): string {
 
 /** Lines of blank space the MANUAL CALCULATION section reserves on the sheet. */
 export const MANUAL_CALCULATION_LINES = 35;
+export const MANUAL_CALCULATION_MIN_LINES = 5;
+export const MANUAL_CALCULATION_MAX_LINES = 80;
+export const MANUAL_CALCULATION_STEP = 5;
+
+/** Lines of manual calculation space for a record, clamped to the allowed range. */
+export function manualCalculationLines(record: { manual_calculation_lines?: number }): number {
+  const n = Math.round(Number(record.manual_calculation_lines));
+  if (!Number.isFinite(n) || n <= 0) return MANUAL_CALCULATION_LINES;
+  return Math.min(MANUAL_CALCULATION_MAX_LINES, Math.max(MANUAL_CALCULATION_MIN_LINES, n));
+}
 
 export interface WatermarkOptions {
   font: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, Timestamp, where, writeBatch } from "firebase/firestore";
+import { collection, deleteField, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { getDb } from "./firebaseConfig";
 import { useAuthUser } from "./authService";
 import { dayKey } from "./usageStats";
@@ -49,6 +49,10 @@ export interface ProfileRow {
   providers: string[];
   createdAt: Date | null;
   lastSeenAt: Date | null;
+  /** College typed by an admin for this person; wins over the one found from the email domain. */
+  college: string | null;
+  /** An admin changed the name, email or college shown here (the sign-in account itself is untouched). */
+  edited: boolean;
 }
 
 export interface UsageSnapshot {
@@ -81,15 +85,34 @@ export async function loadUsage(rangeDays: number): Promise<UsageSnapshot> {
       const p = d.data();
       return {
         uid: d.id,
-        email: (p.email as string) ?? null,
-        displayName: (p.displayName as string) ?? null,
+        // Admin edits live in their own fields because the person's own sign-in rewrites email/displayName every session.
+        email: ((p.adminEmail as string) || (p.email as string)) ?? null,
+        displayName: ((p.adminName as string) || (p.displayName as string)) ?? null,
         providers: Array.isArray(p.providers) ? (p.providers as string[]) : [],
         createdAt: toDate(p.createdAt),
         lastSeenAt: toDate(p.lastSeenAt),
+        college: (p.adminCollege as string) || null,
+        edited: Boolean(p.adminName || p.adminEmail || p.adminCollege),
       };
     }),
     loadedAt: new Date(),
   };
+}
+
+export interface ProfileEdits {
+  name: string;
+  email: string;
+  college: string;
+}
+
+/** An admin sets the name, email and college shown for a user. An empty value clears the edit, back to what the person's own account gives. */
+export async function saveProfileEdits(uid: string, e: ProfileEdits): Promise<void> {
+  const v = (s: string) => (s.trim() ? s.trim() : deleteField());
+  await updateDoc(doc(getDb(), "profiles", uid), {
+    adminName: v(e.name.slice(0, 80)),
+    adminEmail: v(e.email.toLowerCase().slice(0, 120)),
+    adminCollege: v(e.college.slice(0, 120)),
+  });
 }
 
 export interface AdminRecord {

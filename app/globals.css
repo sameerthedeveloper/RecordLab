@@ -624,19 +624,20 @@ html {
   .mobile-panel {
     width: 100% !important;
     min-width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
     border-radius: 0 !important;
     border: none !important;
   }
 
-  /* Content scrolls underneath the floating glass tab bar, so leave room to
-     scroll the last field / page clear of it. */
+  /* No bottom bar in the editor: just clear the home indicator. */
   .editor-surface {
-    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .preview-pages {
-    padding: 14px 14px calc(190px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 14px calc(96px + env(safe-area-inset-bottom, 0px));
     gap: 20px;
     align-items: center;
   }

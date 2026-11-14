@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RecordEditorPanel } from "@/components/RecordEditorPanel";
 import { PreviewPanel } from "@/components/PreviewPanel";
-import { MobileNav } from "@/components/MobileNav";
+import { MobileModeBar } from "@/components/MobileModeBar";
 import { AiAssistantModal } from "@/components/AiAssistantModal";
 import { DashboardModal } from "@/components/DashboardModal";
 import { SettingsModal } from "@/components/SettingsModal";
@@ -876,6 +876,7 @@ export default function Home() {
   return (
     <>
       <div className="app-layout app-canvas flex h-full w-full gap-3.5 md:gap-4 p-3.5 md:p-4 overflow-hidden">
+        <MobileModeBar activePanel={mobilePanel} onSelect={setMobilePanel} />
         <RecordEditorPanel
           key={`editor-${editorKey}`}
           record={record}
@@ -940,8 +941,6 @@ export default function Home() {
           visible={mobilePanel === "preview"}
         />
       </div>
-
-      <MobileNav activePanel={mobilePanel} onSelect={setMobilePanel} onOpenFiles={() => setDashboardOpen(true)} />
 
       <iframe
         ref={printFrameRef}
