@@ -1586,3 +1586,21 @@ html[data-ui="apple"] :is(input, select, textarea).rounded-lg:not([type="range"]
 @keyframes ios-push { from { transform: translateX(32%); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes ios-pop { from { transform: translateX(-12%); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ios-push, .ios-pop { animation: none; } }
+
+/* Date fields in the app chrome (not the record's own header): iOS Safari gives them an intrinsic width
+   and a taller, centred box, so they overflowed the card. Pin them to the column like the text inputs. */
+input[type="date"]:not(.record-header-input) {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  text-align: left;
+}
+input[type="date"]:not(.record-header-input)::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
+input[type="date"]:not(.record-header-input)::-webkit-calendar-picker-indicator { opacity: 0.55; }

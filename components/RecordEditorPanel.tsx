@@ -597,13 +597,34 @@ export function RecordEditorPanel({
                 <label htmlFor="dateInput" className={labelClass}>
                   Date
                 </label>
-                <input
-                  id="dateInput"
-                  type="date"
-                  className={inputClass}
-                  value={record.date}
-                  onChange={(e) => onFieldChange("date", e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    id="dateInput"
+                    type="date"
+                    className={inputClass}
+                    value={record.date}
+                    onChange={(e) => onFieldChange("date", e.target.value)}
+                  />
+                  {/* iOS draws an empty date field as a blank bar: say what it is, and offer today. */}
+                  {!record.date && (
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-ink-soft/50 md:text-[15px]">
+                      Select a date
+                    </span>
+                  )}
+                  {!record.date && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date();
+                        const pad = (n: number) => String(n).padStart(2, "0");
+                        onFieldChange("date", `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent-ink active:scale-95"
+                    >
+                      Today
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
