@@ -241,7 +241,9 @@ export function PreviewPanel({
           ) : (
             pages.map((page, idx) => (
               <div className="preview-page-group" key={idx}>
-                <A4Page page={page} rrn={rrn} watermark={watermark} format={record.format} pageBorder={record.pageBorder} verified={idx === pages.length - 1 ? verified : null} />
+                <div className="preview-page-frame">
+                  <A4Page page={page} rrn={rrn} watermark={watermark} format={record.format} pageBorder={record.pageBorder} verified={idx === pages.length - 1 ? verified : null} />
+                </div>
                 <span className="preview-page-caption">
                   PAGE {String(idx + 1).padStart(2, "0")} / {String(pages.length).padStart(2, "0")}
                 </span>

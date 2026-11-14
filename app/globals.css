@@ -166,6 +166,19 @@ html {
 .preview-pages .a4-page {
   zoom: var(--page-zoom, 1);
 }
+/* Real pages are scaled with transform, not zoom: iOS Safari mis-draws collapsed table borders (the title
+   table's box) and the page's absolutely placed parts under CSS zoom, so the preview stopped matching the
+   PDF. The frame takes the scaled size so layout and scrolling still follow the zoom. */
+.preview-page-frame {
+  flex-shrink: 0;
+  width: calc(210mm * var(--page-zoom, 1));
+  height: calc(297mm * var(--page-zoom, 1));
+}
+.preview-page-frame .a4-page {
+  zoom: 1;
+  transform: scale(var(--page-zoom, 1));
+  transform-origin: 0 0;
+}
 .preview-pages {
   /* zoom shrinks the page's box too, so the gap between pages stays proportional */
   --page-gap: 28px;

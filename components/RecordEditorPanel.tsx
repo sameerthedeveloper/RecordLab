@@ -601,7 +601,7 @@ export function RecordEditorPanel({
                   <input
                     id="dateInput"
                     type="date"
-                    className={inputClass}
+                    className={`${inputClass} ${record.date ? "" : "text-transparent"}`}
                     value={record.date}
                     onChange={(e) => onFieldChange("date", e.target.value)}
                   />
