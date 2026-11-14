@@ -21,11 +21,11 @@ import {
  * (see app/page.tsx's initial-state seeding and handleSaveSettings). `font`
  * applies uniformly to every export — there's no per-record override for it.
  */
-/** "apple": frosted, rounded, pill buttons (default). "classic": the original flat look. */
-export type UiStyle = "apple" | "classic";
+/** "apple": Apple web look (default). "soft": the earlier warm, frosted, rounded Modern look. "material": Material 3, flat tonal surfaces. "classic": the original flat look. */
+export type UiStyle = "apple" | "soft" | "material" | "classic";
 
 
-export const UI_STYLES: UiStyle[] = ["apple", "classic"];
+export const UI_STYLES: UiStyle[] = ["apple", "soft", "material", "classic"];
 
 /** Flips the look of the whole app by setting `data-ui` on <html> (see the .ui-* classes in globals.css). */
 export function applyUiStyle(style: UiStyle): void {

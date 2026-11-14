@@ -193,7 +193,9 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
             <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Interface style">
               {(
                 [
-                  { id: "apple", name: "Modern", note: "Frosted, rounded, soft" },
+                  { id: "apple", name: "Modern", note: "Apple-style, clean, neutral" },
+                  { id: "soft", name: "Soft", note: "Warm, frosted, rounded" },
+                  { id: "material", name: "Material", note: "Tonal, flat, Android-like" },
                   { id: "classic", name: "Classic", note: "Flat, crisp, original" },
                 ] as const
               ).map((o) => {
@@ -210,20 +212,33 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast }: Sett
                     }`}
                   >
                     {/* mini preview of the style */}
+                    {o.id === "material" ? (
+                      <div aria-hidden className="mb-2.5 flex h-16 items-end gap-1.5 overflow-hidden rounded-[12px] bg-[#f6efe6] p-2">
+                        <span className="h-full w-1/3 rounded-[8px] bg-[#fdf8f1] shadow-[0_1px_3px_rgba(0,0,0,0.2)]" />
+                        <span className="relative flex h-full flex-1 flex-col justify-end gap-1 rounded-[8px] bg-[#fdf8f1] p-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
+                          <span className="h-1.5 w-full rounded-[2px] bg-ink/10" />
+                          <span className="h-3 w-1/2 rounded-full bg-accent" />
+                          <span className="absolute right-1 top-1 h-3.5 w-3.5 rounded-[5px] bg-accent-soft" />
+                        </span>
+                      </div>
+                    ) : (
                     <div
-                      aria-hidden
-                      className={`mb-2.5 flex h-16 items-end gap-1.5 overflow-hidden p-2 ${
-                        o.id === "apple"
-                          ? "rounded-[14px] bg-gradient-to-br from-[#fde8d8] via-[#efede7] to-[#dfe9e6]"
-                          : "rounded-lg bg-gray-100"
-                      }`}
-                    >
-                      <span className={`h-full w-1/3 bg-white ${o.id === "apple" ? "rounded-xl shadow-[0_4px_12px_-4px_rgba(28,43,51,0.3)]" : "rounded-md border border-line"}`} />
-                      <span className={`flex h-full flex-1 flex-col justify-end gap-1 bg-white p-1.5 ${o.id === "apple" ? "rounded-xl shadow-[0_4px_12px_-4px_rgba(28,43,51,0.3)]" : "rounded-md border border-line"}`}>
-                        <span className={`h-1.5 w-full bg-ink/10 ${o.id === "apple" ? "rounded-full" : "rounded-sm"}`} />
-                        <span className={`h-3 w-1/2 bg-accent ${o.id === "apple" ? "rounded-full" : "rounded-md"}`} />
-                      </span>
-                    </div>
+                        aria-hidden
+                        className={`mb-2.5 flex h-16 items-end gap-1.5 overflow-hidden p-2 ${
+                          o.id === "soft"
+                            ? "rounded-[14px] bg-gradient-to-br from-[#fde8d8] via-[#efede7] to-[#dfe9e6]"
+                            : o.id === "apple"
+                              ? "rounded-[14px] bg-[#f5f5f7]"
+                              : "rounded-lg bg-gray-100"
+                        }`}
+                      >
+                        <span className={`h-full w-1/3 bg-white ${o.id !== "classic" ? "rounded-xl shadow-[0_4px_12px_-4px_rgba(28,43,51,0.3)]" : "rounded-md border border-line"}`} />
+                        <span className={`flex h-full flex-1 flex-col justify-end gap-1 bg-white p-1.5 ${o.id !== "classic" ? "rounded-xl shadow-[0_4px_12px_-4px_rgba(28,43,51,0.3)]" : "rounded-md border border-line"}`}>
+                          <span className={`h-1.5 w-full bg-ink/10 ${o.id !== "classic" ? "rounded-full" : "rounded-sm"}`} />
+                          <span className={`h-3 w-1/2 bg-accent ${o.id !== "classic" ? "rounded-full" : "rounded-md"}`} />
+                        </span>
+                      </div>
+                    )}
                     <p className="text-[13px] font-bold text-ink">{o.name}</p>
                     <p className="text-[11px] text-ink-soft/70">{o.note}</p>
                   </button>

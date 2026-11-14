@@ -17,11 +17,16 @@ interface CopyPromptTabProps {
   context?: AiContext;
 }
 
-const inputClass =
-  "w-full rounded-xl border border-line p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
-const textareaClass =
-  "w-full resize-none rounded-xl border border-line p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-ink-soft/50 transition-all";
-const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
+// Apple-style inset-grouped form: rows share one rounded card, split by hairlines.
+const group =
+  "overflow-hidden rounded-2xl border border-[var(--hairline)] bg-[var(--surface)] divide-y divide-[var(--hairline)]";
+const rowLabel = "text-[13px] font-medium text-ink sm:w-40 sm:shrink-0";
+const field =
+  "w-full bg-transparent text-base text-ink outline-none placeholder:text-ink-soft/45 sm:text-[15px] sm:text-right";
+const area =
+  "w-full resize-none bg-transparent text-base sm:text-[15px] leading-snug text-ink outline-none placeholder:text-ink-soft/45";
+const req = <span className="text-accent"> *</span>;
+const opt = <span className="font-normal text-ink-soft/60"> · optional</span>;
 
 export function CopyPromptTab({
   title,
@@ -48,7 +53,11 @@ export function CopyPromptTab({
   async function handleCopy() {
     onError("");
     if (!title.trim() || (programming && !lang.trim()) || !requirement.trim()) {
-      onError(programming ? "Please fill in Experiment Title, Programming Language, and Program Requirement before copying prompt." : "Please fill in the Experiment Title and what the experiment covers before copying the prompt.");
+      onError(
+        programming
+          ? "Please fill in Experiment Title, Programming Language, and Program Requirement before copying prompt."
+          : "Please fill in the Experiment Title and what the experiment covers before copying the prompt.",
+      );
       return;
     }
 
@@ -66,116 +75,136 @@ export function CopyPromptTab({
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      onError("Failed to copy automatically. You can copy the prompt from the preview box below.");
+      onError(
+        "Failed to copy automatically. You can copy the prompt from the preview box below.",
+      );
     }
   }
 
   return (
-    <div className="space-y-3">
+    <div className="ai-stagger space-y-4">
       {context?.department.trim() && (
-        <p className="rounded-lg bg-accent-soft/50 px-2.5 py-1.5 text-xs font-semibold text-accent-ink">
+        <p className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft/70 px-3 py-1 text-xs font-medium text-accent-ink">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
           Written for {context.department.trim()}
-          {context.layout ? `, using this record's ${context.layout.filter((s) => s.kind !== "lines").length} sections` : ""}.
+          {context.layout
+            ? `, using this record's ${context.layout.filter((s) => s.kind !== "lines").length} sections`
+            : ""}
         </p>
       )}
-      <p className="text-xs text-ink-soft/80 leading-relaxed">
-        Enter experiment details to create a prefilled prompt requesting the LLM to output content inside structured
-        HTML tags (
-        <code className="bg-accent-soft/60 px-1 py-0.5 rounded text-accent-ink font-mono">&lt;aim&gt;</code>,{" "}
-        <code className="bg-accent-soft/60 px-1 py-0.5 rounded text-accent-ink font-mono">&lt;algorithm&gt;</code>,{" "}
-        <code className="bg-accent-soft/60 px-1 py-0.5 rounded text-accent-ink font-mono">&lt;sourcecode&gt;</code>).
-      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="aiTitleInput" className={labelClass}>
-            Experiment Title <span className="text-red-500 font-semibold">*</span>
-          </label>
+      <div className={group}>
+        <label
+          htmlFor="aiTitleInput"
+          className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
+        >
+          <span className={rowLabel}>Experiment title{req}</span>
           <input
             id="aiTitleInput"
             type="text"
-            placeholder="Example: Binary Search Tree"
-            className={inputClass}
+            placeholder="Binary Search Tree"
+            className={field}
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
           />
-        </div>
-
-        <div>
-          <label htmlFor="aiLangInput" className={labelClass}>
-            {programming ? (
-              <>
-                Programming Language <span className="text-red-500 font-semibold">*</span>
-              </>
-            ) : (
-              <>
-                Apparatus / tools <span className="text-gray-400 font-normal text-xs">(Optional)</span>
-              </>
-            )}
-          </label>
+        </label>
+        <label
+          htmlFor="aiLangInput"
+          className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
+        >
+          <span className={rowLabel}>
+            {programming ? <>Language{req}</> : <>Apparatus / tools{opt}</>}
+          </span>
           <input
             id="aiLangInput"
             type="text"
-            placeholder={programming ? "Example: Python / C++" : "Example: Ammeter, voltmeter, 100 Ω resistor"}
-            className={inputClass}
+            placeholder={
+              programming
+                ? "Python / C++"
+                : "Ammeter, voltmeter, 100 Ω resistor"
+            }
+            className={field}
             value={lang}
             onChange={(e) => onLangChange(e.target.value)}
           />
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="aiReqInput" className={labelClass}>
-          {programming ? "Program / Problem Requirement" : "What the experiment covers"} <span className="text-red-500 font-semibold">*</span>
         </label>
-        <textarea
-          id="aiReqInput"
-          rows={2}
-          placeholder={programming ? "Describe what the program should implement (e.g. tree insertion, deletion, and in-order traversal)..." : "Describe the experiment (e.g. verify Ohm's law by plotting V against I for a fixed resistor)..."}
-          className={textareaClass}
-          value={requirement}
-          onChange={(e) => onRequirementChange(e.target.value)}
-        />
       </div>
 
-      <div>
-        <label htmlFor="aiCustomInput" className={labelClass}>
-          Custom Instructions <span className="text-gray-400 font-normal text-xs">(Optional)</span>
+      <div className={group}>
+        <label htmlFor="aiReqInput" className="block px-4 py-3">
+          <span className="mb-1 block text-[13px] font-medium text-ink">
+            {programming
+              ? "What the program should do"
+              : "What the experiment covers"}
+            {req}
+          </span>
+          <textarea
+            id="aiReqInput"
+            rows={2}
+            placeholder={
+              programming
+                ? "Tree insertion, deletion and in-order traversal"
+                : "Verify Ohm's law by plotting V against I for a fixed resistor"
+            }
+            className={area}
+            value={requirement}
+            onChange={(e) => onRequirementChange(e.target.value)}
+          />
         </label>
-        <textarea
-          id="aiCustomInput"
-          rows={2}
-          placeholder="Example: Keep algorithm in Step 1 format, generate viva questions..."
-          className={textareaClass}
-          value={custom}
-          onChange={(e) => onCustomChange(e.target.value)}
-        />
+        <label htmlFor="aiCustomInput" className="block px-4 py-3">
+          <span className="mb-1 block text-[13px] font-medium text-ink">
+            Extra instructions{opt}
+          </span>
+          <textarea
+            id="aiCustomInput"
+            rows={2}
+            placeholder="Number the algorithm steps, add viva questions"
+            className={area}
+            value={custom}
+            onChange={(e) => onCustomChange(e.target.value)}
+          />
+        </label>
       </div>
 
-      <details className="rounded-xl border border-line bg-white">
-        <summary className="flex cursor-pointer items-center justify-between p-3 select-none text-xs font-bold text-ink uppercase tracking-wider">
-          <span>VIEW PREFILLED PROMPT PREVIEW</span>
-          <ChevronDown className="dropdown-icon h-4 w-4 text-ink-soft/50" strokeWidth={2.25} />
+      <details className={`${group} ai-details`}>
+        <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-[13px] font-medium text-ink">
+          <span>Preview prompt</span>
+          <ChevronDown
+            className="dropdown-icon h-4 w-4 text-ink-soft/50"
+            strokeWidth={2.25}
+          />
         </summary>
-        <div className="px-3 pb-3">
-          <pre className="text-xs font-mono whitespace-pre-wrap bg-[#faf7f0] p-3 rounded-xl border border-line text-ink max-h-44 overflow-y-auto leading-relaxed">
+        <div className="p-3">
+          <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap rounded-xl bg-[var(--tint)] p-3 font-mono text-xs leading-relaxed text-ink">
             {promptText}
           </pre>
         </div>
       </details>
 
-      <div className="pt-2 flex justify-end">
+      <p className="px-1 text-xs leading-relaxed text-ink-soft/70">
+        The AI replies inside tags (
+        <code className="font-mono text-accent-ink">&lt;aim&gt;</code>,{" "}
+        <code className="font-mono text-accent-ink">&lt;algorithm&gt;</code>,{" "}
+        <code className="font-mono text-accent-ink">&lt;sourcecode&gt;</code>)
+        so Paste &amp; Import can fill the record.
+      </p>
+
+      <div className="ai-dock">
         <button
           type="button"
           onClick={handleCopy}
-          className={`rounded-xl border px-4 py-2.5 text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2 w-full sm:w-auto ${
+          className={`flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-[15px] max-sm:min-h-12 font-semibold transition-all active:scale-[0.98] ${
             copied
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-              : "bg-accent text-white border-accent hover:bg-accent-hover"
+              ? "bg-emerald-600 text-white"
+              : "bg-accent text-white shadow-sm hover:bg-accent-hover"
           }`}
         >
-          {copied ? <Check className="h-4 w-4" strokeWidth={2.5} /> : <Copy className="h-4 w-4" strokeWidth={2} />}
-          <span>{copied ? "Copied to Clipboard!" : "Copy Prefilled Prompt"}</span>
+          {copied ? (
+            <Check key="ok" className="ai-pop h-4 w-4" strokeWidth={2.5} />
+          ) : (
+            <Copy className="h-4 w-4" strokeWidth={2} />
+          )}
+          <span>{copied ? "Copied" : "Copy prompt"}</span>
         </button>
       </div>
     </div>

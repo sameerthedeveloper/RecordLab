@@ -34,6 +34,12 @@ interface ModalProps {
   /** Pinned bottom bar, usually the dialog's buttons. */
   footer?: React.ReactNode;
   bodyClassName?: string;
+  /** Extra classes for the header bar and the icon chip. */
+  headerClassName?: string;
+  /** Apple-style sheet bar: centred title, close at the right, hairline once the body scrolls. */
+  nav?: boolean;
+  footerClassName?: string;
+  iconClassName?: string;
   role?: "dialog" | "alertdialog";
   children: React.ReactNode;
 }
@@ -56,6 +62,10 @@ export function Modal({
   headerActions,
   footer,
   bodyClassName = "p-4 sm:p-5",
+  headerClassName = "",
+  nav = false,
+  footerClassName = "",
+  iconClassName = "",
   role = "dialog",
   children,
 }: ModalProps) {
@@ -65,6 +75,7 @@ export function Modal({
   onCloseRef.current = onClose;
   const [drag, setDrag] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const dragStart = useRef(0);
 
   // Phones: the dialog is a bottom sheet, and the grabber / header can be
@@ -138,49 +149,83 @@ export function Modal({
         >
           <span className="h-1.5 w-10 rounded-full bg-ink/20" />
         </div>
-        <header className="ui-modal-head flex shrink-0 items-center gap-3 px-4 py-3.5 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2.5">
-            {Icon && (
-              <span className="ui-tile flex h-8 w-8 shrink-0 items-center justify-center">
-                <Icon className="h-4 w-4" strokeWidth={2.25} />
-              </span>
-            )}
-            <div className="min-w-0">
+        {nav ? (
+          <header
+            className={`ui-nav grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 ${
+              scrolled ? "ui-nav-scrolled" : ""
+            } ${headerClassName}`}
+          >
+            <div className="flex items-center justify-self-start">{headerActions}</div>
+            <div className="min-w-0 text-center">
               <h2
                 id={`${id}-title`}
-                className={`truncate font-serif text-lg font-bold leading-tight text-ink ${
-                  headerContent ? "hidden sm:block" : ""
-                }`}
+                className="flex items-center justify-center gap-1.5 text-[17px] font-semibold leading-tight tracking-tight text-ink"
               >
-                {title}
+                {Icon && <Icon className="ui-nav-icon h-[18px] w-[18px] shrink-0 text-accent" strokeWidth={2.25} />}
+                <span className="truncate">{title}</span>
               </h2>
-              {description && !headerContent && (
-                <p className="truncate text-xs text-ink-soft/70">{description}</p>
-              )}
+              {description && <p className="truncate text-[12px] leading-tight text-ink-soft/70">{description}</p>}
             </div>
-          </div>
+            <div className="justify-self-end">
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="ui-nav-close flex h-8 w-8 items-center justify-center rounded-full bg-ink/[0.08] text-ink-soft transition-[background-color,transform] duration-150 hover:bg-ink/[0.14] active:scale-90 max-sm:h-9 max-sm:w-9 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <X className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+            </div>
+          </header>
+        ) : (
+        <header className={`ui-modal-head flex shrink-0 items-center gap-3 px-4 py-3.5 sm:px-6 ${headerClassName}`}>
+            <div className="flex min-w-0 items-center gap-2.5">
+              {Icon && (
+                <span className={`ui-tile flex h-8 w-8 shrink-0 items-center justify-center ${iconClassName}`}>
+                  <Icon className="h-4 w-4" strokeWidth={2.25} />
+                </span>
+              )}
+              <div className="min-w-0">
+                <h2
+                  id={`${id}-title`}
+                  className={`truncate font-serif text-lg font-bold leading-tight text-ink ${
+                    headerContent ? "hidden sm:block" : ""
+                  }`}
+                >
+                  {title}
+                </h2>
+                {description && !headerContent && (
+                  <p className="truncate text-xs text-ink-soft/70">{description}</p>
+                )}
+              </div>
+            </div>
+  
+            {headerContent ? (
+              <div className="mx-auto flex w-full max-w-xl justify-center">{headerContent}</div>
+            ) : (
+              <div className="flex-1" />
+            )}
+  
+            {headerActions}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink/[0.06] text-ink-soft max-sm:h-10 max-sm:w-10 transition-colors hover:bg-ink/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              <X className="h-5 w-5" strokeWidth={2} />
+            </button>
+          </header>
+  
+        )}
 
-          {headerContent ? (
-            <div className="mx-auto flex w-full max-w-xl justify-center">{headerContent}</div>
-          ) : (
-            <div className="flex-1" />
-          )}
-
-          {headerActions}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink/[0.06] text-ink-soft max-sm:h-10 max-sm:w-10 transition-colors hover:bg-ink/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </button>
-        </header>
-
-        <div className={`min-h-0 flex-1 overflow-y-auto ${bodyClassName}`}>{children}</div>
+        <div
+          onScroll={nav ? (e) => setScrolled(e.currentTarget.scrollTop > 2) : undefined}
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${bodyClassName}`}
+        >{children}</div>
 
         {footer && (
-          <footer className="sheet-footer flex shrink-0 items-center justify-end gap-2 border-t border-line bg-paper px-4 py-3 max-sm:[&>button]:min-h-11 sm:px-5">
+          <footer className={`sheet-footer flex shrink-0 items-center justify-end gap-2 border-t border-line bg-paper px-4 py-3 max-sm:[&>button]:min-h-11 sm:px-5 ${footerClassName}`}>
             {footer}
           </footer>
         )}

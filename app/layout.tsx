@@ -100,7 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html:
-              'try{var s=JSON.parse(localStorage.getItem("recordlab-settings-v1")||"{}");document.documentElement.dataset.ui=s.uiStyle==="classic"?"classic":"apple"}catch(e){document.documentElement.dataset.ui="apple"}',
+              'try{var s=JSON.parse(localStorage.getItem("recordlab-settings-v1")||"{}");document.documentElement.dataset.ui=s.uiStyle==="classic"||s.uiStyle==="material"||s.uiStyle==="soft"?s.uiStyle:"apple"}catch(e){document.documentElement.dataset.ui="apple"}',
           }}
         />
         {/* Google AdSense: the account verification meta tag. The loader script is added by <AdsLoader /> (not for Pro). */}

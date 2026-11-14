@@ -33,6 +33,7 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
   const [importText, setImportText] = useState("");
   const [error, setError] = useState("");
   const [runAfter, setRunAfter] = useState(false);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
   const activeGenerationIdRef = useRef<string | null>(null);
 
   // Each time it opens, start on the tab chosen in Settings (Direct LLM only while an admin has it on).
@@ -43,6 +44,7 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
   if (!open) return null;
 
   function switchTab(tab: AiTab) {
+    if (tab !== activeTab) navigator.vibrate?.(8);
     setActiveTab(tab);
     setError("");
   }
@@ -64,12 +66,12 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
     return true;
   }
 
-  const tabButtonClass = (tab: AiTab) =>
-    `flex-1 rounded-lg py-2 px-3 text-center transition-all flex items-center justify-center gap-1.5 border ${
-      activeTab === tab
-        ? "bg-white font-semibold text-ink shadow-sm border-line"
-        : "font-medium text-ink-soft/70 hover:text-ink-soft border-transparent"
-    }`;
+  const tabs: { id: AiTab; label: string; icon: typeof Copy }[] = [
+    { id: "prompt", label: "Copy prompt", icon: Copy },
+    { id: "import", label: "Paste & import", icon: Upload },
+    ...(directOn ? [{ id: "direct" as const, label: "Direct LLM", icon: Zap }] : []),
+  ];
+  const activeIndex = Math.max(0, tabs.findIndex((t) => t.id === activeTab));
 
   return (
     <Modal
@@ -79,7 +81,9 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
       description="Copy a ready-made prompt, or paste the answer to fill the record"
       icon={Sparkles}
       size="lg"
-      bodyClassName="p-4 sm:p-5"
+      iconClassName="!h-auto !w-auto !border-0 !bg-none !bg-transparent !shadow-none !text-accent"
+      footerClassName="max-sm:hidden"
+      bodyClassName="px-4 pb-0 pt-3 sm:p-5"
       footer={
         <button type="button" onClick={onClose} className={modalButton.secondary}>
           Close
@@ -87,21 +91,27 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
       }
     >
       <div className="space-y-3.5">
-        <div className="mb-3.5 flex rounded-xl border border-line bg-[#faf7f0] p-1 text-xs font-medium gap-1">
-          <button type="button" className={tabButtonClass("prompt")} onClick={() => switchTab("prompt")}>
-            <Copy className="h-4 w-4" strokeWidth={2} />
-            <span>Copy Prompt</span>
-          </button>
-          <button type="button" className={tabButtonClass("import")} onClick={() => switchTab("import")}>
-            <Upload className="h-4 w-4" strokeWidth={2} />
-            <span>Paste &amp; Import</span>
-          </button>
-          {directOn && (
-            <button type="button" className={tabButtonClass("direct")} onClick={() => switchTab("direct")}>
-              <Zap className="h-4 w-4" strokeWidth={2} />
-              <span>Direct LLM</span>
+        <div className="ai-seg relative flex rounded-xl bg-[var(--tint-strong)] p-0.5 text-xs max-sm:min-h-10" role="tablist">
+          <span
+            aria-hidden
+            className="ai-thumb absolute inset-y-0.5 left-0.5 rounded-[9px] bg-[var(--surface)] shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]"
+            style={{ width: `calc((100% - 4px) / ${tabs.length})`, transform: `translateX(${activeIndex * 100}%)` }}
+          />
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === id}
+              onClick={() => switchTab(id)}
+              className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-[9px] px-3 py-1.5 transition-colors duration-200 ${
+                activeTab === id ? "font-semibold text-ink" : "font-medium text-ink-soft/70 hover:text-ink"
+              }`}
+            >
+              <Icon className="h-4 w-4" strokeWidth={2} />
+              <span>{label}</span>
             </button>
-          )}
+          ))}
         </div>
 
         {!context?.layout && (
@@ -115,12 +125,29 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
         )}
 
         {error && (
-          <div className="flex rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 items-center gap-2">
+          <div role="alert" className="ai-err flex rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" strokeWidth={2} />
             <span>{error}</span>
           </div>
         )}
 
+        <div
+          key={activeTab}
+          className="ai-pane"
+          onTouchStart={(e) => {
+            swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          }}
+          onTouchEnd={(e) => {
+            const from = swipe.current;
+            swipe.current = null;
+            if (!from || (e.target as HTMLElement).closest("input,textarea,pre,select")) return;
+            const dx = e.changedTouches[0].clientX - from.x;
+            const dy = e.changedTouches[0].clientY - from.y;
+            if (Math.abs(dx) < 70 || Math.abs(dy) > 40) return;
+            const next = tabs[activeIndex + (dx < 0 ? 1 : -1)];
+            if (next) switchTab(next.id);
+          }}
+        >
         {activeTab === "prompt" && (
           <CopyPromptTab
             title={title}
@@ -162,6 +189,7 @@ export function AiAssistantModal({ open, onClose, onImport, context, start = "pr
             context={context}
           />
         )}
+        </div>
       </div>
     </Modal>
   );
