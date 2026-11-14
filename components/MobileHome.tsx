@@ -228,7 +228,7 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" onClick={() => router.push("/editor")} className="ui-primary flex min-h-16 items-center gap-3 px-4 py-3 text-left">
+          <button type="button" onClick={() => router.push("/editor?new=1")} className="ui-primary flex min-h-16 items-center gap-3 px-4 py-3 text-left">
             <Plus className="h-5 w-5 shrink-0" strokeWidth={2.5} />
             <span className="text-sm font-semibold leading-tight">New record</span>
           </button>

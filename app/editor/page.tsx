@@ -186,8 +186,15 @@ export default function Home() {
     setWatermark(() => ({ ...DEFAULT_WATERMARK, ...s.watermark }));
 
     // Opened from a share link: load the shared snapshot as a fresh, unsaved copy.
-    const shareId = new URLSearchParams(window.location.search).get("share");
-    let restoring = !shareId;
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get("share");
+    // "New record" from Home (or the app shortcut): start clean instead of bringing back the last draft.
+    const startFresh = params.get("new") === "1";
+    if (startFresh) {
+      clearDraft();
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    let restoring = !shareId && !startFresh;
     if (shareId) {
       window.history.replaceState(null, "", window.location.pathname);
       loadSharedRecord(shareId)

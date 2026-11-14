@@ -9,10 +9,10 @@ export function InstallAppSection() {
   return (
     <section>
       <h3 className="mb-3 font-serif text-sm font-bold text-ink">Install app</h3>
-      {state === "installed" && <p className="text-sm text-ink-soft">Record Lab is installed on this device. It opens on the editor and works offline.</p>}
+      {state === "installed" && <p className="text-sm text-ink-soft">Record Lab is installed on this device. It opens on Home and works offline.</p>}
       {state === "promptable" && (
         <>
-          <p className="mb-2.5 text-sm text-ink-soft">Add Record Lab to your home screen. Opens on the editor, works offline.</p>
+          <p className="mb-2.5 text-sm text-ink-soft">Add Record Lab to your home screen. Opens on Home, works offline.</p>
           <button type="button" onClick={install} className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-accent-hover">
             <Download className="h-3.5 w-3.5" strokeWidth={2.25} /> Install Record Lab
           </button>

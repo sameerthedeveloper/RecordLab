@@ -102,7 +102,7 @@ const index = [
   {
     icon: Save,
     title: "Install it, use it offline",
-    body: "Add Record Lab to your phone's home screen. It opens on the editor and keeps working without a connection.",
+    body: "Add Record Lab to your phone's home screen. It opens on your Home screen and keeps working without a connection.",
   },
   {
     icon: Layers,
