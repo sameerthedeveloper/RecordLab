@@ -1221,7 +1221,7 @@ export function DashboardModal({
   if (embedded) {
     return (
       <>
-        <div className="ui-panel relative flex h-full w-full min-h-0 flex-col overflow-hidden">
+        <div className="ui-panel relative flex h-full w-full min-h-0 flex-col overflow-hidden max-md:!rounded-none max-md:!border-0 max-md:!bg-transparent max-md:!shadow-none max-md:![backdrop-filter:none]">
           <header className="flex shrink-0 items-center border-b border-line px-4 py-3 sm:px-5">
             <label className="relative flex w-full max-w-xl items-center">
               <Search

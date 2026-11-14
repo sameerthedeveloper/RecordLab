@@ -13,6 +13,8 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // One id per build: the app registers /sw.js?v=<id>, so every deploy is seen as a new service worker.
+  env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) || String(Date.now()) },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

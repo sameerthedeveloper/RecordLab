@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { BUILD_ID, markUnsupported, startUpdates } from "@/lib/pwaUpdate";
 
 /**
  * Registers the service worker (production builds only: in dev it would cache stale chunks) and
@@ -32,8 +33,15 @@ export function PwaRegister() {
   }, []);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
-    const register = () => navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((err) => console.error("SW registration failed:", err));
+    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) {
+      markUnsupported();
+      return;
+    }
+    const register = () =>
+      navigator.serviceWorker
+        .register(`/sw.js?v=${BUILD_ID}`, { scope: "/" })
+        .then(startUpdates)
+        .catch((err) => console.error("SW registration failed:", err));
     if (document.readyState === "complete") register();
     else window.addEventListener("load", register, { once: true });
   }, []);

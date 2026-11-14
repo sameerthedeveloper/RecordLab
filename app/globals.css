@@ -1579,3 +1579,10 @@ html[data-ui="apple"] :is(input, select, textarea).rounded-lg:not([type="range"]
   border-color: rgb(var(--c-accent));
   box-shadow: 0 0 0 4px rgb(var(--c-accent) / 0.18);
 }
+
+/* iOS-style push / pop for the full-screen settings list. */
+.ios-push { animation: ios-push 0.38s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.ios-pop { animation: ios-pop 0.38s cubic-bezier(0.32, 0.72, 0, 1) both; }
+@keyframes ios-push { from { transform: translateX(32%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ios-pop { from { transform: translateX(-12%); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ios-push, .ios-pop { animation: none; } }

@@ -52,6 +52,8 @@ export interface AppSettings {
   defaultLayout: SectionTemplate | null;
   /** Which AI assistant tab opens first. "direct" falls back to "prompt" while an admin has Direct LLM switched off. */
   aiStart: AiStart;
+  /** Installed app: switch to a new version by itself once you leave the app. */
+  autoUpdate: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -65,6 +67,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   department: "",
   defaultLayout: null,
   aiStart: "prompt",
+  autoUpdate: true,
 };
 
 const STORAGE_KEY = "recordlab-settings-v1";
@@ -83,6 +86,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     pageBorder: resolvePageBorder(parsed.pageBorder),
     defaultLayout: sanitizeTemplate(parsed.defaultLayout),
     aiStart: AI_STARTS.includes(parsed.aiStart as AiStart) ? (parsed.aiStart as AiStart) : "prompt",
+    autoUpdate: typeof parsed.autoUpdate === "boolean" ? parsed.autoUpdate : true,
     department: typeof parsed.department === "string" ? parsed.department.trim().slice(0, 80) : "",
   };
 }

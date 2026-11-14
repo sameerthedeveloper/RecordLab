@@ -376,7 +376,7 @@ export function RecordEditorPanel({
   }
 
   const iconBtn =
-    "ui-icon-btn flex items-center justify-center max-md:h-11 max-md:w-11 max-md:p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+    "ui-icon-btn flex items-center justify-center max-md:h-10 max-md:w-10 max-md:p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
   const menuItem =
     "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-ink-soft transition-colors hover:bg-accent-soft/50 hover:text-accent-ink";
 
@@ -385,7 +385,7 @@ export function RecordEditorPanel({
       id="inputPanel"
       className={`mobile-panel ${visible ? "flex" : "hidden"} md:flex w-full md:w-[400px] lg:w-[440px] shrink-0 flex-col ui-panel overflow-hidden`}
     >
-      <div className="ui-panel-header shrink-0 p-4 pb-3.5">
+      <div className="ui-panel-header shrink-0 p-4 pb-3.5 max-md:px-4 max-md:pb-3 max-md:pt-3">
         <div className="flex items-center justify-between gap-2">
           <div data-onboarding="brand" className="min-w-0">
             <h1 className="font-serif text-xl font-bold leading-tight tracking-tight text-ink">
@@ -398,7 +398,7 @@ export function RecordEditorPanel({
               target="_blank"
               rel="noopener noreferrer"
               title="Cogniheim"
-              className="mt-0.5 block w-fit font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft/55 transition-colors hover:text-accent"
+              className="mt-0.5 block w-fit max-md:hidden font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft/55 transition-colors hover:text-accent"
             >
               A product by <span className="text-ink-soft/80">Cogniheim</span>
             </a>
@@ -520,7 +520,7 @@ export function RecordEditorPanel({
           data-onboarding="save-cloud"
           onClick={onSaveCloud}
           disabled={isSavingCloud}
-          className="mt-3.5 flex w-full items-center justify-center gap-2 ui-primary px-3 py-2.5 text-[13px] max-md:min-h-12 max-md:text-[15px] font-semibold disabled:cursor-wait disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-3.5 flex w-full items-center justify-center gap-2 ui-primary px-3 py-2.5 text-[13px] max-md:mt-3 max-md:min-h-11 max-md:text-[15px] font-semibold disabled:cursor-wait disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Cloud className="h-4 w-4" strokeWidth={2.25} />
           {isSavingCloud ? "Saving…" : "Save to cloud"}

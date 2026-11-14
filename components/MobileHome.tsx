@@ -2,16 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronRight, Download, FileDown, Files, FolderOpen, House, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, ChevronRight, Download, FileDown, Files, FolderOpen, House, Pencil, Plus, Settings as SettingsIcon } from "lucide-react";
 import { AccountMenu } from "./AccountMenu";
 import { AdSlot } from "./AdSlot";
 import { DashboardModal } from "./DashboardModal";
+import { SettingsModal } from "./SettingsModal";
 import { FileThumb, relativeTime, stripHtml } from "./CloudFileViews";
 import { useAuthUser } from "@/lib/authService";
 import { watchUserDocuments, type CloudDocument, type RlabPayload } from "@/lib/firestoreService";
 import { useFolders } from "@/lib/folderService";
 import { downloadCloudDocumentPdf } from "@/lib/downloadCloudPdf";
 import { useInstallPrompt } from "@/lib/useInstallPrompt";
+import { loadSettings, normalizeSettings, saveSettings, type AppSettings } from "@/lib/settings";
+import { getUserSettings, saveUserSettings } from "@/lib/userProfile";
 
 interface MobileHomeProps {
   onLoad: (payload: RlabPayload, docId: string, folderId: string | null) => void;
@@ -54,7 +57,36 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
   const folders = useFolders();
   const { canInstall, install } = useInstallPrompt();
   const [documents, setDocuments] = useState<CloudDocument[] | null>(null);
-  const [view, setView] = useState<"home" | "files">("home");
+  const [view, setView] = useState<"home" | "files" | "settings">("home");
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
+
+  // Signed in: the account's saved preferences win, like in the editor.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    getUserSettings(user.uid)
+      .then((cloud) => {
+        if (cancelled || cloud?.kind !== "full") return;
+        const next = normalizeSettings(cloud.settings);
+        setSettings(next);
+        saveSettings(next);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  function handleSaveSettings(next: AppSettings) {
+    setSettings(next);
+    saveSettings(next);
+    if (user) {
+      saveUserSettings(user.uid, next).catch(() => onToast("Settings saved on this device, but couldn't sync to your account."));
+      onToast("Settings saved.");
+    } else {
+      onToast("Settings saved on this device. Sign in to keep them with your account.");
+    }
+  }
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,23 +137,39 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
     }
   }
 
-  const firstName = user?.displayName?.split(" ")[0];
+  const rawName = user?.displayName?.split(" ")[0];
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase() : undefined;
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+
+  if (view === "settings") {
+    return (
+      <div className="app-canvas flex h-full w-full flex-col">
+        <div className="min-h-0 flex-1">
+          <SettingsModal screen open settings={settings} onClose={() => setView("home")} onSave={handleSaveSettings} onToast={onToast} />
+        </div>
+        <Tabs active="settings" onHome={() => setView("home")} onFiles={() => setView("files")} onSettings={() => setView("settings")} />
+      </div>
+    );
+  }
 
   if (view === "files") {
     return (
-      <div className="app-canvas flex h-full w-full flex-col gap-3 p-3 pb-[calc(env(safe-area-inset-bottom,0px)+92px)]">
-        <button
-          type="button"
-          onClick={() => setView("home")}
-          className="flex w-fit items-center gap-1.5 px-1 text-sm font-semibold text-ink-soft"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2.25} /> Home
-        </button>
+      <div className="app-canvas flex h-full w-full flex-col pb-[calc(env(safe-area-inset-bottom,0px)+82px)]">
+        <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-1 pt-[max(12px,env(safe-area-inset-top))]">
+          <button
+            type="button"
+            onClick={() => setView("home")}
+            className="flex min-h-10 items-center gap-1 rounded-full pl-1 pr-3 text-sm font-semibold text-ink-soft active:bg-ink/[0.06]"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={2.25} /> Home
+          </button>
+          <h1 className="font-serif text-base font-bold text-ink">My files</h1>
+          <EditorLink onPress={() => router.push("/editor")} />
+        </div>
         <div className="min-h-0 flex-1">
           <DashboardModal open embedded onClose={() => setView("home")} onLoad={onLoad} onToast={onToast} />
         </div>
-        <Tabs active="files" onHome={() => setView("home")} onEditor={() => router.push("/editor")} onFiles={() => setView("files")} />
+        <Tabs active="files" onHome={() => setView("home")} onFiles={() => setView("files")} onSettings={() => setView("settings")} />
       </div>
     );
   }
@@ -129,15 +177,18 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
   return (
     <div className="app-canvas h-full w-full overflow-y-auto overscroll-contain">
       <div className="mx-auto flex max-w-md flex-col gap-6 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+104px)] pt-[max(16px,env(safe-area-inset-top))]">
-        <header className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-ink-soft">{today}</p>
-            <h1 className="mt-0.5 font-serif text-[26px] font-bold leading-tight tracking-tight text-ink">
-              {greeting()}
-              {firstName ? `, ${firstName}` : ""}
-            </h1>
+        <header>
+          <div className="flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-xs font-medium text-ink-soft">{today}</p>
+            <div className="flex shrink-0 items-center gap-2">
+              <EditorLink compact onPress={() => router.push("/editor")} />
+              <AccountMenu onToast={onToast} menuAlign="end" />
+            </div>
           </div>
-          <AccountMenu onToast={onToast} menuAlign="end" />
+          <h1 className="mt-2 font-serif text-[28px] font-bold leading-tight tracking-tight text-ink">
+            {greeting()}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
         </header>
 
         {!user ? (
@@ -149,20 +200,20 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
           <div className="h-44 animate-pulse rounded-[28px] bg-ink/[0.05]" aria-label="Loading your records" />
         ) : latest ? (
           <section aria-label="Continue editing" className="ui-panel overflow-hidden">
-            <div className="flex gap-4 p-4">
-              <div className="h-36 w-28 shrink-0 overflow-hidden rounded-xl border border-line bg-paper">
+            <div className="flex items-stretch gap-4 p-4">
+              <div className="min-h-36 w-28 shrink-0 self-stretch overflow-hidden rounded-xl border border-line bg-paper">
                 <FileThumb document={latest} />
               </div>
               <div className="flex min-w-0 flex-1 flex-col">
                 <p className="text-xs font-semibold text-accent">Pick up where you left off</p>
-                <h2 className="mt-1 line-clamp-2 font-serif text-lg font-bold leading-snug text-ink">{latest.title}</h2>
+                <h2 className="mt-1 line-clamp-2 font-serif text-lg font-bold leading-snug text-ink [overflow-wrap:anywhere]">{latest.title}</h2>
                 <p className="mt-1 line-clamp-2 text-xs text-ink-soft">
                   {stripHtml(latest.data?.record?.aim) || `Edited ${relativeTime(latest.updatedAt)}`}
                 </p>
                 <button
                   type="button"
                   onClick={() => open(latest)}
-                  className="ui-primary mt-auto flex min-h-11 items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold"
+                  className="ui-primary mt-3 flex min-h-11 items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold"
                 >
                   <Pencil className="h-3.5 w-3.5" strokeWidth={2.5} /> Continue
                 </button>
@@ -281,17 +332,31 @@ export function MobileHome({ onLoad, onToast }: MobileHomeProps) {
         )}
       </div>
 
-      <Tabs active="home" onHome={() => setView("home")} onEditor={() => router.push("/editor")} onFiles={() => setView("files")} />
+      <Tabs active="home" onHome={() => setView("home")} onFiles={() => setView("files")} onSettings={() => setView("settings")} />
     </div>
   );
 }
 
+/** Editor lives up here, not in the tab bar: Home and Files are the two places you browse; the editor is where you go to work. */
+function EditorLink({ onPress, compact = false }: { onPress: () => void; compact?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      aria-label="Open the editor"
+      className={`flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-accent-soft text-[13px] ${compact ? "w-10" : "px-3.5"} font-semibold text-accent-ink transition-transform active:scale-95`}
+    >
+      <Pencil className={compact ? "h-[18px] w-[18px]" : "h-3.5 w-3.5"} strokeWidth={2.5} /> {!compact && "Editor"}
+    </button>
+  );
+}
+
 /** Same glass capsule as the editor's bar, so Home feels like one more tab of it. */
-function Tabs({ active, onHome, onEditor, onFiles }: { active: "home" | "files"; onHome: () => void; onEditor: () => void; onFiles: () => void }) {
+function Tabs({ active, onHome, onFiles, onSettings }: { active: "home" | "files" | "settings"; onHome: () => void; onFiles: () => void; onSettings: () => void }) {
   const tabs = [
     { id: "home", label: "Home", Icon: House, onPress: onHome },
-    { id: "editor", label: "Editor", Icon: Pencil, onPress: onEditor },
     { id: "files", label: "Files", Icon: Files, onPress: onFiles },
+    { id: "settings", label: "Settings", Icon: SettingsIcon, onPress: onSettings },
   ];
   return (
     <nav aria-label="Main" className="ios-tabbar fixed inset-x-0 bottom-0 z-50 px-4">

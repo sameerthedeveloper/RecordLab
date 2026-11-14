@@ -647,8 +647,8 @@ export function LandingPageClient() {
   return (
     <main ref={rootRef} className="fixed inset-0 scroll-pt-24 overflow-y-auto overflow-x-hidden app-canvas text-ink">
       <header className="pointer-events-none sticky top-3 z-30 px-3 sm:px-5">
-        <div className="pointer-events-auto ui-panel !rounded-full mx-auto flex max-w-[66rem] items-center justify-between gap-4 py-2 pl-4 pr-2 sm:pl-5">
-          <span className="flex items-center gap-2 font-serif text-lg font-bold tracking-tight">
+        <div className="pointer-events-auto ui-panel !rounded-full mx-auto flex max-w-[66rem] items-center justify-between gap-2 py-2 pl-3.5 pr-2 sm:gap-4 sm:pl-5">
+          <span className="flex shrink-0 items-center gap-2 whitespace-nowrap font-serif text-base font-bold tracking-tight sm:text-lg">
             <Image src="/icons/record-lab.svg" alt="" width={28} height={28} className="h-7 w-7 rounded-[9px]" unoptimized />
             Record Lab
           </span>
@@ -670,16 +670,17 @@ export function LandingPageClient() {
                 Install
               </button>
             )}
-            <Link href="/faculty" className="ui-chip flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-ink-soft hover:text-accent-ink">
+            <Link href="/faculty" aria-label="For faculty" className="ui-chip flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-xs font-semibold text-ink-soft hover:text-accent-ink max-[420px]:h-9 max-[420px]:w-9 max-[420px]:justify-center max-[420px]:p-0 sm:px-3.5">
               <UserCheck className="h-3.5 w-3.5" strokeWidth={2.25} />
-              <span className="sm:hidden">Faculty</span>
+              <span className="max-[420px]:hidden sm:hidden">Faculty</span>
               <span className="hidden sm:inline">For faculty</span>
             </Link>
             <Link
               href="/editor"
-              className="ui-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
+              className="ui-primary flex items-center gap-1.5 whitespace-nowrap px-4 py-2 text-xs font-semibold"
             >
-              Open the app
+              <span className="sm:hidden">Open app</span>
+              <span className="hidden sm:inline">Open the app</span>
               <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
             </Link>
           </div>
