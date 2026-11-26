@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, FileText, Loader2 } from "lucide-react";
+import { AccountMenu } from "./AccountMenu";
 import { AuthModal } from "./AuthModal";
+import { FileThumb } from "./CloudFileViews";
 import { ToastViewport, useToast } from "./Toast";
 import { useAuthUser } from "@/lib/authService";
-import { saveDocument } from "@/lib/firestoreService";
+import { saveDocument, type RlabPayload } from "@/lib/firestoreService";
 import { createFolder, setFolderLayout } from "@/lib/folderService";
 import { loadFolderShare, type SharedFolder } from "@/lib/folderShare";
 import { loadSharedRecord } from "@/lib/shareLink";
 import { track } from "@/lib/analytics";
 
-/** What someone sees when they open a folder link: the folder laid out like a record book's index page. */
+/** What someone sees when they open a folder link: the folder, looking like a subject in "My records". */
 export function SharedFolderClient({ id }: { id: string }) {
   const user = useAuthUser();
   const [folder, setFolder] = useState<SharedFolder | null | undefined>(undefined);
@@ -34,6 +36,20 @@ export function SharedFolderClient({ id }: { id: string }) {
   }, [id]);
   useEffect(load, [load]);
 
+  // The cards show at once from the link's index; each page preview fills in as its record arrives.
+  const [payloads, setPayloads] = useState<Record<string, RlabPayload>>({});
+  useEffect(() => {
+    let live = true;
+    folder?.items.forEach((item) => {
+      loadSharedRecord(item.id)
+        .then((p) => live && p && setPayloads((all) => ({ ...all, [item.id]: p })))
+        .catch(() => {}); // the card keeps its plain preview
+    });
+    return () => {
+      live = false;
+    };
+  }, [folder]);
+
   async function saveAll() {
     if (!user) return setAuthOpen(true);
     if (!folder || saving !== null) return;
@@ -51,7 +67,7 @@ export function SharedFolderClient({ id }: { id: string }) {
       }
       if (folder.layoutMode === "programming") await setFolderLayout(user.uid, created.id, { mode: "programming" });
       for (const item of folder.items) {
-        const payload = await loadSharedRecord(item.id);
+        const payload = payloads[item.id] ?? (await loadSharedRecord(item.id));
         if (!payload) continue;
         await saveDocument(payload, item.title, created.id);
         setSaving(++count);
@@ -73,95 +89,114 @@ export function SharedFolderClient({ id }: { id: string }) {
   const total = folder?.items.length ?? 0;
 
   return (
-    // The app locks body scrolling, so this page scrolls inside itself.
-    <main className="h-full overflow-y-auto bg-paper px-4 pb-16 pt-[calc(env(safe-area-inset-top,0px)+20px)]">
-      <div className="mx-auto max-w-2xl">
-        <Link href="/" className="font-serif text-sm font-bold text-ink-soft hover:text-accent">
-          Record Lab
-        </Link>
-
-        {folder === undefined && !failed && (
-          <p role="status" className="mt-16 flex items-center justify-center gap-2 text-sm text-ink-soft">
-            <Loader2 className="h-4 w-4 animate-spin" /> Opening folder
+    <main className="app-canvas flex h-full w-full flex-col gap-3.5 p-3.5 pt-[calc(env(safe-area-inset-top,0px)+14px)] md:p-4">
+      <header className="ui-panel relative z-30 flex shrink-0 items-center justify-between gap-x-3 px-4 py-3 sm:items-end sm:px-5 sm:py-4">
+        <div className="min-w-0">
+          <Link
+            href="/editor"
+            className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:mb-2"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2.25} />
+            Open Record Lab
+          </Link>
+          <h1 className="line-clamp-2 break-words font-serif text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl">
+            {folder ? folder.name : "Shared folder"}
+          </h1>
+          <p className="mt-0.5 truncate text-xs text-ink-soft sm:text-sm">
+            {folder ? `${total} ${total === 1 ? "record" : "records"} shared with you.` : failed ? "Not loaded." : folder === null ? "Link not found." : "Opening folder…"}
           </p>
-        )}
+        </div>
+        <div className="shrink-0">
+          <AccountMenu onToast={showToast} menuAlign="start" />
+        </div>
+      </header>
 
-        {failed && (
-          <div className="mt-16 text-center">
-            <p className="text-sm text-ink-soft">Couldn&rsquo;t open the folder. Check your connection.</p>
-            <button type="button" onClick={load} className="ui-btn ui-btn-primary mt-4">
-              Try again
-            </button>
-          </div>
-        )}
-
-        {folder === null && (
-          <div className="mt-16 text-center">
-            <h1 className="font-serif text-xl font-bold text-ink">This link doesn&rsquo;t open anything</h1>
-            <p className="mt-2 text-sm text-ink-soft">The owner may have stopped sharing it. Ask them for a new link.</p>
-            <Link href="/editor" className="ui-btn ui-btn-primary mt-5 inline-flex">
-              Make your own record
-            </Link>
-          </div>
-        )}
-
-        {folder && (
-          <article className="mt-5 rounded-lg border border-line bg-white px-4 py-6 shadow-sm sm:px-8 sm:py-9">
-            <header className="border-b-2 border-ink pb-4">
-              <h1 className="break-words font-serif text-3xl font-bold leading-tight tracking-tight text-ink">{folder.name}</h1>
-              <p className="mt-1.5 text-sm text-ink-soft">
-                {total} {total === 1 ? "record" : "records"}, shared with you. Open one to get your own editable copy.
+      <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col bg-white">
+          {folder && total > 0 && (
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2.5 px-4 py-3 sm:px-5">
+              <p className="text-xs text-ink-soft">
+                {savedAs ? (
+                  <span role="status">
+                    Saved to your files as <strong className="text-ink">{savedAs}</strong>.
+                  </span>
+                ) : (
+                  "Open a record to get your own editable copy."
+                )}
               </p>
-            </header>
-
-            <table className="w-full table-fixed text-left">
-              <thead>
-                <tr className="border-b border-line text-xs text-ink-soft">
-                  <th scope="col" className="w-14 py-2 font-semibold">Ex. no</th>
-                  <th scope="col" className="py-2 font-semibold">Title</th>
-                  <th scope="col" className="w-24 py-2 font-semibold max-sm:hidden">Date</th>
-                  <th scope="col" className="w-6 py-2"><span className="sr-only">Open</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {folder.items.map((item) => (
-                  <tr key={item.id} className="group relative border-b border-line text-sm text-ink hover:bg-accent-soft/40">
-                    <td className="py-3 align-top font-mono text-xs leading-5 text-ink-soft">{item.exercise}</td>
-                    <td className="break-words py-3 pr-2 align-top font-semibold">
-                      {/* The link stretches over the whole row. */}
-                      <a
-                        href={`/editor?share=${item.id}`}
-                        className="after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-accent"
-                      >
-                        {item.title}
-                      </a>
-                    </td>
-                    <td className="py-3 align-top text-xs leading-5 text-ink-soft max-sm:hidden">{item.date}</td>
-                    <td className="py-3 align-top">
-                      <ChevronRight aria-hidden className="h-5 w-4 text-ink-soft/50 group-hover:text-accent" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="mt-6">
               {savedAs ? (
-                <p role="status" className="text-sm text-ink">
-                  Saved to your files as <strong>{savedAs}</strong>.{" "}
-                  <Link href="/dashboard" className="font-semibold text-accent underline underline-offset-2">
-                    Open your files
-                  </Link>
-                </p>
+                <Link href="/dashboard" className="ui-btn ui-btn-primary flex items-center justify-center max-sm:min-h-11 max-sm:w-full">
+                  Open your files
+                </Link>
               ) : (
-                <button type="button" onClick={saveAll} disabled={saving !== null || total === 0} className="ui-btn ui-btn-primary flex w-full items-center justify-center gap-2 max-sm:min-h-11 sm:w-auto">
-                  {saving !== null && <Loader2 className="h-4 w-4 animate-spin" />}
+                <button type="button" onClick={saveAll} disabled={saving !== null} className="ui-btn ui-btn-primary flex items-center justify-center gap-2 max-sm:min-h-11 max-sm:w-full">
+                  {saving !== null ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" strokeWidth={2.25} />}
                   {saving !== null ? `Saving ${saving} of ${total}` : user ? "Save folder to my files" : "Sign in to save this folder"}
                 </button>
               )}
             </div>
-          </article>
-        )}
+          )}
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] sm:px-5">
+            {folder === undefined && !failed && (
+              <div className="grid grid-cols-2 gap-3.5 pt-4 md:grid-cols-3 xl:grid-cols-5" aria-hidden>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-52 animate-pulse rounded-2xl border border-line bg-paper" />
+                ))}
+              </div>
+            )}
+
+            {failed && (
+              <div className="py-16 text-center">
+                <p className="text-sm text-ink-soft">Couldn&rsquo;t open the folder. Check your connection.</p>
+                <button type="button" onClick={load} className="ui-btn ui-btn-primary mt-4">
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {folder === null && (
+              <div className="py-16 text-center">
+                <h2 className="font-serif text-lg font-bold text-ink">This link doesn&rsquo;t open anything</h2>
+                <p className="mt-1.5 text-sm text-ink-soft">The owner may have stopped sharing it. Ask them for a new link.</p>
+                <Link href="/editor" className="ui-btn ui-btn-primary mt-5 inline-flex">
+                  Make your own record
+                </Link>
+              </div>
+            )}
+
+            {folder && total === 0 && <p className="py-16 text-center text-sm text-ink-soft">This folder has no records.</p>}
+
+            {folder && total > 0 && (
+              <ul className="grid grid-cols-2 gap-3.5 pt-1 md:grid-cols-3 xl:grid-cols-5">
+                {folder.items.map((item) => (
+                  <li key={item.id} className="min-w-0">
+                    <a
+                      href={`/editor?share=${item.id}`}
+                      className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white transition-colors hover:border-accent/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                    >
+                      <span className="block h-40 border-b border-line">
+                        <FileThumb
+                          document={{
+                            title: item.title,
+                            data: payloads[item.id] ?? ({ record: { exercise_number: item.exercise, date: item.date, title: item.title } } as RlabPayload),
+                          }}
+                        />
+                      </span>
+                      <span className="flex items-center gap-2 px-3 py-2">
+                        <FileText className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
+                        <span className="min-w-0">
+                          <span className="block truncate text-[13px] font-semibold text-ink">{item.title}</span>
+                          <span className="block truncate text-[11px] text-ink-soft/70">{item.exercise ? `Ex. ${item.exercise}` : "No exercise number"}</span>
+                        </span>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onToast={showToast} />

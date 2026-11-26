@@ -32,7 +32,7 @@ export function relativeTime(ts: CloudDocument["updatedAt"]): string {
 }
 
 /** A miniature of the record's first page, so a file is recognisable at a glance. */
-export function FileThumb({ document }: { document: CloudDocument }) {
+export function FileThumb({ document }: { document: Pick<CloudDocument, "title" | "data"> }) {
   const record = document.data?.record;
   // First text section and first code section, whichever layout the record uses.
   const sections = record ? resolveSections({ ...DEFAULT_RECORD, ...record }) : [];
