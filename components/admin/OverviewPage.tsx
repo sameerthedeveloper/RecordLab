@@ -9,6 +9,7 @@ import { Avatar, BarChart, Card, Empty, Kpi } from "./ui";
 import { WhenLoaded } from "./LoadState";
 import type { AdminData } from "@/lib/adminService";
 import type { AdminView } from "@/lib/adminView";
+import { FACULTY_WIRED } from "@/lib/facultyFlag";
 
 /** Things an admin can act on right now, each linking to where it is fixed. */
 function attention(view: AdminView, data: AdminData, facultyWaiting = 0): { text: string; href?: string }[] {
@@ -46,7 +47,7 @@ export function OverviewPage() {
   // Optional: if the faculty rules are not deployed yet this stays at 0 and the rest of the page is unaffected.
   const [facultyWaiting, setFacultyWaiting] = useState(0);
   useEffect(() => {
-    loadFacultyRequests().then((r) => setFacultyWaiting(r.length)).catch(() => {});
+    if (FACULTY_WIRED) loadFacultyRequests().then((r) => setFacultyWaiting(r.length)).catch(() => {});
   }, []);
   return (
     <WhenLoaded>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BILLING_WIRED } from "@/lib/billingShared";
 import { normalizeCode, redeemPromo } from "@/lib/server/billing";
 import { adminSdkConfigured } from "@/lib/server/firebaseAdmin";
 import { verifyUser } from "@/lib/server/userAuth";
@@ -10,6 +11,7 @@ const STATUS: Record<string, number> = { not_found: 404, used: 409, expired: 410
 
 /** Redeems a promo code for the signed-in person. */
 export async function POST(request: Request) {
+  if (!BILLING_WIRED) return NextResponse.json({ error: "plans_off" }, { status: 410 });
   const user = await verifyUser(request);
   if (!user) return NextResponse.json({ error: "sign_in" }, { status: 401 });
   if (!adminSdkConfigured()) return NextResponse.json({ error: "not_configured" }, { status: 501 });

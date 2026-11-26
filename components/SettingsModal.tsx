@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, CreditCard, FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, ShieldCheck, Smartphone, Sparkles, Stamp, User as UserIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, FolderOpen, LayoutList, Palette, Rows3, Settings as SettingsIcon, ShieldCheck, Smartphone, Sparkles, Stamp, User as UserIcon } from "lucide-react";
 import { Modal, modalButton } from "./Modal";
 import { MAX_HEIGHT_MM, MIN_HEIGHT_MM } from "./DraggableHeaderTable";
 import { AdminSettings } from "./AdminSettings";
@@ -9,7 +9,6 @@ import { AiSettings } from "./AiSettings";
 import { useAdminAccess } from "@/lib/adminService";
 import { CollegeInfo } from "./CollegeInfo";
 import { AccountSettings } from "./AccountSettings";
-import { SubscriptionPanel } from "./SubscriptionPanel";
 import { RecordFormatPicker } from "./RecordFormatPicker";
 import { PageBorderControls } from "./PageBorderControls";
 import { InstallAppSection } from "./InstallAppSection";
@@ -36,11 +35,10 @@ const inputClass =
   "w-full rounded-xl border border-line bg-white p-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all";
 const labelClass = "mb-1 block text-xs font-semibold text-ink-soft";
 
-type Tab = "app" | "admin" | "ai" | "account" | "billing" | "appearance" | "record" | "sections" | "subjects" | "heading" | "watermark";
+type Tab = "app" | "admin" | "ai" | "account" | "appearance" | "record" | "sections" | "subjects" | "heading" | "watermark";
 
 const TABS: { id: Tab; label: string; icon: typeof Palette }[] = [
   { id: "account", label: "Account", icon: UserIcon },
-  { id: "billing", label: "Billing", icon: CreditCard },
   { id: "ai", label: "AI assistant", icon: Sparkles },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "app", label: "App", icon: Smartphone },
@@ -94,16 +92,9 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast, screen
             </div>
           )}
           {tab === "ai" && <AiSettings value={draft.aiStart} onChange={(aiStart) => setDraft({ ...draft, aiStart })} />}
-          {tab === "billing" && (
-            <section>
-              <h3 className="mb-3 font-serif text-sm font-bold text-ink">Subscription</h3>
-              <SubscriptionPanel onToast={onToast} />
-            </section>
-          )}
           {tab === "account" && (
             <AccountSettings
               onToast={onToast}
-              onOpenBilling={() => setTab("billing")}
               afterDetails={
                 <>
                 <CollegeInfo />
@@ -317,7 +308,6 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast, screen
     const aiName = { prompt: "Starts on Copy prompt", import: "Starts on Paste & import", direct: "Starts on Direct LLM" }[draft.aiStart];
     const note: Record<Tab, string> = {
       account: "Name, college and sign-in",
-      billing: "Your plan and payments",
       admin: "Tools for admins",
       ai: aiName,
       appearance: `${styleName[draft.uiStyle]} interface`,
@@ -329,7 +319,7 @@ export function SettingsModal({ open, settings, onClose, onSave, onToast, screen
       app: draft.autoUpdate ? "Installs and updates itself" : "Updates are manual",
     };
     const groups: { name: string; ids: Tab[] }[] = [
-      { name: "You", ids: isAdmin ? ["account", "billing", "admin"] : ["account", "billing"] },
+      { name: "You", ids: isAdmin ? ["account", "admin"] : ["account"] },
       { name: "How it looks and helps", ids: ["appearance", "app", "ai"] },
       { name: "Every new record", ids: ["record", "sections", "subjects", "heading", "watermark"] },
     ];

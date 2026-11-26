@@ -1,5 +1,7 @@
 # Paid plans (Razorpay) and the faculty switch
 
+> **Unwired.** The app shows no plans, ads or limits. `BILLING_WIRED` in `lib/billingShared.ts` is `false`, so new orders, promo codes and redemptions are refused. `/api/billing/verify` and `/api/billing/webhook` still run, so a payment already in flight is still recorded. The code below is kept; to rewire, set the flag and restore the UI entry points from git history.
+
 ## What it does
 - **Free**: up to 15 cloud records per account (the number is editable in Admin > Billing). Everything else in Record Lab stays free.
 - **Pro**: unlimited cloud records. Bought as a one-time payment for 1 month (30 days) or 1 year (365 days). No auto-renewal; buying again while Pro adds to the end date.

@@ -1,13 +1,6 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { BillingPage } from "@/components/admin/BillingPage";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Billing · Record Lab admin" };
-
+// Billing is unwired (see docs/billing.md). components/admin/BillingPage.tsx is kept for rewiring.
 export default function Page() {
-  return (
-    <Suspense>
-      <BillingPage />
-    </Suspense>
-  );
+  redirect("/admin");
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Link2, Loader2, Trash2 } from "lucide-react";
+import { Copy, Folder, Link2, Loader2, Trash2 } from "lucide-react";
 import { listMyShareLinks, revokeShareLink, type ShareLinkInfo } from "@/lib/shareLink";
 
 /** Settings → Account: every share link the user made, with copy and revoke. */
@@ -48,12 +48,16 @@ export function SharedLinks({ onToast }: { onToast: (message: string) => void })
       {links === null ? (
         <Loader2 className="h-4 w-4 animate-spin text-ink-soft" />
       ) : links.length === 0 ? (
-        <p className="text-sm text-ink-soft">No links yet. Use the share button in the editor to make one.</p>
+        <p className="text-sm text-ink-soft">No links yet. Share a record from the editor, or a subject folder from your files.</p>
       ) : (
         <ul className="divide-y divide-line rounded-xl border border-line">
           {links.map((l) => (
             <li key={l.id} className="flex items-center gap-2 px-3 py-2">
-              <Link2 className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2} />
+              {l.isFolder ? (
+                <Folder aria-label="Folder link" className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2} />
+              ) : (
+                <Link2 aria-label="Record link" className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2} />
+              )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-semibold text-ink">{l.title}</p>
                 <p className="text-[11px] text-ink-soft/70">{l.createdAt ? l.createdAt.toLocaleDateString() : "Just now"}</p>

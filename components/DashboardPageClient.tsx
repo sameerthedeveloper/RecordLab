@@ -7,7 +7,6 @@ import { ArrowLeft } from "lucide-react";
 import { AccountMenu } from "./AccountMenu";
 import { DashboardModal } from "./DashboardModal";
 import { MobileHome } from "./MobileHome";
-import { AdSlot } from "./AdSlot";
 import { ToastViewport, useToast } from "./Toast";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
 
@@ -128,7 +127,6 @@ export function DashboardPageClient() {
         />
       </div>
 
-      <AdSlot name="My records, bottom" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_RECORDS} className="shrink-0 !max-w-3xl" />
 
       <ToastViewport toast={toast} />
     </div>

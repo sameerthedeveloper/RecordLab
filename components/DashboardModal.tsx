@@ -17,6 +17,7 @@ import {
   FileText,
   Folder as FolderIcon,
   FolderPlus,
+  Share2,
   LayoutGrid,
   List,
   LogIn,
@@ -53,7 +54,9 @@ import { SectionTemplateEditor } from "./SectionTemplateEditor";
 import type { CloudDocument, RlabPayload } from "@/lib/firestoreService";
 import { useAuthUser } from "@/lib/authService";
 import { AuthModal } from "./AuthModal";
+import { ShareFolderModal } from "./ShareFolderModal";
 import { track } from "@/lib/analytics";
+import { FACULTY_WIRED } from "@/lib/facultyFlag";
 
 interface DashboardModalProps {
   open: boolean;
@@ -125,6 +128,7 @@ export function DashboardModal({
   const folders = useFolders();
   const [moving, setMoving] = useState<CloudDocument | null>(null);
   const [facultyOpen, setFacultyOpen] = useState(false);
+  const [sharingFolder, setSharingFolder] = useState<Folder | null>(null);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderTemplate, setNewFolderTemplate] = useState<SectionTemplate | null>(null);
@@ -564,6 +568,7 @@ export function DashboardModal({
                 <FolderPlus className="h-4 w-4" strokeWidth={2} />
                 Subject
               </button>
+              {FACULTY_WIRED && (
               <Link
                 href="/join"
                 className="flex shrink-0 items-center gap-2.5 rounded-full px-3.5 py-2 text-[13px] font-semibold text-ink-soft transition-colors hover:bg-ink/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent md:mt-2"
@@ -571,6 +576,7 @@ export function DashboardModal({
                 <UserCheck className="h-4 w-4 shrink-0" strokeWidth={2} />
                 Join with class code
               </Link>
+              )}
             </>
           )}
           {user && (
@@ -659,6 +665,16 @@ export function DashboardModal({
                     </button>
                     <button
                       type="button"
+                      aria-label="Share folder"
+                      title="Share folder"
+                      onClick={() => setSharingFolder(activeFolder)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft max-md:h-9 max-md:w-9 transition-colors hover:bg-ink/10 hover:text-accent"
+                    >
+                      <Share2 className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                    {FACULTY_WIRED && (
+                    <button
+                      type="button"
                       aria-label="Hand in to faculty"
                       title="Hand in to faculty"
                       onClick={() => setFacultyOpen(true)}
@@ -666,6 +682,7 @@ export function DashboardModal({
                     >
                       <UserCheck className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
+                    )}
                     <button
                       type="button"
                       aria-label="Rename subject"
@@ -770,7 +787,7 @@ export function DashboardModal({
               </div>
             )}
 
-            {user && activeFolder && !query && <SubjectAssignments key={`${activeFolder.id}:${facultyOpen}`} subjectId={activeFolder.id} documents={(documents ?? []).filter((d) => d.folderId === activeFolder.id)} />}
+            {FACULTY_WIRED && user && activeFolder && !query && <SubjectAssignments key={`${activeFolder.id}:${facultyOpen}`} subjectId={activeFolder.id} documents={(documents ?? []).filter((d) => d.folderId === activeFolder.id)} />}
 
             {user && documents === null && (
               <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 xl:grid-cols-4">
@@ -1127,7 +1144,16 @@ export function DashboardModal({
         </p>
       </Modal>
 
-      {user && activeFolder && (
+      {sharingFolder && (
+        <ShareFolderModal
+          key={sharingFolder.id}
+          folder={sharingFolder}
+          documents={(documents ?? []).filter((d) => d.folderId === sharingFolder.id)}
+          onClose={() => setSharingFolder(null)}
+          onToast={onToast}
+        />
+      )}
+      {FACULTY_WIRED && user && activeFolder && (
         <FacultyReviewModal
           open={facultyOpen}
           onClose={() => setFacultyOpen(false)}

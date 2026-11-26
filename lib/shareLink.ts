@@ -1,6 +1,7 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, where } from "firebase/firestore";
 import { getDb, getFirebaseAuth } from "./firebaseConfig";
 import type { RlabPayload } from "./firestoreService";
+import { deleteFolderShareItems, folderShareUrl } from "./folderShare";
 
 const COLLECTION = "shares";
 
@@ -32,6 +33,7 @@ export interface ShareLinkInfo {
   id: string;
   title: string;
   url: string;
+  isFolder: boolean;
   createdAt: Date | null;
 }
 
@@ -41,10 +43,13 @@ export async function listMyShareLinks(): Promise<ShareLinkInfo[]> {
   if (!user) return [];
   const snap = await getDocs(query(collection(getDb(), COLLECTION), where("userId", "==", user.uid)));
   return snap.docs
+    // A folder link's per-record snapshots are managed through the folder link itself.
+    .filter((d) => !d.data().folderShareId)
     .map((d) => ({
       id: d.id,
       title: (d.data().title as string) ?? "Untitled",
-      url: `${window.location.origin}/editor?share=${d.id}`,
+      url: d.data().kind === "folder" ? folderShareUrl(d.id) : `${window.location.origin}/editor?share=${d.id}`,
+      isFolder: d.data().kind === "folder",
       createdAt: (d.data().createdAt as { toDate(): Date } | null)?.toDate() ?? null,
     }))
     .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
@@ -52,5 +57,7 @@ export async function listMyShareLinks(): Promise<ShareLinkInfo[]> {
 
 /** Kills the link: anyone opening it afterwards sees "invalid or removed". */
 export async function revokeShareLink(id: string): Promise<void> {
+  const user = getFirebaseAuth().currentUser;
+  if (user) await deleteFolderShareItems(user.uid, id); // no-op for a single record's link
   await deleteDoc(doc(getDb(), COLLECTION, id));
 }

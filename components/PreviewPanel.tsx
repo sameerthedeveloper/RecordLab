@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { ChevronDown, ChevronLeft, ChevronRight, FileDown, Loader2, Maximize2, Minus, Plus, Share2 } from "lucide-react";
 import { A4Page } from "./A4Page";
 import { AccountMenu } from "./AccountMenu";
-import { AdSlot } from "./AdSlot";
 import type { DownloadFormat, PageObject, PdfEngine, RecordState, Verification, WatermarkOptions } from "@/lib/types";
 
 // Tiptap (react + core + starter-kit) adds ~130KB — load it only once
@@ -161,14 +160,6 @@ export function PreviewPanel({
         </div>
 
         {/* Phones: account sits beside the title, the actions get their own full-width row. */}
-        {/* Ad space in the header's empty stretches: only on screens wide enough that nothing is squeezed. */}
-        <div className="hidden w-[234px] shrink-0 md:order-2 min-[1750px]:block">
-          <AdSlot shape="small" name="Preview header, left" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_LEFT} />
-        </div>
-        <div className="hidden w-[234px] shrink-0 md:order-4 min-[1450px]:block">
-          <AdSlot shape="small" name="Preview header, right" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER_RIGHT} />
-        </div>
-
         <div className="order-2 min-w-0 md:order-5">
           <AccountMenu onToast={onToast} />
         </div>
@@ -250,8 +241,6 @@ export function PreviewPanel({
               </div>
             ))
           )}
-          {/* After the last page, outside the document: never between pages, never in print or an export. */}
-          <AdSlot name="Preview, below the pages" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_PREVIEW} className="!max-w-[794px] opacity-90" />
         </div>
       </div>
 

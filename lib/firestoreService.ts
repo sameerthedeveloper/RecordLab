@@ -13,7 +13,6 @@ import {
   where,
 } from "firebase/firestore";
 import { getDb, getFirebaseAuth } from "./firebaseConfig";
-import { assertCanCreateRecord } from "./billing";
 import { getPuterIdentity } from "./puter";
 import type { RecordState, WatermarkOptions } from "./types";
 
@@ -89,7 +88,6 @@ function toCloudDocument(id: string, data: Record<string, unknown>): CloudDocume
 /** Saves a new document. Puter linking is best-effort and silent (no sign-in popup) — see `getPuterIdentity`. */
 export async function saveDocument(payload: RlabPayload, title: string, folderId: string | null = null): Promise<string> {
   const user = await requireUser();
-  await assertCanCreateRecord(user.uid);
   const puterUser = await getPuterIdentity();
 
   const docRef = await addDoc(collection(getDb(), COLLECTION), {

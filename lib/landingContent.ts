@@ -1,5 +1,6 @@
+import { FACULTY_WIRED } from "./facultyFlag";
 /** Landing-page copy shared with the structured data in app/page.tsx (the FAQ appears on the page and in FAQPage JSON-LD). */
-export const FAQS: { q: string; a: string }[] = [
+const ALL_FAQS: { q: string; a: string }[] = [
   {
     q: "What is the best online lab record maker?",
     a: "Record Lab is a free online lab record maker for engineering and science students in any department. You choose the sections your lab needs, write or AI-draft the record, run the code to capture its real output, and download a print-ready fair copy as PDF or Word. It works in the browser with no install and no account.",
@@ -10,7 +11,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is it really free?",
-    a: "Yes. Record Lab runs in your browser, there is nothing to install and no payment step. It is supported by small ads.",
+    a: "Yes. Record Lab runs in your browser, there is nothing to install, no payment step and no ads.",
   },
   {
     q: "Is it only for computer science?",
@@ -53,3 +54,5 @@ export const FAQS: { q: string; a: string }[] = [
     a: "Unsaved work stays in your browser. If you save to the cloud, records live in your own account. You can open them; Record Lab administrators can also read saved records to support users and keep the service healthy. A share link shows a copy only to people who have the link, until you revoke it.",
   },
 ];
+
+export const FAQS = ALL_FAQS.filter((f) => FACULTY_WIRED || !/faculty/i.test(f.q));

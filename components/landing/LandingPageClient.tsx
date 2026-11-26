@@ -1,6 +1,5 @@
 "use client";
 
-import { AdSlot } from "@/components/AdSlot";
 import { FAQS as faqs } from "@/lib/landingContent";
 import Image from "next/image";
 import Link from "next/link";
@@ -37,6 +36,7 @@ import {
   TerminalSquare,
   UserCheck,
 } from "lucide-react";
+import { FACULTY_WIRED } from "@/lib/facultyFlag";
 
 const index = [
   {
@@ -567,7 +567,7 @@ const DEPARTMENTS_STRIP = [
   "Mathematics",
 ];
 
-const MARQUEE = ["Every department", "Faculty verification", "Run the code", "Real output", "Graphs", "College sheet", "Page border", "Heading table", "Manual calculation", "Share a link", "Works offline", "A4 pagination"];
+const MARQUEE = ["Every department", ...(FACULTY_WIRED ? ["Faculty verification"] : []), "Run the code", "Real output", "Graphs", "College sheet", "Page border", "Heading table", "Manual calculation", "Share a link", "Works offline", "A4 pagination"];
 
 
 /** Small "PAGE 0N / 06" mono label — the landing page's own section counter,
@@ -656,7 +656,7 @@ export function LandingPageClient() {
             <a href="#see-it" className="transition-colors hover:text-accent">See it</a>
             <a href="#index" className="transition-colors hover:text-accent">Features</a>
             <a href="#how" className="transition-colors hover:text-accent">How it works</a>
-            <a href="#faculty" className="transition-colors hover:text-accent">Faculty</a>
+            {FACULTY_WIRED && <a href="#faculty" className="transition-colors hover:text-accent">Faculty</a>}
             <a href="#faq" className="transition-colors hover:text-accent">FAQ</a>
           </nav>
           <div className="flex items-center gap-1.5">
@@ -670,11 +670,13 @@ export function LandingPageClient() {
                 Install
               </button>
             )}
+            {FACULTY_WIRED && (
             <Link href="/faculty" aria-label="For faculty" className="ui-chip flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-xs font-semibold text-ink-soft hover:text-accent-ink max-[420px]:h-9 max-[420px]:w-9 max-[420px]:justify-center max-[420px]:p-0 sm:px-3.5">
               <UserCheck className="h-3.5 w-3.5" strokeWidth={2.25} />
               <span className="max-[420px]:hidden sm:hidden">Faculty</span>
               <span className="hidden sm:inline">For faculty</span>
             </Link>
+            )}
             <Link
               href="/editor"
               className="ui-primary flex items-center gap-1.5 whitespace-nowrap px-4 py-2 text-xs font-semibold"
@@ -870,7 +872,6 @@ export function LandingPageClient() {
       </section>
 
       <div className="px-5 py-6 sm:py-10">
-        <AdSlot name="Landing, after features" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LANDING_1} />
       </div>
 
       {/* ============ INDEX ============ */}
@@ -943,6 +944,7 @@ export function LandingPageClient() {
       </section>
 
       {/* ============ FACULTY ============ */}
+      {FACULTY_WIRED && (
       <section id="faculty" aria-labelledby="faculty-heading" data-reveal-group className="px-5 py-20 sm:py-28">
         <div className="mx-auto grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
           <div>
@@ -1013,6 +1015,7 @@ export function LandingPageClient() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ============ FAQ ============ */}
       <section id="faq" data-reveal-group className="px-5 py-20 sm:py-28">
@@ -1059,12 +1062,14 @@ export function LandingPageClient() {
             Open Record Lab
             <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
           </Link>
+          {FACULTY_WIRED && (
           <p data-reveal className="relative mt-5 text-sm text-paper/60">
             Teach a lab?{" "}
             <Link href="/faculty" className="font-semibold text-paper underline decoration-paper/30 underline-offset-4 hover:decoration-paper">
               Sign in as faculty
             </Link>
           </p>
+          )}
         </div>
       </section>
 
@@ -1118,7 +1123,6 @@ export function LandingPageClient() {
       </section>
 
       <div className="px-5 pb-8">
-        <AdSlot name="Landing, above footer" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LANDING_2} />
       </div>
 
       <footer className="px-3 pb-3 sm:px-5 sm:pb-5">

@@ -7,7 +7,6 @@ import { AutoTextarea } from "./AutoTextarea";
 import { EditorSection } from "./EditorSection";
 import { SheetSetup } from "./SheetSetup";
 import { imageOwner, isCustomLayout, MAX_PAIRS, pairCount, pairIds, pairTitles } from "@/lib/sections";
-import { AdSlot } from "./AdSlot";
 import { outputStatus, runnableSource } from "@/lib/runner/source";
 import type { Folder } from "@/lib/folderService";
 import { TerminalImageModal } from "./TerminalImageModal";
@@ -1030,7 +1029,6 @@ export function RecordEditorPanel({
         </div>
 
         {/* Ad space sits after everything you edit, so it never moves a field or covers one. */}
-        <AdSlot name="Editor, below the form" slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_EDITOR} className="mt-2 !max-w-none" />
       </div>
     </div>
   );

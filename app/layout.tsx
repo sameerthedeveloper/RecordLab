@@ -4,8 +4,6 @@ import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { PwaRegister } from "@/components/PwaRegister";
 import { OfflineBadge } from "@/components/OfflineBadge";
-import { ADSENSE_CLIENT } from "@/lib/ads";
-import { AdsLoader } from "@/components/AdsLoader";
 import { NamePrompt } from "@/components/NamePrompt";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 
@@ -103,12 +101,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               'try{var s=JSON.parse(localStorage.getItem("recordlab-settings-v1")||"{}");document.documentElement.dataset.ui=s.uiStyle==="classic"||s.uiStyle==="material"||s.uiStyle==="soft"?s.uiStyle:"apple"}catch(e){document.documentElement.dataset.ui="apple"}',
           }}
         />
-        {/* Google AdSense: the account verification meta tag. The loader script is added by <AdsLoader /> (not for Pro). */}
-        <meta name="google-adsense-account" content={ADSENSE_CLIENT} />
       </head>
       <body>
         {children}
-        <AdsLoader />
         <NamePrompt />
         <PwaRegister />
         <OfflineBadge />

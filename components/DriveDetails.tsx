@@ -6,6 +6,7 @@ import { useMySubmissions } from "@/lib/facultyService";
 import { fmtDate } from "@/lib/adminFormat";
 import type { CloudDocument } from "@/lib/firestoreService";
 import { FileThumb, stripHtml } from "./CloudFileViews";
+import { FACULTY_WIRED } from "@/lib/facultyFlag";
 
 function fullDate(ts: CloudDocument["updatedAt"]): string {
   if (!ts) return "Just now";
@@ -121,6 +122,7 @@ export function DriveDetails({ document, onClose, onOpen, onRename, onDownload, 
         </div>
       )}
 
+      {FACULTY_WIRED && (
       <div className="border-t border-line p-4">
         <p className="mb-2 text-xs text-ink-soft/70">Faculty review</p>
         {review ? (
@@ -145,6 +147,7 @@ export function DriveDetails({ document, onClose, onOpen, onRename, onDownload, 
           <p className="text-xs text-ink-soft">{document.folderId ? "Not handed in yet. Open its subject and choose Hand in to faculty." : "Move this file into a subject to hand it in."}</p>
         )}
       </div>
+      )}
 
       <dl className="space-y-2.5 border-t border-line p-4 text-xs">
         {rows.map(([label, value]) => (

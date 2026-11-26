@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BILLING_WIRED } from "@/lib/billingShared";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { SITE_URL } from "@/lib/site";
 import { buildMailHtml } from "@/lib/mailTemplate";
@@ -50,6 +51,7 @@ async function mailCode(input: { email: string; code: string; days: number; code
 
 /** Admins only. action "create" (default): makes a code for one email and optionally mails it. "resend": mails an unused code again. "revoke": deletes an unused code. */
 export async function POST(request: Request) {
+  if (!BILLING_WIRED) return NextResponse.json({ error: "plans_off" }, { status: 410 });
   const admin = await verifyAdmin(request);
   if (!admin) return NextResponse.json({ error: "Only Record Lab admins can do this." }, { status: 403 });
   const db = getAdminDb();

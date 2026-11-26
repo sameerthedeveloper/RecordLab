@@ -5,6 +5,9 @@
  */
 export type PlanId = "month" | "year";
 
+/** Paid plans are unwired from the app. While false, no new order, promo code or redemption is accepted. */
+export const BILLING_WIRED: boolean = false;
+
 export interface BillingConfig {
   /** Master switch. Off: everything is free and nothing is limited. */
   enabled: boolean;

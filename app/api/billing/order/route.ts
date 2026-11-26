@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BILLING_WIRED } from "@/lib/billingShared";
 import { amountFor, isPlan, readBillingConfig } from "@/lib/server/billing";
 import { adminSdkConfigured } from "@/lib/server/firebaseAdmin";
 import { createOrder, razorpayKeys } from "@/lib/server/razorpay";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 /** Starts a payment: prices the plan on the server and creates the Razorpay order the browser then pays. */
 export async function POST(request: Request) {
+  if (!BILLING_WIRED) return NextResponse.json({ error: "plans_off" }, { status: 410 });
   const user = await verifyUser(request);
   if (!user) return NextResponse.json({ error: "sign_in" }, { status: 401 });
   const keys = razorpayKeys();

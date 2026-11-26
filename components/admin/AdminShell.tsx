@@ -2,19 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FileText, GraduationCap, LayoutDashboard, Loader2, Mail, Wallet, RefreshCw, ShieldCheck, Sparkles, UserCheck, Users } from "lucide-react";
+import { ArrowLeft, FileText, GraduationCap, LayoutDashboard, Loader2, Mail, RefreshCw, ShieldCheck, Sparkles, UserCheck, Users } from "lucide-react";
 import { signOutUser } from "@/lib/authService";
 import { ago } from "@/lib/adminFormat";
 import { PanelFrame, type PanelNavItem } from "../PanelFrame";
 import { RANGES, useAdmin } from "./AdminProvider";
+import { FACULTY_WIRED } from "@/lib/facultyFlag";
 
 const TABS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, count: null, exact: true },
   { href: "/admin/users", label: "Users", icon: Users, count: "users" },
   { href: "/admin/records", label: "Records", icon: FileText, count: "records" },
   { href: "/admin/colleges", label: "Colleges", icon: GraduationCap, count: "collegesNamed" },
-  { href: "/admin/faculty", label: "Faculty", icon: UserCheck, count: null },
-  { href: "/admin/billing", label: "Billing", icon: Wallet, count: null },
+  ...(FACULTY_WIRED ? [{ href: "/admin/faculty", label: "Faculty", icon: UserCheck, count: null }] as const : []),
   { href: "/admin/ai", label: "AI", icon: Sparkles, count: null },
   { href: "/admin/mail", label: "Send mail", icon: Mail, count: null },
   { href: "/admin/admins", label: "Admins", icon: ShieldCheck, count: "adminCount" },

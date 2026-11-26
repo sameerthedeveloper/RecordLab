@@ -15,8 +15,6 @@ import { buildPrintDocumentHTML } from "@/lib/buildPrintHtml";
 import { buildRecordDocx } from "@/lib/buildDocx";
 import type { TerminalImageOptions } from "@/lib/terminalImage";
 import { saveDocument, updateDocument } from "@/lib/firestoreService";
-import { RecordLimitError } from "@/lib/billing";
-import { UpgradeModal } from "@/components/UpgradeModal";
 import { AuthModal } from "@/components/AuthModal";
 import { createFolder, setFolderTemplate, useFolders } from "@/lib/folderService";
 import { applyTemplate, effectiveLayout, isCustomLayout, pairCount, pairIds, pairTitles } from "@/lib/sections";
@@ -82,7 +80,6 @@ export default function Home() {
   const [mobilePanel, setMobilePanel] = useState<"inputs" | "preview">("inputs");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   // A download asked for while signed out; it runs once sign-in completes.
   const [saveAfterAuth, setSaveAfterAuth] = useState(false);
@@ -625,10 +622,6 @@ export default function Home() {
       track("save_cloud");
       return true;
     } catch (error) {
-      if (error instanceof RecordLimitError) {
-        setUpgradeOpen(true);
-        return false;
-      }
       console.error("Cloud save failed:", error);
       const message = error instanceof Error ? error.message : "Unable to save to the cloud. Please try again.";
       showToast(message);
@@ -997,7 +990,6 @@ export default function Home() {
         onToast={showToast}
       />
 
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} onToast={showToast} />
 
       <RunCodeModal
         open={runOpen}
